@@ -1,0 +1,70 @@
+#  Copyright 2019 Marc Mosko
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+import ccnpy
+
+
+class PayloadType(ccnpy.TlvType):
+    __lookup = {ccnpy.TlvType.T_PAYLOADTYPE_DATA: "DATA",
+                ccnpy.TlvType.T_PAYLOADTYPE_KEY: "KEY",
+                ccnpy.TlvType.T_PAYLOADTYPE_LINK: "LINK"}
+
+    def __to_string(self):
+        if self._payload_type in PayloadType.__lookup:
+            return PayloadType.__lookup[self._payload_type]
+        else:
+            return "Unknown %r" % self._payload_type
+
+    def __init__(self, type):
+        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_PAYLDTYPE)
+        self._payload_type = type
+        self._tlv = ccnpy.Tlv.create_uint8(self.type_number(), self._payload_type)
+
+    def __repr__(self):
+        return "PLDTYP(%r)" % self.__to_string()
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    @classmethod
+    def deserialize(cls, tlv):
+        if tlv.type() != ccnpy.TlvType.T_PAYLDTYPE:
+            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+
+        return cls(tlv.value_as_number())
+
+    def serialize(self):
+        return self._tlv.serialize()
+
+    @classmethod
+    def create_data_type(cls):
+        return cls(ccnpy.TlvType.T_PAYLOADTYPE_DATA)
+
+    @classmethod
+    def create_key_type(cls):
+        return cls(ccnpy.TlvType.T_PAYLOADTYPE_KEY)
+
+    @classmethod
+    def create_link_type(cls):
+        return cls(ccnpy.TlvType.T_PAYLOADTYPE_LINK)
+
+    def is_data(self):
+        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_DATA
+
+    def is_key(self):
+        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_KEY
+
+    def is_link(self):
+        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_LINK
+

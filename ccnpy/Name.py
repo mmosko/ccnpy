@@ -34,7 +34,13 @@ class Name(ccnpy.TlvType):
         self._components = components
         self._tlv = ccnpy.Tlv(self.type_number(), self._components)
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
     def __str__(self):
+        return "NAME(%r)" % self._components
+
+    def __repr__(self):
         return "NAME(%r)" % self._components
 
     def __getitem__(self, index):
@@ -66,7 +72,28 @@ class Name(ccnpy.TlvType):
 
     @classmethod
     def deserialize(cls, tlv):
-        return cls()
+        if tlv.type() != ccnpy.TlvType.T_NAME:
+            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+
+        components = []
+        offset = 0
+        while offset < tlv.length():
+            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            if len(inner_tlv) == 0:
+                raise RuntimeError("Inner TLV length is 0, must be at least 4")
+            offset += len(inner_tlv)
+
+            # Convert to a byte array for readability
+            converted_tlv = inner_tlv
+            try:
+                encoded = inner_tlv.value().tobytes()
+                converted_tlv = ccnpy.Tlv(inner_tlv.type(), encoded)
+            except RuntimeError:
+                pass
+
+            components.append(converted_tlv)
+
+        return cls(components)
 
     @classmethod
     def from_uri(cls, uri):
@@ -76,7 +103,7 @@ class Name(ccnpy.TlvType):
         components = []
         # The first element of the array is '/', so skip it
         for component in path.parts[1:]:
-            a = bytearray(component, 'utf-8')
+            a = component.encode()
             c = NameComponent(value=a)
             components.append(c)
 

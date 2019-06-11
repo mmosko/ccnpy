@@ -20,6 +20,8 @@ from ccnpy.FixedHeader import FixedHeader
 
 from ccnpy.ExpiryTime import ExpiryTime
 from ccnpy.HashValue import HashValue
+from ccnpy.PayloadType import PayloadType
+from ccnpy.Payload import Payload
 
 from ccnpy.ContentObject import ContentObject
 from ccnpy.Interest import Interest

@@ -38,6 +38,10 @@ class TlvType:
     T_SIGTIME = 0x000F
     T_SHA_256 = 0x0001
 
+    T_PAYLOADTYPE_DATA = 0
+    T_PAYLOADTYPE_KEY = 1
+    T_PAYLOADTYPE_LINK = 2
+
     """
     superclass for objects that are TLV types
     """

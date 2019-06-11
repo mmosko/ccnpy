@@ -27,6 +27,16 @@ class Tlv:
         """
         return cls(type, Tlv.uint64_to_array(value))
 
+    @classmethod
+    def create_uint8(cls, type, value):
+        """
+
+        :param type:
+        :param value: A uint8
+        :return:
+        """
+        return cls(type, Tlv.number_to_array(value))
+
     def __init__(self, type, value):
         self._type = type
         # If the value is an array, we flatten it here

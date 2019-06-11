@@ -12,13 +12,45 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
+from datetime import datetime
 import ccnpy
 
 
 class ContentObject(ccnpy.TlvType):
+    @classmethod
+    def create_data(cls, name=None, payload=None, expiry_time=None):
+        """
+
+        :param name: ccnpy.Name
+        :param payload: A byte array (array.array("B", ...))
+        :param expiry_time: A python datetime
+        :return: A ccnpy.ContentObject
+        """
+        payload_type = None
+
+        if payload is not None:
+            payload_type = ccnpy.PayloadType.create_data_type()
+
+        if expiry_time is not None:
+            if not isinstance(expiry_time, datetime):
+                raise TypeError("expiry_time must be datetime")
+            expiry_time = ccnpy.ExpiryTime.from_datetime(expiry_time)
+        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
+
     def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
         ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_OBJECT)
+
+        if name is not None:
+            if not isinstance(name, ccnpy.Name):
+                raise TypeError("Name must be of type ccnpy.Name")
+
+        if payload is not None:
+            if not isinstance(payload, ccnpy.Payload):
+                raise TypeError("Payload must be of type ccnpy.Payload")
+
+        if payload_type is not None:
+            if not isinstance(payload_type, ccnpy.PayloadType):
+                raise TypeError("PayloadType must be of type ccnpy.PayloadType")
 
         self._name = name
         self._payload_type = payload_type
@@ -29,18 +61,20 @@ class ContentObject(ccnpy.TlvType):
                                                    self._payload_type,
                                                    self._payload])
 
+    def __repr__(self):
+        return "CO(%r, %r, %r, %r)" % (self.name(), self.expiry_time(), self.payload_type(), self.payload())
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
     def name(self):
         return self._name
 
     def payload_type(self):
-        if self._payload_type is not None:
-            return self._payload_type.value()
-        return None
+        return self._payload_type
 
     def payload(self):
-        if self._payload is not None:
-            return self._payload.value()
-        return None
+        return self._payload
 
     def expiry_time(self):
         return self._expiry_time
@@ -53,7 +87,7 @@ class ContentObject(ccnpy.TlvType):
         name = payload_type = payload = expiry_time = None
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value[offset:])
+            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
             if inner_tlv.type() == ccnpy.TlvType.T_NAME:
@@ -61,10 +95,10 @@ class ContentObject(ccnpy.TlvType):
                 name = ccnpy.Name.deserialize(inner_tlv)
             elif inner_tlv.type() == ccnpy.TlvType.T_PAYLDTYPE:
                 assert payload_type is None
-                payload_type = inner_tlv
+                payload_type = ccnpy.PayloadType.deserialize(inner_tlv)
             elif inner_tlv.type() == ccnpy.TlvType.T_PAYLOAD:
                 assert payload is None
-                payload = inner_tlv
+                payload = ccnpy.Payload.deserialize(inner_tlv)
             elif inner_tlv.type() == ccnpy.TlvType.T_EXPIRY:
                 assert expiry_time is None
                 expiry_time = ccnpy.ExpiryTime.deserialize(inner_tlv)
