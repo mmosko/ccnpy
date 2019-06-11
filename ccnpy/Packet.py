@@ -1,4 +1,4 @@
-
+import hashlib
 import ccnpy
 
 
@@ -37,8 +37,7 @@ class Packet:
             else:
                 raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
 
-        # TODO:  Finish
-        return cls(header=None, body=None)
+        return cls(header=header, body=body, validation_alg=val_alg, validation_payload=val_payload)
 
     def header(self):
         return self._header
@@ -51,3 +50,14 @@ class Packet:
 
     def validation_payload(self):
         return self._validation_payload
+
+    def content_object_hash(self):
+        h = hashlib.sha256()
+        h.update(self.body().serialize())
+        if self.validation_alg() is not None:
+            h.update(self.validation_alg().serialize())
+        if self.validation_payload() is not None:
+            h.update(self.validation_payload().serialize())
+        digest = h.digest()
+        tlv = ccnpy.HashValue.create_sha256(digest)
+        return tlv

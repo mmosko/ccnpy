@@ -2,12 +2,11 @@ import ccnpy
 
 
 class HashValue(ccnpy.TlvType):
-    ALG_SHA_256 = ccnpy.TlvType.T_SHA_256
 
     def __init__(self, hash_algorithm, value):
         """
 
-        :param hash_algorithm: The method used to compute the hash (e.g. ALG_SHA_256)
+        :param hash_algorithm: The method used to compute the hash (e.g. T_SHA_256)
         :param value: The hash value
         """
         ccnpy.TlvType.__init__(self, hash_algorithm)
@@ -27,3 +26,7 @@ class HashValue(ccnpy.TlvType):
     def deserialize(cls, tlv):
         # TODO: Finish
         pass
+
+    @classmethod
+    def create_sha256(cls, value):
+        return cls(ccnpy.TlvType.T_SHA_256, value)

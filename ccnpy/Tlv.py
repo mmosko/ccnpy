@@ -3,6 +3,16 @@ import array
 
 
 class Tlv:
+    @classmethod
+    def create_uint64(cls, type, value):
+        """
+
+        :param type:
+        :param value: Up to an 8-byte number
+        :return:
+        """
+        return cls(type, Tlv.uint64_to_array(value))
+
     def __init__(self, type, value):
         self._type = type
         # If the value is an array, we flatten it here
@@ -58,7 +68,8 @@ class Tlv:
         if isinstance(value, list):
             byte_list = []
             for x in value:
-                byte_list.extend(x.serialize())
+                if x is not None:
+                    byte_list.extend(x.serialize())
             return array.array("B", byte_list)
         else:
             return value
@@ -81,6 +92,9 @@ class Tlv:
 
     def value(self):
         return self._value
+
+    def value_as_number(self):
+        return Tlv.array_to_number(self._value)
 
     def length(self):
         return len(self._value)
@@ -119,6 +133,18 @@ class Tlv:
             byte_array = [(n >> 56) & 0xFF, (n >> 48) & 0xFF, (n >> 40) & 0xFF, (n >> 32) & 0xFF,
                           (n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF]
 
+        return array.array("B", byte_array)
+
+    @staticmethod
+    def uint64_to_array(n):
+        """
+        Treat n like an 8-byte number
+
+        :param n:
+        :return:
+        """
+        byte_array = [(n >> 56) & 0xFF, (n >> 48) & 0xFF, (n >> 40) & 0xFF, (n >> 32) & 0xFF,
+                      (n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF]
         return array.array("B", byte_array)
 
     @staticmethod

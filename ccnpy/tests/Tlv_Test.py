@@ -41,3 +41,17 @@ class Tlv_Test(unittest.TestCase):
         truth = ccnpy.Tlv(2, array.array("B", [0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13]))
         actual = ccnpy.Tlv.deserialize(wire_format)
         self.assertEqual(truth, actual)
+
+    def test_tlv_array_value(self):
+        a = ccnpy.Tlv(type=1, value=array.array("B", [0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13]))
+        b = ccnpy.Tlv(type=2, value=array.array("B", [10, 11, 12, 13]))
+        c = None
+        d = ccnpy.Tlv(type=4, value=array.array("B", [10, 11, 12, 13]))
+
+        tlv = ccnpy.Tlv(1, [a, b, c, d])
+        expected = array.array("B", [0, 1, 0, 28,
+                                     0, 1, 0, 8, 0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13,
+                                     0, 2, 0, 4, 10, 11, 12, 13,
+                                     0, 4, 0, 4, 10, 11, 12, 13])
+        actual = tlv.serialize()
+        self.assertEqual(expected, actual)
