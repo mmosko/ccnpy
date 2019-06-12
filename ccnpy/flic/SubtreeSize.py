@@ -12,36 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import array
 import ccnpy
 
 
-class Payload(ccnpy.TlvType):
-    def __init__(self, value):
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_PAYLOAD)
-        if isinstance(value, list):
-            value = array.array("B", value)
+class SubtreeSize:
+    __type = 0x0001
 
-        self._value = value
-        self._tlv = ccnpy.Tlv(self.type_number(), self._value)
+    @staticmethod
+    def class_type():
+        return SubtreeSize.__type
 
-    def __eq__(self, other):
-        if self.__dict__ == other.__dict__:
-            return True
-        return False
+    def __init__(self, size):
+        self._size = size
+        self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self._size)
 
     def __repr__(self):
-        return "PAYLOAD(%r)" % self._value
+        return "SubtreeSize(%r)" % self._size
 
-    def value(self):
-        return self._value
-
-    def serialize(self):
-        return self._tlv.serialize()
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     @classmethod
     def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_PAYLOAD:
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
-        return cls(tlv.value())
+        return cls(tlv.value_as_number())
+
+    def serialize(self):
+        return self._tlv.serialize()

@@ -12,3 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
+class GroupData:
+    __type = 0x0001
+    __subtree_size_type = 0x0001
+    __subtree_digest_type = 0x0002
+
+    @staticmethod
+    def class_type():
+        return NodeData.__type
+
+    def __init__(self, leaf_size=None, leaf_digest=None,
+                 subtree_size=None, subtree_digest=None, size_index=None, locators=None):
+        pass
