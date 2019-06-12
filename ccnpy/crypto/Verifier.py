@@ -12,21 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from abc import ABC, abstractmethod
 
-from ccnpy.TlvType import TlvType
-from ccnpy.Tlv import Tlv
-from ccnpy.Name import Name
-from ccnpy.FixedHeader import FixedHeader
 
-from ccnpy.ExpiryTime import ExpiryTime
-from ccnpy.HashValue import HashValue
-from ccnpy.PayloadType import PayloadType
-from ccnpy.Payload import Payload
-
-from ccnpy.ContentObject import ContentObject
-from ccnpy.Interest import Interest
-from ccnpy.ValidationAlg import ValidationAlg
-from ccnpy.ValidationPayload import ValidationPayload
-
-from ccnpy.Packet import Packet
-
+class Verifier(ABC):
+    """
+    Abstract class used to sign a Packet.
+    """
+    @abstractmethod
+    def verify(self, buffer, validation_payload):
+        """
+        Checks if the validation_payload checks out on the buffer
+        :param buffer: The buffer to verify
+        :param validation_payload: The ValidationPayload to compare
+        :return: True or False
+        """
+        pass

@@ -172,6 +172,17 @@ class Tlv:
         return array.array("B", byte_array)
 
     @staticmethod
+    def uint32_to_array(n):
+        """
+        Treat n like an 8-byte number
+
+        :param n:
+        :return:
+        """
+        byte_array = [n >> 24, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF]
+        return array.array("B", byte_array)
+
+    @staticmethod
     def array_to_number(a):
         n = 0
         for b in a:

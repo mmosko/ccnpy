@@ -67,6 +67,13 @@ class ContentObject(ccnpy.TlvType):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __len__(self):
+        """
+        The wire format length of the Content Object
+        :return:
+        """
+        return len(self._tlv)
+
     def name(self):
         return self._name
 

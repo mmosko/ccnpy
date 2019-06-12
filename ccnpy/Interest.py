@@ -31,6 +31,14 @@ class Interest(ccnpy.TlvType):
         self._name = name
         self._keyidrestr = key_id_restr
         self._conobjhashrestr = con_obj_hash_restr
+        self._tlv = ccnpy.Tlv(self.type_number(), [self._name, self._keyidrestr, self._conobjhashrestr])
+
+    def __len__(self):
+        """
+        The wire format length of the Interest
+        :return:
+        """
+        return len(self._tlv)
 
     @classmethod
     def deserialize(cls, tlv):

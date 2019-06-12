@@ -27,6 +27,9 @@ class ValidationPayload(ccnpy.TlvType):
     def __eq__(self, other):
         return self.payload() == other.payload()
 
+    def __repr__(self):
+        return "ValPld(%r)" % self._payload
+
     @classmethod
     def deserialize(cls, tlv):
         if tlv.type() != ccnpy.TlvType.T_VALIDATION_PAYLOAD:
