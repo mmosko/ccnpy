@@ -106,8 +106,6 @@ class Tlv:
         byte_list.extend(self._encode_length())
         byte_list.extend(self.value())
 
-        #if isinstance(byte_list, self.value()):
-
         wire_format = array.array("B", byte_list)
         return wire_format
 

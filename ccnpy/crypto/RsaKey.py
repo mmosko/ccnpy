@@ -13,6 +13,9 @@
 #  limitations under the License.
 
 import array
+import hashlib
+import ccnpy
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
@@ -92,7 +95,7 @@ class RsaKey:
         with open(filename, "wb") as key_file:
             key_file.write(pem)
 
-    def public_key(self):
+    def public_key_pem(self):
         """
 
         :return: PEM encoded public key as a  string
@@ -104,6 +107,19 @@ class RsaKey:
                 encoding = serialization.Encoding.PEM,
                 format = serialization.PublicFormat.SubjectPublicKeyInfo)
         return pem
+
+    def public_key_der(self):
+        """
+
+        :return: DER encoded public key as a  string
+        """
+        if self._public_key is None:
+            raise ValueError("RsaKey does not have a public key")
+
+        der = self._public_key.public_bytes(
+                encoding = serialization.Encoding.DER,
+                format = serialization.PublicFormat.SubjectPublicKeyInfo)
+        return der
 
     @staticmethod
     def __create_padding(use_pss=False):
@@ -184,3 +200,14 @@ class RsaKey:
             pem = key_file.read()
             return cls(pem, password)
 
+    def keyid(self):
+        """
+        sha256 of the public key in DER format returned in a ccnpy.HashValue
+        :return:
+        """
+        der = self.public_key_der()
+        h = hashlib.sha256()
+        h.update(der)
+        digest = h.digest()
+        tlv = ccnpy.HashValue.create_sha256(digest)
+        return tlv

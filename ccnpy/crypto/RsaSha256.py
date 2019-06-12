@@ -36,6 +36,9 @@ class RsaSha256_Signer(Signer):
         payload = ccnpy.ValidationPayload(signature)
         return payload
 
+    def keyid(self):
+        return self._key.keyid()
+
 
 class RsaSha256_Verifier(Verifier):
     def __init__(self, key):

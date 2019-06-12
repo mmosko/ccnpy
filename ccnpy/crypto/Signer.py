@@ -40,3 +40,11 @@ class Signer(ABC):
         """
         pass
 
+    @abstractmethod
+    def keyid(self):
+        """
+        Returns the signer's public key ID.  Some algorithms may not have a KeyId.
+
+        :return: A HashValue, may be None
+        """
+        pass

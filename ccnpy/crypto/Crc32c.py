@@ -33,6 +33,9 @@ class Crc32c_Signer(Signer):
         payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
         return payload
 
+    def keyid(self):
+        return None
+
 
 class Crc32c_Verifier(Verifier):
     """

@@ -21,18 +21,29 @@ import ccnpy
 class Packet:
     @classmethod
     def create_interest(cls, body, hop_limit):
-        fh = ccnpy.FixedHeader.create_interest(packet_length=len(body), hop_limit=hop_limit)
+        # TODO: Hard-coding the 8 is not good
+        fh = ccnpy.FixedHeader.create_interest(packet_length=8 + len(body), hop_limit=hop_limit)
         return cls(header=fh, body=body)
 
     @classmethod
     def create_content_object(cls, body):
-        fh = ccnpy.FixedHeader.create_content_object(packet_length=len(body))
+        # TODO: Hard-coding the 8 is not good
+        fh = ccnpy.FixedHeader.create_content_object(packet_length=8 + len(body))
         return cls(header=fh, body=body)
 
     @classmethod
-    def create_signed_interest(cls, body, hop_limit, signer):
-        pass
+    def create_signed_interest(cls, body, hop_limit, validation_alg, validation_payload):
+        # TODO: Hard-coding the 8 is not good
+        packet_length = 8 + len(body) + len(validation_alg) + len(validation_payload)
+        fh = ccnpy.FixedHeader.create_interest(packet_length=packet_length, hop_limit=hop_limit)
+        return cls(header=fh, body=body, validation_alg=validation_alg, validation_payload=validation_payload)
 
+    @classmethod
+    def create_signed_content_object(cls, body, validation_alg, validation_payload):
+        # TODO: Hard-coding the 8 is not good
+        packet_length = 8 + len(body) + len(validation_alg) + len(validation_payload)
+        fh = ccnpy.FixedHeader.create_content_object(packet_length=packet_length)
+        return cls(header=fh, body=body, validation_alg=validation_alg, validation_payload=validation_payload)
 
     def __init__(self, header, body, validation_alg=None, validation_payload=None):
         if not isinstance(header, ccnpy.FixedHeader):
@@ -104,6 +115,10 @@ class Packet:
 
     def serialize(self):
         return self._wire_format
+
+    def save(self, filename):
+        with open(filename, 'wb') as outfile:
+            outfile.write(self.serialize().tobytes())
 
     def header(self):
         return self._header

@@ -27,6 +27,31 @@ class HashValue(ccnpy.TlvType):
         ccnpy.TlvType.__init__(self, hash_algorithm)
         self._value = value
         self._tlv = ccnpy.Tlv(self.type_number(), self._value)
+        self._wire_format = self._tlv.serialize()
+
+    def __iter__(self):
+        self._offset = 0
+        return self
+
+    def __next__(self):
+        if self._offset == len(self._wire_format):
+            raise StopIteration
+
+        output = self._wire_format[self._offset]
+        self._offset += 1
+        return output
+
+    def __alg_string(self):
+        if self.type_number() == ccnpy.TlvType.T_SHA_256:
+            return "SHA256"
+        else:
+            return "Unknown(%r)" % self.type_number()
+
+    def __len__(self):
+        return len(self._tlv)
+
+    def __repr__(self):
+        return "HashValue(%r, %r)" % (self.__alg_string(), self._value)
 
     def hash_algorithm(self):
         return self.type_number()
