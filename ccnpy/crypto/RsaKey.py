@@ -22,8 +22,13 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric import utils
+
 
 class RsaKey:
+    """
+    TODO: Need a way to create an RSA key from the DER encoded public key
+    """
     def __init__(self, pem_key, password=None):
         """
         Pass in one of (A) encrypted private key, (B) unencrypted private key, (C) public key
@@ -132,23 +137,30 @@ class RsaKey:
             pad = padding.PKCS1v15()
         return pad
 
-    def sign(self, buffer, use_pss_padding=False):
+    def sign(self, *buffers, use_pss_padding=False):
         """
 
-        :param buffer:
+        :param buffers: One or more buffers to sign
+        :param use_pss_padding: Use PSS padding with MGF1, otherwise use PKCS1 v1.5
         :return: A byte array
         """
         if self._private_key is None:
             raise ValueError("RsaKey does not have a private key")
 
+        hash_function = hashes.SHA256()
+        hasher = hashes.Hash(hash_function, default_backend())
+        for buffer in buffers:
+            hasher.update(buffer)
+        digest = hasher.finalize()
+
         signature = self._private_key.sign(
-                        buffer,
+                        digest,
                         self.__create_padding(use_pss_padding),
-                        hashes.SHA256()
+                        utils.Prehashed(hash_function)
                         )
         return array.array("B", signature)
 
-    def verify(self, buffer, signature, use_pss_padding=False):
+    def verify(self, *buffers, signature, use_pss_padding=False):
         if self._public_key is None:
             raise ValueError("RsaKey does not have a public key")
 
@@ -157,13 +169,18 @@ class RsaKey:
 
         result = False
 
-
         try:
+            hash_function = hashes.SHA256()
+            hasher = hashes.Hash(hash_function, default_backend())
+            for buffer in buffers:
+                hasher.update(buffer)
+            digest = hasher.finalize()
+
             self._public_key.verify(
                 signature,
-                buffer,
+                digest,
                 self.__create_padding(use_pss_padding),
-                hashes.SHA256()
+                utils.Prehashed(hash_function)
             )
             result = True
         except InvalidSignature:

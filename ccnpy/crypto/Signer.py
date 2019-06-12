@@ -32,10 +32,10 @@ class Signer(ABC):
     Abstract class used to sign a Packet.
     """
     @abstractmethod
-    def sign(self, buffer):
+    def sign(self, *buffers):
         """
         Returns the ValidationPayload
-        :param buffer:
+        :param buffers: one or more buffers (e.g. sign(body, validation_alg))
         :return:
         """
         pass

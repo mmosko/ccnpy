@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import array
 import ccnpy
 
 
 class Payload(ccnpy.TlvType):
     def __init__(self, value):
         ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_PAYLOAD)
+        if isinstance(value, list):
+            value = array.array("B", value)
+
         self._value = value
         self._tlv = ccnpy.Tlv(self.type_number(), self._value)
 

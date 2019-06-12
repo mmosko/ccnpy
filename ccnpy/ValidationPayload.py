@@ -30,6 +30,9 @@ class ValidationPayload(ccnpy.TlvType):
     def __repr__(self):
         return "ValPld(%r)" % self._payload
 
+    def __len__(self):
+        return len(self._tlv)
+
     @classmethod
     def deserialize(cls, tlv):
         if tlv.type() != ccnpy.TlvType.T_VALIDATION_PAYLOAD:

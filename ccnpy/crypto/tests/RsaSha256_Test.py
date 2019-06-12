@@ -71,5 +71,5 @@ YwIDAQAB
 
         for buffer in vectors:
             signature = signer.sign(buffer)
-            result = verifier.verify(buffer, signature)
+            result = verifier.verify(buffer, validation_payload=signature)
             self.assertTrue(result, buffer)

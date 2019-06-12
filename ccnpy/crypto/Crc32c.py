@@ -28,8 +28,10 @@ class Crc32c_Signer(Signer):
         """
         pass
 
-    def sign(self, buffer):
-        checksum = crc32(buffer)
+    def sign(self, *buffers):
+        checksum = 0
+        for buffer in buffers:
+            checksum = crc32(buffer, checksum)
         payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
         return payload
 
@@ -47,7 +49,7 @@ class Crc32c_Verifier(Verifier):
         """
         pass
 
-    def verify(self, buffer, validation_payload):
+    def verify(self, *buffers, validation_payload):
         """
 
         :param buffer: The buffer to checksum
@@ -57,6 +59,9 @@ class Crc32c_Verifier(Verifier):
         if validation_payload is None:
             raise ValueError("validation_payload must not be None")
 
-        checksum = crc32(buffer)
+        checksum = 0
+        for buffer in buffers:
+            checksum = crc32(buffer, checksum)
+
         check_payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
         return check_payload == validation_payload

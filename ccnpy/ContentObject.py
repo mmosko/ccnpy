@@ -22,7 +22,7 @@ class ContentObject(ccnpy.TlvType):
         """
 
         :param name: ccnpy.Name
-        :param payload: A byte array (array.array("B", ...))
+        :param payload: A byte array (array.array("B", ...)) or ccnpy.Payload
         :param expiry_time: A python datetime
         :return: A ccnpy.ContentObject
         """
@@ -30,6 +30,8 @@ class ContentObject(ccnpy.TlvType):
 
         if payload is not None:
             payload_type = ccnpy.PayloadType.create_data_type()
+            if not isinstance(payload, ccnpy.Payload):
+                payload = ccnpy.Payload(payload)
 
         if expiry_time is not None:
             if not isinstance(expiry_time, datetime):

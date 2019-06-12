@@ -31,8 +31,8 @@ class RsaSha256_Signer(Signer):
 
         self._key = key
 
-    def sign(self, buffer):
-        signature = self._key.sign(buffer)
+    def sign(self, *buffers):
+        signature = self._key.sign(*buffers)
         payload = ccnpy.ValidationPayload(signature)
         return payload
 
@@ -48,7 +48,7 @@ class RsaSha256_Verifier(Verifier):
             raise RuntimeError("key does not hold a public key, cannot verify")
         self._key = key
 
-    def verify(self, buffer, validation_payload):
+    def verify(self, *buffers, validation_payload):
         """
 
         :param buffer: The buffer to checksum
@@ -58,5 +58,5 @@ class RsaSha256_Verifier(Verifier):
         if validation_payload is None:
             raise ValueError("validation_payload must not be None")
 
-        result = self._key.verify(buffer, validation_payload.payload())
+        result = self._key.verify(*buffers, signature=validation_payload.payload())
         return result

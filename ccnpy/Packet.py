@@ -92,7 +92,7 @@ class Packet:
         offset += header.header_length()
 
         while offset < len(buffer):
-            tlv = ccnpy.Tlv.deserialize(buffer)
+            tlv = ccnpy.Tlv.deserialize(buffer[offset:])
             offset += len(tlv)
 
             if tlv.type() == ccnpy.TlvType.T_OBJECT:
@@ -104,7 +104,7 @@ class Packet:
             elif tlv.type() == ccnpy.TlvType.T_VALIDATION_ALG:
                 assert val_alg is None
                 val_alg = ccnpy.ValidationAlg.deserialize(tlv)
-            elif tlv.type() == ccnpy.TlvType.T_VALIDATION_ALG:
+            elif tlv.type() == ccnpy.TlvType.T_VALIDATION_PAYLOAD:
                 assert val_alg is not None
                 assert val_payload is None
                 val_payload = ccnpy.ValidationPayload.deserialize(tlv)
@@ -112,6 +112,11 @@ class Packet:
                 raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
 
         return cls(header=header, body=body, validation_alg=val_alg, validation_payload=val_payload)
+
+    @classmethod
+    def load(cls, filename):
+        with open(filename, 'rb') as infile:
+            return cls.deserialize(array.array("B", infile.read()))
 
     def serialize(self):
         return self._wire_format

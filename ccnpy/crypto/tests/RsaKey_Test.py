@@ -101,7 +101,7 @@ YwIDAQAB
         buffer = array.array("B", b'apple')
         signature = key.sign(buffer)
 
-        result = key.verify(buffer, signature)
+        result = key.verify(buffer, signature=signature)
         self.assertTrue(result)
 
     def test_verify(self):
@@ -109,5 +109,15 @@ YwIDAQAB
         buffer = array.array("B", self.sign_buffer)
         signature = array.array("B", self.sign_output)
 
-        result = key.verify(buffer, signature)
+        result = key.verify(buffer, signature=signature)
+        self.assertTrue(result)
+
+    def test_sign_two_buffers(self):
+        key = RsaKey(self.private_key)
+
+        b1 = array.array("B", b'app')
+        b2 = array.array("B", b'le')
+        signature = key.sign(b1, b2)
+
+        result = key.verify(b1, b2, signature=signature)
         self.assertTrue(result)

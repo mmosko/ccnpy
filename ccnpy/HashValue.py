@@ -64,8 +64,7 @@ class HashValue(ccnpy.TlvType):
 
     @classmethod
     def deserialize(cls, tlv):
-        # TODO: Finish
-        pass
+        return cls(tlv.type(), tlv.value())
 
     @classmethod
     def create_sha256(cls, value):

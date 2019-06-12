@@ -25,28 +25,58 @@ class ValidationAlg(ccnpy.TlvType):
 
     @classmethod
     def deserialize(cls, tlv):
-        pass
+        if tlv.type() != ccnpy.TlvType.T_VALIDATION_ALG:
+            raise ValueError("Incorrect TLV type %r" % tlv.type())
+
+        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+
+        if inner_tlv.type() == ValidationAlg_RsaSha256.class_type():
+            return ValidationAlg_RsaSha256.deserialize(inner_tlv)
+
+        if inner_tlv.type() == ValidationAlg_Crc32c.class_type():
+            return ValidationAlg_Crc32c.deserialize(inner_tlv)
+
+        raise ValueError("Unsupported ValidationAlg type %r" % tlv.type())
 
     def serialize(self):
         pass
 
 
 class ValidationAlg_Crc32c(ValidationAlg):
+    @staticmethod
+    def class_type():
+        return ccnpy.TlvType.T_CRC32C
+
     def __init__(self):
-        ValidationAlg.__init__(self, ccnpy.TlvType.T_CRC32C)
+        ValidationAlg.__init__(self, self.class_type())
         self._tlv = ccnpy.Tlv(ccnpy.TlvType.T_VALIDATION_ALG,
-                              ccnpy.Tlv(ccnpy.TlvType.T_CRC32C, []))
+                              ccnpy.Tlv(self.class_type(), []))
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __len__(self):
+        return len(self._tlv)
 
     @classmethod
     def deserialize(cls, tlv):
-        # TODO: Finish
-        raise RuntimeError("Not Implemented")
+        if tlv.type() != ValidationAlg_Crc32c.class_type():
+            raise ValueError("Incorrect TLV type %r" % tlv.type())
+
+        if tlv.length() != 0:
+            raise ValueError("Expected length 0, got %r" % tlv.length())
+
+        return cls()
 
     def serialize(self):
         return self._tlv.serialize()
 
 
 class ValidationAlg_RsaSha256(ValidationAlg):
+    @staticmethod
+    def class_type():
+        return ccnpy.TlvType.T_RSA_SHA256
+
     def __init__(self, keyid=None, public_key=None, key_link=None, signature_time=None):
         """
         :param keyid: The keyid to include in the ValidationAlg (HashValue)
@@ -54,7 +84,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         :param key_link: A Link to include in the ValidationAlg (Link)
         :param signature_time: A datetime when the signature was created (uses now if None) (SignatureTime)
         """
-        ValidationAlg.__init__(self, ccnpy.TlvType.T_RSA_SHA256)
+        ValidationAlg.__init__(self, self.class_type())
 
         tlvs = []
         if keyid is None and public_key is not None:
@@ -67,7 +97,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
             tlvs.append(ccnpy.Tlv(ccnpy.TlvType.T_KEYID, keyid))
 
         if public_key is not None:
-            tlvs.append(ccnpy.Tlv(ccnpy.TlvType.T_PUBLICKEY, public_key.keyid()))
+            tlvs.append(ccnpy.Tlv(ccnpy.TlvType.T_PUBLICKEY, public_key.der()))
 
         if key_link is not None:
             tlvs.append(ccnpy.Tlv(ccnpy.TlvType.T_KEYLINK, key_link))
@@ -82,12 +112,38 @@ class ValidationAlg_RsaSha256(ValidationAlg):
 
         tlvs.append(signature_time)
         self._tlv = ccnpy.Tlv(ccnpy.TlvType.T_VALIDATION_ALG,
-                              ccnpy.Tlv(ccnpy.TlvType.T_RSA_SHA256, tlvs))
+                              ccnpy.Tlv(self.class_type(), tlvs))
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __len__(self):
+        return len(self._tlv)
 
     @classmethod
     def deserialize(cls, tlv):
-        # TODO: Finish
-        raise RuntimeError("Not Implemented")
+        if tlv.type() != ValidationAlg_RsaSha256.class_type():
+            raise ValueError("Incorrect TLV type %r" % tlv.type())
+
+        # Now parse the body for the inner TLVs
+        keyid = public_key = key_link = signature_time = None
+        offset = 0
+        while offset < tlv.length():
+            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            if inner_tlv.type() == ccnpy.TlvType.T_KEYID:
+                hash_value_tlv = ccnpy.Tlv.deserialize(inner_tlv.value())
+                keyid = ccnpy.HashValue.deserialize(hash_value_tlv)
+            elif inner_tlv.type() == ccnpy.TlvType.T_SIGTIME:
+                signature_time = ccnpy.SignatureTime.deserialize(inner_tlv)
+            elif inner_tlv.type() == ccnpy.TlvType.T_PUBLICKEY:
+                der = inner_tlv.value()
+                # TODO: convert from DER to Public Key
+                raise RuntimeError("Not implemented")
+            elif inner_tlv.type() == ccnpy.TlvType.T_KEYLINK:
+                # TODO: process a LINK type
+                raise RuntimeError("Not implemented")
+            offset += len(inner_tlv)
+        return cls(keyid=keyid, public_key=public_key, key_link=key_link, signature_time=signature_time)
 
     def serialize(self):
         return self._tlv.serialize()

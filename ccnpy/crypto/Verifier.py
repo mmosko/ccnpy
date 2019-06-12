@@ -20,10 +20,10 @@ class Verifier(ABC):
     Abstract class used to sign a Packet.
     """
     @abstractmethod
-    def verify(self, buffer, validation_payload):
+    def verify(self, *buffers, validation_payload):
         """
         Checks if the validation_payload checks out on the buffer
-        :param buffer: The buffer to verify
+        :param buffers: One or more buffers to concatenate and verify
         :param validation_payload: The ValidationPayload to compare
         :return: True or False
         """
