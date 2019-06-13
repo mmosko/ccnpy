@@ -17,12 +17,18 @@ import ccnpy
 
 
 class ValidationPayload(ccnpy.TlvType):
+    __T_VALIDATION_PAYLOAD = 0x0004
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_VALIDATION_PAYLOAD
+
     def __init__(self, payload):
         """
         """
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_VALIDATION_PAYLOAD)
+        ccnpy.TlvType.__init__(self)
         self._payload = payload
-        self._tlv = ccnpy.Tlv(self.type_number(), self._payload)
+        self._tlv = ccnpy.Tlv(self.class_type(), self._payload)
 
     def __eq__(self, other):
         return self.payload() == other.payload()
@@ -34,8 +40,8 @@ class ValidationPayload(ccnpy.TlvType):
         return len(self._tlv)
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_VALIDATION_PAYLOAD:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         return cls(tlv.value())

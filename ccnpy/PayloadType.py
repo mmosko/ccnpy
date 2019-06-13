@@ -16,9 +16,14 @@ import ccnpy
 
 
 class PayloadType(ccnpy.TlvType):
-    __lookup = {ccnpy.TlvType.T_PAYLOADTYPE_DATA: "DATA",
-                ccnpy.TlvType.T_PAYLOADTYPE_KEY: "KEY",
-                ccnpy.TlvType.T_PAYLOADTYPE_LINK: "LINK"}
+    __T_PAYLDTYPE = 0x0005
+    __T_PAYLOADTYPE_DATA = 0
+    __T_PAYLOADTYPE_KEY = 1
+    __T_PAYLOADTYPE_LINK = 2
+
+    __lookup = {__T_PAYLOADTYPE_DATA: "DATA",
+                __T_PAYLOADTYPE_KEY: "KEY",
+                __T_PAYLOADTYPE_LINK: "LINK"}
 
     def __to_string(self):
         if self._payload_type in PayloadType.__lookup:
@@ -26,10 +31,14 @@ class PayloadType(ccnpy.TlvType):
         else:
             return "Unknown %r" % self._payload_type
 
+    @classmethod
+    def class_type(cls):
+        return cls.__T_PAYLDTYPE
+
     def __init__(self, type):
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_PAYLDTYPE)
+        ccnpy.TlvType.__init__(self)
         self._payload_type = type
-        self._tlv = ccnpy.Tlv.create_uint8(self.type_number(), self._payload_type)
+        self._tlv = ccnpy.Tlv.create_uint8(self.class_type(), self._payload_type)
 
     def __repr__(self):
         return "PLDTYP(%r)" % self.__to_string()
@@ -38,8 +47,8 @@ class PayloadType(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_PAYLDTYPE:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         return cls(tlv.value_as_number())
@@ -49,22 +58,22 @@ class PayloadType(ccnpy.TlvType):
 
     @classmethod
     def create_data_type(cls):
-        return cls(ccnpy.TlvType.T_PAYLOADTYPE_DATA)
+        return cls(cls.__T_PAYLOADTYPE_DATA)
 
     @classmethod
     def create_key_type(cls):
-        return cls(ccnpy.TlvType.T_PAYLOADTYPE_KEY)
+        return cls(cls.__T_PAYLOADTYPE_KEY)
 
     @classmethod
     def create_link_type(cls):
-        return cls(ccnpy.TlvType.T_PAYLOADTYPE_LINK)
+        return cls(cls.__T_PAYLOADTYPE_LINK)
 
     def is_data(self):
-        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_DATA
+        return self._payload_type == self.__T_PAYLOADTYPE_DATA
 
     def is_key(self):
-        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_KEY
+        return self._payload_type == self.__T_PAYLOADTYPE_KEY
 
     def is_link(self):
-        return self._payload_type == ccnpy.TlvType.T_PAYLOADTYPE_LINK
+        return self._payload_type == self.__T_PAYLOADTYPE_LINK
 

@@ -21,18 +21,36 @@ import ccnpy
 
 
 class NameComponent(ccnpy.Tlv):
-    def __init__(self, type=ccnpy.TlvType.T_NAMESEGMENT, value=None):
-        ccnpy.Tlv.__init__(self, type=type, value=value)
+    __T_NAMESEGMENT=0x0001
+    __T_IPID=0x0002
+
+    @classmethod
+    def create_name_segment(cls, value):
+        return cls(cls.__T_NAMESEGMENT, value)
+
+    @classmethod
+    def create_ipid_segment(cls, value):
+        return cls(cls.__T_IPID, value)
+
+    def __init__(self, tlv_type, value):
+        ccnpy.Tlv.__init__(self, tlv_type=tlv_type, value=value)
+
 
 class Name(ccnpy.TlvType):
+    __T_NAME = 0x0000
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_NAME
+
     def __init__(self, components=None):
         """
 
         :param components: An array of NameComponents
         """
-        ccnpy.TlvType.__init__(self, type_number=ccnpy.TlvType.T_NAME)
+        ccnpy.TlvType.__init__(self)
         self._components = components
-        self._tlv = ccnpy.Tlv(self.type_number(), self._components)
+        self._tlv = ccnpy.Tlv(self.class_type(), self._components)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -71,14 +89,14 @@ class Name(ccnpy.TlvType):
         return self._components[index]
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_NAME:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         components = []
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.NameComponent.deserialize(tlv.value()[offset:])
             if len(inner_tlv) == 0:
                 raise RuntimeError("Inner TLV length is 0, must be at least 4")
             offset += len(inner_tlv)
@@ -87,7 +105,7 @@ class Name(ccnpy.TlvType):
             converted_tlv = inner_tlv
             try:
                 encoded = inner_tlv.value().tobytes()
-                converted_tlv = ccnpy.Tlv(inner_tlv.type(), encoded)
+                converted_tlv = ccnpy.NameComponent(inner_tlv.type(), encoded)
             except RuntimeError:
                 pass
 
@@ -104,7 +122,7 @@ class Name(ccnpy.TlvType):
         # The first element of the array is '/', so skip it
         for component in path.parts[1:]:
             a = component.encode()
-            c = NameComponent(value=a)
+            c = NameComponent.create_name_segment(value=a)
             components.append(c)
 
         return cls(components)

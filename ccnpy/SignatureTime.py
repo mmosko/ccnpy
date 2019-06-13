@@ -31,15 +31,21 @@ import ccnpy
 
 
 class SignatureTime(ccnpy.Timestamp):
+    __T_SIGTIME = 0x000F
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_SIGTIME
+
     def __init__(self, timestamp):
         """
         :param timestamp: Python datetime timestamp (seconds float)
         """
-        ccnpy.Timestamp.__init__(self, ccnpy.TlvType.T_SIGTIME, timestamp)
+        ccnpy.Timestamp.__init__(self, timestamp)
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_SIGTIME:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         msec = tlv.value_as_number()

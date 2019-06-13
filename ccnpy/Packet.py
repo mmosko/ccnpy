@@ -95,19 +95,19 @@ class Packet:
             tlv = ccnpy.Tlv.deserialize(buffer[offset:])
             offset += len(tlv)
 
-            if tlv.type() == ccnpy.TlvType.T_OBJECT:
+            if tlv.type() == ccnpy.ContentObject.class_type():
                 assert body is None
-                body = ccnpy.ContentObject.deserialize(tlv)
-            elif tlv.type() == ccnpy.TlvType.T_INTEREST:
+                body = ccnpy.ContentObject.parse(tlv)
+            elif tlv.type() == ccnpy.Interest.class_type():
                 assert body is None
-                body = ccnpy.Interest.deserialize(tlv)
-            elif tlv.type() == ccnpy.TlvType.T_VALIDATION_ALG:
+                body = ccnpy.Interest.parse(tlv)
+            elif tlv.type() == ccnpy.ValidationAlg.class_type():
                 assert val_alg is None
-                val_alg = ccnpy.ValidationAlg.deserialize(tlv)
-            elif tlv.type() == ccnpy.TlvType.T_VALIDATION_PAYLOAD:
+                val_alg = ccnpy.ValidationAlg.parse(tlv)
+            elif tlv.type() == ccnpy.ValidationPayload.class_type():
                 assert val_alg is not None
                 assert val_payload is None
-                val_payload = ccnpy.ValidationPayload.deserialize(tlv)
+                val_payload = ccnpy.ValidationPayload.parse(tlv)
             else:
                 raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
 

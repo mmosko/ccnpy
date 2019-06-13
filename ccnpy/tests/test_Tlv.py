@@ -34,7 +34,7 @@ class Tlv_Test(unittest.TestCase):
     def test_serialize_array(self):
         type = 0x1234
         value = array.array("B", [10, 11, 12, 13])
-        tlv = ccnpy.Tlv(type=type, value=value)
+        tlv = ccnpy.Tlv(tlv_type=type, value=value)
         #print(tlv)
 
         wire_format = tlv.serialize()
@@ -46,8 +46,8 @@ class Tlv_Test(unittest.TestCase):
         self.assertEqual(truth, wire_format, "wire format incorrect")
 
     def test_serialize_tlv(self):
-        inner_tlv = ccnpy.Tlv(type=0x0001, value=[10, 11, 12, 13])
-        outer_tlv = ccnpy.Tlv(type=0x0002, value=inner_tlv)
+        inner_tlv = ccnpy.Tlv(tlv_type=0x0001, value=[10, 11, 12, 13])
+        outer_tlv = ccnpy.Tlv(tlv_type=0x0002, value=inner_tlv)
         wire_format = outer_tlv.serialize()
 
         truth = array.array("B", [0x00, 0x02, 0x00, 0x08, 0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13])
@@ -70,10 +70,10 @@ class Tlv_Test(unittest.TestCase):
         self.assertEqual(truth, actual)
 
     def test_tlv_array_value(self):
-        a = ccnpy.Tlv(type=1, value=array.array("B", [0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13]))
-        b = ccnpy.Tlv(type=2, value=array.array("B", [10, 11, 12, 13]))
+        a = ccnpy.Tlv(tlv_type=1, value=array.array("B", [0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13]))
+        b = ccnpy.Tlv(tlv_type=2, value=array.array("B", [10, 11, 12, 13]))
         c = None
-        d = ccnpy.Tlv(type=4, value=array.array("B", [10, 11, 12, 13]))
+        d = ccnpy.Tlv(tlv_type=4, value=array.array("B", [10, 11, 12, 13]))
 
         tlv = ccnpy.Tlv(1, [a, b, c, d])
         expected = array.array("B", [0, 1, 0, 28,

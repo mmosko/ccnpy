@@ -17,13 +17,20 @@ import ccnpy
 
 
 class Payload(ccnpy.TlvType):
+    __T_PAYLOAD = 0x0001
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_PAYLOAD
+
     def __init__(self, value):
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_PAYLOAD)
+        ccnpy.TlvType.__init__(self)
+
         if isinstance(value, list):
             value = array.array("B", value)
 
         self._value = value
-        self._tlv = ccnpy.Tlv(self.type_number(), self._value)
+        self._tlv = ccnpy.Tlv(self.class_type(), self._value)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
@@ -40,8 +47,8 @@ class Payload(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_PAYLOAD:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         return cls(tlv.value())

@@ -12,24 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import unittest
 import array
 import ccnpy
+import ccnpy.flic
 
 
-class ValidationPayload_Test(unittest.TestCase):
-
+class SubtreeSize_Test(unittest.TestCase):
     def test_serialize(self):
-        payload = array.array("B", [1, 2, 3, 4, 5, 6])
-        vp = ccnpy.ValidationPayload(payload)
-        expected = array.array("B", [0, 4, 0, 6, 1, 2, 3, 4, 5, 6])
-        actual = vp.serialize()
+        ss = ccnpy.flic.SubtreeSize(0x010203)
+        actual = ss.serialize()
+
+        expected = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        payload = array.array("B", [1, 2, 3, 4, 5, 6])
-        tlv = ccnpy.Tlv(ccnpy.TlvType.T_VALIDATION_PAYLOAD, payload)
-        expected = ccnpy.ValidationPayload(payload)
-        actual = ccnpy.ValidationPayload.deserialize(tlv)
+        wire_format = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
+        tlv = ccnpy.Tlv.deserialize(wire_format)
+        actual = ccnpy.flic.SubtreeSize.parse(tlv)
+        expected = ccnpy.flic.SubtreeSize(0x010203)
         self.assertEqual(expected, actual)

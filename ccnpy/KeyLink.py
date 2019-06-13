@@ -15,30 +15,28 @@
 import ccnpy
 
 
-class SubtreeSize(ccnpy.TlvType):
-    __type = 0x0001
+class KeyLink(ccnpy.TlvType):
+    __T_KEYLINK = 0x000E
 
-    @staticmethod
-    def class_type():
-        return SubtreeSize.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__T_KEYLINK
 
-    def __init__(self, size):
-        ccnpy.TlvType.__init__(self)
-        self._size = size
-        self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self._size)
-
-    def __repr__(self):
-        return "SubtreeSize(%r)" % self._size
+    def __init__(self, link):
+        ccnpy.TlvType.__init__(self, self.class_type())
+        self._link = link
+        self._tlv = ccnpy.Tlv(self.class_type(), link)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def serialize(self):
+        return self._tlv.serialize()
+
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise TypeError("TLV type %r expected %r" % (tlv.type(), cls.class_type()))
 
-        return cls(tlv.value_as_number())
-
-    def serialize(self):
-        return self._tlv.serialize()
+        link = ccnpy.Link.deserialize(tlv.value())
+        return cls(link)

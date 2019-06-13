@@ -20,19 +20,22 @@ import ccnpy
 
 class Timestamp(ccnpy.TlvType):
     """
-    base class for ExpiryTime and SignatureTime
+    base class for ExpiryTime and SignatureTime.
+
+    Because it does not implement all the abstract methods in TlvType, this
+    is an abstract intermediate class.
     """
     @classmethod
     def from_datetime(cls, dt):
         return cls(round(dt.timestamp(), 3))
 
-    def __init__(self, tlv_type, timestamp):
+    def __init__(self, timestamp):
         """
         :param timestamp: Python datetime timestamp (seconds float)
         """
-        ccnpy.TlvType.__init__(self, tlv_type)
+        ccnpy.TlvType.__init__(self)
         self._timestamp = timestamp
-        self._tlv = ccnpy.Tlv.create_uint64(self.type_number(), self.milliseconds())
+        self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self.milliseconds())
         self._wire_format = self._tlv.serialize()
 
     def __eq__(self, other):

@@ -17,15 +17,26 @@ import ccnpy
 
 
 class HashValue(ccnpy.TlvType):
+    __T_SHA_256 = 0x0001
+
+    @classmethod
+    def class_type(cls):
+        """
+        TODO: Need workaround for multiple hash types
+        :return:
+        """
+        return cls.__T_SHA_256
+
     def __init__(self, hash_algorithm, value):
         """
 
         :param hash_algorithm: The method used to compute the hash (e.g. T_SHA_256)
         :param value: The hash value
         """
-        ccnpy.TlvType.__init__(self, hash_algorithm)
+        ccnpy.TlvType.__init__(self)
+        self._hash_algorithm = hash_algorithm
         self._value = value
-        self._tlv = ccnpy.Tlv(self.type_number(), self._value)
+        self._tlv = ccnpy.Tlv(hash_algorithm, self._value)
         self._wire_format = self._tlv.serialize()
 
     def __iter__(self):
@@ -41,10 +52,10 @@ class HashValue(ccnpy.TlvType):
         return output
 
     def __alg_string(self):
-        if self.type_number() == ccnpy.TlvType.T_SHA_256:
+        if self._hash_algorithm == self.__T_SHA_256:
             return "SHA256"
         else:
-            return "Unknown(%r)" % self.type_number()
+            return "Unknown(%r)" % self._hash_algorithm
 
     def __len__(self):
         return len(self._tlv)
@@ -56,7 +67,7 @@ class HashValue(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def hash_algorithm(self):
-        return self.type_number()
+        return self._hash_algorithm
 
     def value(self):
         return self._value
@@ -65,9 +76,9 @@ class HashValue(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         return cls(tlv.type(), tlv.value())
 
     @classmethod
     def create_sha256(cls, value):
-        return cls(ccnpy.TlvType.T_SHA_256, value)
+        return cls(cls.__T_SHA_256, value)

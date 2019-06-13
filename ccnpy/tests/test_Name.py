@@ -47,6 +47,6 @@ class Name_Test(unittest.TestCase):
                                         0, 1, 0, 6, 99, 104, 101, 114, 114, 121,
                                         0, 1, 0, 6, 100, 117, 114, 105, 97, 110])
         tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.Name.deserialize(tlv)
+        actual = ccnpy.Name.parse(tlv)
         expected = ccnpy.Name.from_uri('ccnx:/apple/banana/cherry/durian')
         self.assertEqual(expected, actual, "Incorrect deserialize")

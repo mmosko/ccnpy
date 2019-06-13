@@ -17,6 +17,9 @@ import ccnpy
 
 
 class Link:
+    __T_KEYIDRESTR = 0x0002
+    __T_OBJHASHRESTR = 0x0003
+
     """
     Serves as the base class for KeyLink and is used in Locators
     """
@@ -47,10 +50,10 @@ class Link:
             self._wire_format.extend(self._name.serialize())
 
         if self._keyid is not None:
-            self._wire_format.extend(ccnpy.Tlv(ccnpy.TlvType.T_KEYIDRESTR, self._keyid).serialize())
+            self._wire_format.extend(ccnpy.Tlv(self.__T_KEYIDRESTR, self._keyid).serialize())
 
         if self._digest is not None:
-            self._wire_format.extend(ccnpy.Tlv(ccnpy.TlvType.T_OBJHASHRESTR, self._digest).serialize())
+            self._wire_format.extend(ccnpy.Tlv(self.__T_OBJHASHRESTR, self._digest).serialize())
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -75,17 +78,17 @@ class Link:
         while offset < len(buffer):
             tlv = ccnpy.Tlv.deserialize(buffer[offset:])
             offset += len(tlv)
-            if tlv.type() == ccnpy.TlvType.T_NAME:
+            if tlv.type() == ccnpy.Name.class_type():
                 assert name is None
-                name = ccnpy.Name.deserialize(tlv)
-            elif tlv.type() == ccnpy.TlvType.T_KEYIDRESTR:
+                name = ccnpy.Name.parse(tlv)
+            elif tlv.type() == cls.__T_KEYIDRESTR:
                 assert keyid is None
                 inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-                keyid = ccnpy.HashValue.deserialize(inner_tlv)
-            elif tlv.type() == ccnpy.TlvType.T_OBJHASHRESTR:
+                keyid = ccnpy.HashValue.parse(inner_tlv)
+            elif tlv.type() == cls.__T_OBJHASHRESTR:
                 assert digest is None
                 inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-                digest = ccnpy.HashValue.deserialize(inner_tlv)
+                digest = ccnpy.HashValue.parse(inner_tlv)
             else:
                 raise ValueError("Unsupported TLV %r" % tlv)
         return cls(name=name, keyid=keyid, digest=digest)

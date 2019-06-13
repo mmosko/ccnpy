@@ -41,7 +41,7 @@ class Interest(ccnpy.TlvType):
         return len(self._tlv)
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         pass
 
     def serialize(self):

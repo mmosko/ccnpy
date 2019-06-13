@@ -19,15 +19,21 @@ import ccnpy
 
 
 class ExpiryTime(ccnpy.Timestamp):
+    __T_EXPIRY = 0x0006
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_EXPIRY
+
     def __init__(self, timestamp):
         """
         :param timestamp: Python datetime timestamp (seconds float)
         """
-        ccnpy.Timestamp.__init__(self, ccnpy.TlvType.T_EXPIRY, timestamp)
+        ccnpy.Timestamp.__init__(self, timestamp)
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_EXPIRY:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         msec = tlv.value_as_number()

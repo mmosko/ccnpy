@@ -12,26 +12,3 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from abc import ABC, abstractmethod
-
-
-class TlvType(ABC):
-    """
-    superclass for objects that are TLV types
-    """
-    def __init__(self):
-        pass
-
-    @classmethod
-    @abstractmethod
-    def class_type(cls):
-        pass
-
-    @abstractmethod
-    def serialize(self):
-        pass
-
-    @classmethod
-    @abstractmethod
-    def parse(cls, tlv):
-        pass

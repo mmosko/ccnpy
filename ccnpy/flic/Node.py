@@ -19,9 +19,9 @@ import ccnpy.flic
 class Node(ccnpy.TlvType):
     __type = 0x0010
 
-    @staticmethod
-    def class_type():
-        return Node.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, node_data=None, hash_groups=None):
         """
@@ -29,7 +29,7 @@ class Node(ccnpy.TlvType):
         :param node_data: (optional) ccnpy.flic.NodeData
         :param hash_groups: A single HashGroup or a list of HashGroups
         """
-        ccnpy.TlvType.__init__(self, self.class_type())
+        ccnpy.TlvType.__init__(self)
         if node_data is not None and not isinstance(node_data, ccnpy.flic.NodeData):
             raise TypeError("node_data must be ccnpy.flic.NodeData")
 
@@ -44,7 +44,7 @@ class Node(ccnpy.TlvType):
 
         inner_tlvs = [self._node_data]
         inner_tlvs.extend(self._hash_groups)
-        self._tlv = ccnpy.Tlv(self.type_number(), inner_tlvs)
+        self._tlv = ccnpy.Tlv(self.class_type(), inner_tlvs)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
@@ -64,7 +64,7 @@ class Node(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
@@ -78,10 +78,10 @@ class Node(ccnpy.TlvType):
 
             if tlv.type() == ccnpy.flic.NodeData.class_type():
                 assert node_data is None
-                node_data = ccnpy.flic.NodeData.deserialize(inner_tlv)
+                node_data = ccnpy.flic.NodeData.parse(inner_tlv)
 
             elif tlv.type() == ccnpy.flic.HashGroup.class_type():
-                hash_group = ccnpy.flic.HashGroup.deserialize(inner_tlv)
+                hash_group = ccnpy.flic.HashGroup.parse(inner_tlv)
                 hash_groups.append(hash_group)
 
             else:

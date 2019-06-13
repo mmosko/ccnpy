@@ -30,6 +30,6 @@ class SubtreeDigest_Test(unittest.TestCase):
     def test_deserialize(self):
         wire_format = array.array("B", [0, 2, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         tlv = ccnpy.Tlv.deserialize(wire_format)
-        sd = ccnpy.flic.SubtreeDigest.deserialize(tlv)
+        sd = ccnpy.flic.SubtreeDigest.parse(tlv)
         expected = ccnpy.flic.SubtreeDigest(ccnpy.HashValue(55, array.array("B", [1, 2, 3])))
         self.assertEqual(expected, sd)

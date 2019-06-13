@@ -17,6 +17,12 @@ import ccnpy
 
 
 class ContentObject(ccnpy.TlvType):
+    __T_OBJECT = 0x0002
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_OBJECT
+
     @classmethod
     def create_data(cls, name=None, payload=None, expiry_time=None):
         """
@@ -40,8 +46,6 @@ class ContentObject(ccnpy.TlvType):
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
     def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_OBJECT)
-
         if name is not None:
             if not isinstance(name, ccnpy.Name):
                 raise TypeError("Name must be of type ccnpy.Name")
@@ -58,10 +62,10 @@ class ContentObject(ccnpy.TlvType):
         self._payload_type = payload_type
         self._payload = payload
         self._expiry_time = expiry_time
-        self._tlv = ccnpy.Tlv(self.type_number(), [self._name,
-                                                   self._expiry_time,
-                                                   self._payload_type,
-                                                   self._payload])
+        self._tlv = ccnpy.Tlv(self.class_type(), [self._name,
+                                                  self._expiry_time,
+                                                  self._payload_type,
+                                                  self._payload])
 
     def __repr__(self):
         return "CO(%r, %r, %r, %r)" % (self.name(), self.expiry_time(), self.payload_type(), self.payload())
@@ -89,8 +93,8 @@ class ContentObject(ccnpy.TlvType):
         return self._expiry_time
 
     @classmethod
-    def deserialize(cls, tlv):
-        if tlv.type() != ccnpy.TlvType.T_OBJECT:
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r must be T_OBJECT")
 
         name = payload_type = payload = expiry_time = None
@@ -99,18 +103,18 @@ class ContentObject(ccnpy.TlvType):
             inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
-            if inner_tlv.type() == ccnpy.TlvType.T_NAME:
+            if inner_tlv.type() == ccnpy.Name.class_type():
                 assert name is None
-                name = ccnpy.Name.deserialize(inner_tlv)
-            elif inner_tlv.type() == ccnpy.TlvType.T_PAYLDTYPE:
+                name = ccnpy.Name.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.PayloadType.class_type():
                 assert payload_type is None
-                payload_type = ccnpy.PayloadType.deserialize(inner_tlv)
-            elif inner_tlv.type() == ccnpy.TlvType.T_PAYLOAD:
+                payload_type = ccnpy.PayloadType.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.Payload.class_type():
                 assert payload is None
-                payload = ccnpy.Payload.deserialize(inner_tlv)
-            elif inner_tlv.type() == ccnpy.TlvType.T_EXPIRY:
+                payload = ccnpy.Payload.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.ExpiryTime.class_type():
                 assert expiry_time is None
-                expiry_time = ccnpy.ExpiryTime.deserialize(inner_tlv)
+                expiry_time = ccnpy.ExpiryTime.parse(inner_tlv)
             else:
                 raise ValueError("Unsupported ContentObject TLV %r" % inner_tlv.type())
 

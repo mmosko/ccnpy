@@ -19,9 +19,9 @@ import ccnpy.flic
 class HashGroup(ccnpy.TlvType):
     __type = 0x0002
 
-    @staticmethod
-    def class_type():
-        return HashGroup.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, group_data=None, pointers=None):
         """
@@ -29,7 +29,7 @@ class HashGroup(ccnpy.TlvType):
         :param group_data:
         :param pointers:
         """
-        ccnpy.TlvType.__init__(self, self.class_type())
+        ccnpy.TlvType.__init__(self)
         if group_data is not None and not isinstance(group_data, ccnpy.flic.GroupData):
             raise TypeError("group_data must be ccnpy.flic.GrouData")
 
@@ -44,7 +44,7 @@ class HashGroup(ccnpy.TlvType):
 
         inner_tlvs = [self._group_data]
         inner_tlvs.extend(self._pointers)
-        self._tlv = ccnpy.Tlv(self.type_number(), inner_tlvs)
+        self._tlv = ccnpy.Tlv(self.class_type(), inner_tlvs)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
@@ -64,7 +64,7 @@ class HashGroup(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
@@ -78,9 +78,9 @@ class HashGroup(ccnpy.TlvType):
 
             if tlv.type() == ccnpy.flic.GroupData.class_type():
                 assert group_data is None
-                group_data = ccnpy.flic.GroupData.deserialize(inner_tlv)
+                group_data = ccnpy.flic.GroupData.parse(inner_tlv)
             else:
-                hash_value = ccnpy.HashValue.deserialize(inner_tlv)
+                hash_value = ccnpy.HashValue.parse(inner_tlv)
                 pointers.append(hash_value)
 
         return cls(group_data=group_data, pointers=pointers)

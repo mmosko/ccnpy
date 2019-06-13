@@ -20,9 +20,9 @@ class NodeData(ccnpy.TlvType):
     __type = 0x0001
     __subtree_digest_type = 0x0002
 
-    @staticmethod
-    def class_type():
-        return NodeData.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, subtree_size=None, subtree_digest=None, locators=None):
         """
@@ -31,7 +31,7 @@ class NodeData(ccnpy.TlvType):
         :param subtree_digest:
         :param locators:
         """
-        ccnpy.TlvType.__init__(self, self.class_type())
+        ccnpy.TlvType.__init__(self)
 
         if subtree_size is not None and not isinstance(subtree_size, ccnpy.flic.SubtreeSize):
             raise TypeError("subtree_size, if present, must be ccnpy.flic.SubtreeSize")
@@ -79,7 +79,7 @@ class NodeData(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 

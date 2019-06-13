@@ -40,7 +40,7 @@ class ExpiryTime_Test(unittest.TestCase):
     def test_deserialize(self):
         wire_format = array.array("B", [0, 6, 0, 8, 0x00, 0x00, 0x01, 0x6b, 0x44, 0xcf, 0x03, 0x32])
         tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.ExpiryTime.deserialize(tlv)
+        actual = ccnpy.ExpiryTime.parse(tlv)
 
         timestamp = 1560227545.906
         expected = ccnpy.ExpiryTime(timestamp)

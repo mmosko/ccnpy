@@ -21,9 +21,9 @@ class Locators(ccnpy.TlvType):
     __final_type = 0x0001
     __locator_type = 0x0002
 
-    @staticmethod
-    def class_type():
-        return Locators.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, final=False, locators=None):
         """
@@ -31,7 +31,7 @@ class Locators(ccnpy.TlvType):
         :param final:
         :param locators: a list of ccnpy.flic.Locator
         """
-        ccnpy.TlvType.__init__(self, self.class_type())
+        ccnpy.TlvType.__init__(self)
 
         self._final = final
         self._locators = locators
@@ -63,7 +63,7 @@ class Locators(ccnpy.TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
         raise RuntimeError("Not Implemented")

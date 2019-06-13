@@ -12,16 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import ccnpy
 
-class GroupData:
+
+class GroupData(ccnpy.TlvType):
     __type = 0x0001
     __subtree_size_type = 0x0001
     __subtree_digest_type = 0x0002
 
-    @staticmethod
-    def class_type():
-        return NodeData.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, leaf_size=None, leaf_digest=None,
                  subtree_size=None, subtree_digest=None, size_index=None, locators=None):
-        pass
+        ccnpy.TlvType.__init__(self)
+

@@ -25,7 +25,7 @@ class Manifest(ccnpy.ContentObject):
         self._node = node
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         # TODO: Finish
         return cls()
 

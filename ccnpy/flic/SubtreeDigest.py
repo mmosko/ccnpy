@@ -15,14 +15,16 @@
 import ccnpy
 
 
-class SubtreeDigest:
+class SubtreeDigest(ccnpy.TlvType):
     __type = 0x0002
 
-    @staticmethod
-    def class_type():
-        return SubtreeDigest.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, digest):
+        ccnpy.TlvType.__init__(self)
+
         if digest is None:
             raise ValueError("digest must not be None")
         if not isinstance(digest, ccnpy.HashValue):
@@ -38,12 +40,12 @@ class SubtreeDigest:
         return self.__dict__ == other.__dict__
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-        digest = ccnpy.HashValue.deserialize(inner_tlv)
+        digest = ccnpy.HashValue.parse(inner_tlv)
         return cls(digest)
 
     def serialize(self):

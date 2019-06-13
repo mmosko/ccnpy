@@ -17,17 +17,16 @@ import array
 import ccnpy
 
 
-class PayloadType_Test(unittest.TestCase):
+class Payload_Test(unittest.TestCase):
     def test_serialize(self):
-        pt = ccnpy.PayloadType.create_link_type()
-        self.assertTrue(pt.is_link(), "did not test as Link type")
-        expected = array.array("B", [0, 5, 0, 1, 2])
-        actual = pt.serialize()
-        self.assertEqual(expected, actual, "Incorrect serialization")
+        payload = ccnpy.Payload(array.array("B", [1, 2, 3, 4]))
+        expected = array.array("B", [0, ccnpy.Payload.class_type(), 0, 4, 1, 2, 3, 4])
+        actual = payload.serialize()
+        self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 5, 0, 1, 2])
+        wire_format = array.array("B", [0, ccnpy.Payload.class_type(), 0, 4, 1, 2, 3, 4])
         tlv = ccnpy.Tlv.deserialize(wire_format)
-        expected = ccnpy.PayloadType.create_link_type()
-        actual = ccnpy.PayloadType.deserialize(tlv)
-        self.assertEqual(expected, actual, "Incorrect deserialize")
+        actual = ccnpy.Payload.parse(tlv)
+        expected = ccnpy.Payload(array.array("B", [1, 2, 3, 4]))
+        self.assertEqual(expected, actual)

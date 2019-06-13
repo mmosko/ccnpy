@@ -15,7 +15,7 @@
 import ccnpy
 
 
-class Locator:
+class Locator(ccnpy.TlvType):
     __type = 0x0002
 
     @classmethod
@@ -27,6 +27,8 @@ class Locator:
 
         :param links: A ccnpy.Link
         """
+        ccnpy.TlvType.__init__(self)
+
         if not isinstance(link, ccnpy.Link):
             raise TypeError("link must be ccnpy.Link")
 
@@ -43,7 +45,7 @@ class Locator:
         return self._tlv.serialize()
 
     @classmethod
-    def deserialize(cls, tlv):
+    def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise TypeError("tlv type %r must be %r" % (tlv.type(), cls.class_type()))
 

@@ -46,7 +46,7 @@ class ContentObject_Test(unittest.TestCase):
                                         0, 5, 0, 1, 0,
                                         0, 1, 0, 5, 1, 3, 5, 7, 9])
         tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.ContentObject.deserialize(tlv)
+        actual = ccnpy.ContentObject.parse(tlv)
 
         name = ccnpy.Name.from_uri('ccnx:/apple/pie')
         payload = ccnpy.Payload(array.array("B", [1, 3, 5, 7, 9]))

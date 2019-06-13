@@ -14,40 +14,41 @@
 
 
 import array
+import ccnpy
 
 
 class Tlv:
     @classmethod
-    def create_uint64(cls, type, value):
+    def create_uint64(cls, tlv_type, value):
         """
 
-        :param type:
+        :param tlv_type:
         :param value: Up to an 8-byte number
         :return:
         """
-        return cls(type, Tlv.uint64_to_array(value))
+        return cls(tlv_type, Tlv.uint64_to_array(value))
 
     @classmethod
-    def create_uint8(cls, type, value):
+    def create_uint8(cls, tlv_type, value):
         """
 
-        :param type:
+        :param tlv_type:
         :param value: A uint8
         :return:
         """
-        return cls(type, Tlv.number_to_array(value))
+        return cls(tlv_type, Tlv.number_to_array(value))
 
-    def __init__(self, type, value):
-        self._type = type
+    def __init__(self, tlv_type, value):
+        self._tlv_type = tlv_type
         # If the value is an array, we flatten it here
         self._value = self._flatten(value)
         self._wire_format = self._serialize()
 
     def __str__(self):
-        return "TLV(%r, %r, %r)" % (self._type, self.length(), self._value)
+        return "TLV(%r, %r, %r)" % (self._tlv_type, self.length(), self._value)
 
     def __repr__(self):
-        return "TLV(%r, %r, %r)" % (self._type, self.length(), self._value)
+        return "TLV(%r, %r, %r)" % (self._tlv_type, self.length(), self._value)
 
     def __len__(self):
         """
@@ -81,11 +82,11 @@ class Tlv:
         if len(buffer) < 4:
             raise RuntimeError("buffer length %r must be at least 4" % len(buffer))
 
-        type = cls.array_to_number(buffer[0:2])
+        tlv_type = cls.array_to_number(buffer[0:2])
         length = cls.array_to_number(buffer[2:4])
         value = buffer[4:length + 4]
 
-        return cls(type, value)
+        return cls(tlv_type, value)
 
     @staticmethod
     def _flatten(value):
@@ -93,7 +94,10 @@ class Tlv:
             byte_list = []
             for x in value:
                 if x is not None:
-                    byte_list.extend(x.serialize())
+                    if isinstance(x, ccnpy.TlvType) or isinstance(x, ccnpy.Tlv):
+                        byte_list.extend(x.serialize())
+                    else:
+                        byte_list.append(x)
 
             return array.array("B", byte_list)
         else:
@@ -111,7 +115,7 @@ class Tlv:
         return wire_format
 
     def type(self):
-        return self._type
+        return self._tlv_type
 
     def value(self):
         return self._value
