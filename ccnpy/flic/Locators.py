@@ -18,22 +18,32 @@ import ccnpy.flic
 
 class Locators(ccnpy.TlvType):
     __type = 0x0003
+    __final_type = 0x0001
+    __locator_type = 0x0002
 
     @staticmethod
     def class_type():
         return Locators.__type
 
-    def __init__(self, final=False, links=None):
+    def __init__(self, final=False, locators=None):
         """
 
         :param final:
-        :param links:
+        :param locators: a list of ccnpy.flic.Locator
         """
         ccnpy.TlvType.__init__(self, self.class_type())
 
         self._final = final
-        self._links = links
-        raise RuntimeError("Not Implemented")
+        self._locators = locators
+
+        tlvs = []
+        if final is not None and final is True:
+            tlv = ccnpy.Tlv(self.__final_type, [])
+
+        if self._locators is not None:
+            tlvs.extend(locators)
+
+        self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
@@ -41,13 +51,13 @@ class Locators(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "Locators(%r, %r)" % (self._final, self._links)
+        return "Locators(%r, %r)" % (self._final, self._locators)
 
     def final(self):
         return self._final
 
-    def links(self):
-        return self._links
+    def locators(self):
+        return self._locators
 
     def serialize(self):
         return self._tlv.serialize()

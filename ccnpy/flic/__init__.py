@@ -14,6 +14,7 @@
 
 from .SubtreeDigest import SubtreeDigest
 from .SubtreeSize import SubtreeSize
+from .Locator import Locator
 
 from .GroupData import GroupData
 from .HashGroup import HashGroup
