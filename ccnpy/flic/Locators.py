@@ -33,12 +33,15 @@ class Locators(ccnpy.TlvType):
         """
         ccnpy.TlvType.__init__(self)
 
+        if final is None:
+            final = False
+
         self._final = final
         self._locators = locators
 
         tlvs = []
-        if final is not None and final is True:
-            tlv = ccnpy.Tlv(self.__final_type, [])
+        if final:
+            tlvs.append(ccnpy.Tlv(self.__final_type, []))
 
         if self._locators is not None:
             tlvs.extend(locators)
@@ -66,5 +69,22 @@ class Locators(ccnpy.TlvType):
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
-        raise RuntimeError("Not Implemented")
 
+        final = None
+        locators = []
+        offset = 0
+        while offset < tlv.length():
+            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            offset += len(inner_tlv)
+            if inner_tlv.type() == cls.__final_type:
+                assert final is None
+                if inner_tlv.length() > 0:
+                    raise ValueError("Final TLV should have 0 length")
+                final = True
+            elif inner_tlv.type() == ccnpy.flic.Locator.class_type():
+                locator = ccnpy.flic.Locator.parse(inner_tlv)
+                locators.append(locator)
+            else:
+                raise ValueError("Unsupported TLV %r" % inner_tlv)
+
+        return cls(final=final, locators=locators)
