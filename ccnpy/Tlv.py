@@ -94,6 +94,7 @@ class Tlv:
             for x in value:
                 if x is not None:
                     byte_list.extend(x.serialize())
+
             return array.array("B", byte_list)
         else:
             return value

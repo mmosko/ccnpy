@@ -17,7 +17,6 @@ import ccnpy
 
 
 class HashValue(ccnpy.TlvType):
-
     def __init__(self, hash_algorithm, value):
         """
 
@@ -52,6 +51,9 @@ class HashValue(ccnpy.TlvType):
 
     def __repr__(self):
         return "HashValue(%r, %r)" % (self.__alg_string(), self._value)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     def hash_algorithm(self):
         return self.type_number()

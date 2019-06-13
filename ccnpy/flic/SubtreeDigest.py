@@ -12,6 +12,39 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import ccnpy
+
 
 class SubtreeDigest:
-    pass
+    __type = 0x0002
+
+    @staticmethod
+    def class_type():
+        return SubtreeDigest.__type
+
+    def __init__(self, digest):
+        if digest is None:
+            raise ValueError("digest must not be None")
+        if not isinstance(digest, ccnpy.HashValue):
+            raise TypeError("digest must be ccnpy.HashValue")
+
+        self._digest = digest
+        self._tlv = ccnpy.Tlv(self.class_type(), self._digest)
+
+    def __repr__(self):
+        return "SubtreeDigest(%r)" % self._digest
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    @classmethod
+    def deserialize(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+
+        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+        digest = ccnpy.HashValue.deserialize(inner_tlv)
+        return cls(digest)
+
+    def serialize(self):
+        return self._tlv.serialize()

@@ -18,6 +18,7 @@ from ccnpy.Tlv import Tlv
 from ccnpy.Name import Name
 from ccnpy.FixedHeader import FixedHeader
 
+from ccnpy.Link import Link
 from ccnpy.Timestamp import Timestamp
 from ccnpy.SignatureTime import SignatureTime
 from ccnpy.ExpiryTime import ExpiryTime
