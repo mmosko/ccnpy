@@ -33,7 +33,7 @@ class Locator(ccnpy.TlvType):
             raise TypeError("link must be ccnpy.Link")
 
         self._link = link
-        self._tlv = ccnpy.Tlv(self.class_type(), link)
+        self._tlv = ccnpy.Tlv(self.class_type(), link.serialize())
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
