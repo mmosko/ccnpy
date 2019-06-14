@@ -4,6 +4,10 @@ ccnpy is a pure python implementation of the CCNx 1.0
 protocols (RFC xxxx and RFC yyyy).
 
 
+## dependencies
+
+```python3 -m pip install cryptography crc32c```
+
 # Implementation nodes
 
 

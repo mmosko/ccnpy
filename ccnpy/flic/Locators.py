@@ -48,6 +48,9 @@ class Locators(ccnpy.TlvType):
 
         self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
             return True
@@ -68,7 +71,7 @@ class Locators(ccnpy.TlvType):
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise RuntimeError("Incorrect TLV type %r" % tlv)
 
         final = None
         locators = []

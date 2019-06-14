@@ -52,6 +52,9 @@ class Name(ccnpy.TlvType):
         self._components = components
         self._tlv = ccnpy.Tlv(self.class_type(), self._components)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 

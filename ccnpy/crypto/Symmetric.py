@@ -15,31 +15,27 @@
 from abc import ABC, abstractmethod
 
 
-class TlvType(ABC):
-    """
-    superclass for objects that are TLV types
-    """
-    def __init__(self):
+class Symmetric(ABC):
+
+    @abstractmethod
+    def encrypt(self, nonce, plaintext, associated_data):
+        """
+
+        :param nonce: A byte array
+        :param plaintext: A byte array
+        :param associated_data: (Optional) A byte array
+        :return: The pair (ciphertext, auth_tag), both byte arrays
+        """
         pass
 
     @abstractmethod
-    def __len__(self):
+    def decrypt(self, nonce, ciphertext, associated_data, auth_tag):
         """
-        Returns the TLV encoded length
+
+        :param nonce:
+        :param ciphertext:
+        :param associated_data:
+        :param auth_tag:
         :return:
         """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def class_type(cls):
-        pass
-
-    @abstractmethod
-    def serialize(self):
-        pass
-
-    @classmethod
-    @abstractmethod
-    def parse(cls, tlv):
         pass

@@ -32,6 +32,9 @@ class Payload(ccnpy.TlvType):
         self._value = value
         self._tlv = ccnpy.Tlv(self.class_type(), self._value)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
             return True

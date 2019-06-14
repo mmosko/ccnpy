@@ -77,7 +77,28 @@ class HashValue(ccnpy.TlvType):
 
     @classmethod
     def parse(cls, tlv):
+        if not isinstance(tlv, ccnpy.Tlv):
+            raise TypeError('tlv must be ccnpy.Tlv')
         return cls(tlv.type(), tlv.value())
+
+    @classmethod
+    def deserialize(cls, buffer):
+        """
+        In some cases, the HashValue is stored inside another TLV, such as
+        (KeyId (HashValue type value)).  This convenience function lets one
+        do something like this.
+
+        Example:
+            keyid = ccnpy.Tlv(T_KEYID, ccnpy.HashValue(1, [2]))
+            wire = keyid.serialize()
+            keyid2 = ccnpy.Tlv.deserialize(wire)
+            hv = ccnpy.HashValue.deserialize(keyid2.value())
+
+        :param buffer:
+        :return:
+        """
+        tlv = ccnpy.Tlv.deserialize(buffer)
+        return cls.parse(tlv)
 
     @classmethod
     def create_sha256(cls, value):

@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from .SecurityCtx import SecurityCtx
+
+from .Pointers import Pointers
 from .SubtreeDigest import SubtreeDigest
 from .SubtreeSize import SubtreeSize
 from .Locator import Locator
@@ -22,4 +25,11 @@ from .Locators import Locators
 from .NodeData import NodeData
 from .Node import Node
 
+
+from .AuthTag import AuthTag
+from .EncryptedNode import EncryptedNode
 from .Manifest import Manifest
+
+from .PresharedKey import PresharedKeyCtx
+from .PresharedKey import PresharedKey
+

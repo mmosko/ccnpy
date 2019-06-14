@@ -12,11 +12,44 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from abc import abstractmethod
 
-class SecurityCtx:
+import ccnpy
+import ccnpy.flic
+
+class SecurityCtx(ccnpy.TlvType):
     """
-    superclass of all security contexts
+    Analogous to the ccnpy.ValidationAlg container.  It is an abstract intermediate class between
+    TlvType and the concrete algorithms.
     """
+    __type = 0x0001
+
+    @classmethod
+    def class_type(cls):
+        return cls.__type
+
     def __init__(self):
+        ccnpy.TlvType.__init__(self)
+
+    @abstractmethod
+    def __len__(self):
         pass
 
+    @classmethod
+    def parse(cls, tlv):
+        # Due to circular reference between SecurityCtx and it's children, need
+        # to defer the loading of the children
+        from ccnpy.flic import PresharedKeyCtx
+
+        if tlv.type() != cls.class_type():
+            raise ValueError("Incorrect TLV type %r" % tlv)
+
+        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+        if inner_tlv.type() == PresharedKeyCtx.class_type():
+            return PresharedKeyCtx.parse(inner_tlv)
+
+        raise ValueError("Unsupported security context %r" % inner_tlv)
+
+    @abstractmethod
+    def serialize(self):
+        pass

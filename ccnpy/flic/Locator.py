@@ -35,6 +35,9 @@ class Locator(ccnpy.TlvType):
         self._link = link
         self._tlv = ccnpy.Tlv(self.class_type(), link.serialize())
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 

@@ -114,6 +114,26 @@ class Tlv:
         wire_format = array.array("B", byte_list)
         return wire_format
 
+    def extend(self, other_tlv):
+        """
+        Create a new TLV that extends this TLV's value() with the other TLV.  Neither the
+        current TLV or the other_tlv is modified.
+
+        Example
+            a = (Name (Component a)(Component b))
+            b = a.extend((Component c)
+            # b = (Name (Component a)(Component b)(Component c))
+
+        :param other_tlv:
+        :return:
+        """
+        extension = other_tlv.serialize()
+        # make a copy
+        new_value = array.array("B", self._value)
+        new_value.extend(extension)
+        new_tlv = ccnpy.Tlv(self.type(), new_value)
+        return new_tlv
+
     def type(self):
         return self._tlv_type
 

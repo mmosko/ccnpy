@@ -12,11 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from abc import abstractmethod
 from datetime import datetime
 import ccnpy
 
 
-class ValidationAlg:
+class ValidationAlg(ccnpy.TlvType):
+    """
+    ValidationAlg is an abstract intermediate class between TlvType and the concrete
+    validation algorithms.
+    """
     __T_VALIDATION_ALG = 0x0003
 
     @classmethod
@@ -26,6 +31,10 @@ class ValidationAlg:
     def __init__(self):
         """
         """
+        ccnpy.TlvType.__init__(self)
+
+    @abstractmethod
+    def __len__(self):
         pass
 
     @classmethod
@@ -43,6 +52,7 @@ class ValidationAlg:
 
         raise ValueError("Unsupported ValidationAlg type %r" % tlv.type())
 
+    @abstractmethod
     def serialize(self):
         pass
 

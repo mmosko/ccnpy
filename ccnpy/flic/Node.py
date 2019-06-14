@@ -17,7 +17,7 @@ import ccnpy.flic
 
 
 class Node(ccnpy.TlvType):
-    __type = 0x0010
+    __type = 0x0002
 
     @classmethod
     def class_type(cls):
@@ -42,9 +42,10 @@ class Node(ccnpy.TlvType):
         self._node_data = node_data
         self._hash_groups = hash_groups
 
-        inner_tlvs = [self._node_data]
-        inner_tlvs.extend(self._hash_groups)
-        self._tlv = ccnpy.Tlv(self.class_type(), inner_tlvs)
+        self._tlv = ccnpy.Tlv(self.class_type(), [self._node_data, *self._hash_groups])
+
+    def __len__(self):
+        return len(self._tlv)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:
@@ -63,6 +64,15 @@ class Node(ccnpy.TlvType):
     def serialize(self):
         return self._tlv.serialize()
 
+    def serialized_value(self):
+        """
+        The value of the Node's TLV byte array, which is used encrypted in an EncryptedNode via
+        some algorithm.
+
+        :return: byte array
+        """
+        return self._tlv.value()
+
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
@@ -76,15 +86,15 @@ class Node(ccnpy.TlvType):
             inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
-            if tlv.type() == ccnpy.flic.NodeData.class_type():
+            if inner_tlv.type() == ccnpy.flic.NodeData.class_type():
                 assert node_data is None
                 node_data = ccnpy.flic.NodeData.parse(inner_tlv)
 
-            elif tlv.type() == ccnpy.flic.HashGroup.class_type():
+            elif inner_tlv.type() == ccnpy.flic.HashGroup.class_type():
                 hash_group = ccnpy.flic.HashGroup.parse(inner_tlv)
                 hash_groups.append(hash_group)
 
             else:
-                raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
+                raise RuntimeError("Unsupported packet TLV type %r" % inner_tlv)
 
         return cls(node_data=node_data, hash_groups=hash_groups)

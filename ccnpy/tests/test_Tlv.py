@@ -41,8 +41,6 @@ class Tlv_Test(unittest.TestCase):
         truth = array.array("B", [0x12, 0x34, 0x00, 0x04])
         truth.extend(value)
 
-        #print("truth  = %r" % truth)
-        #print("actual = %r" % wire_format)
         self.assertEqual(truth, wire_format, "wire format incorrect")
 
     def test_serialize_tlv(self):
@@ -51,8 +49,6 @@ class Tlv_Test(unittest.TestCase):
         wire_format = outer_tlv.serialize()
 
         truth = array.array("B", [0x00, 0x02, 0x00, 0x08, 0x00, 0x01, 0x00, 0x04, 10, 11, 12, 13])
-        print("truth  = %r" % truth)
-        print("actual = %r" % wire_format)
         self.assertEqual(truth, wire_format, "wire format incorrect")
 
     def test_equal(self):
@@ -82,3 +78,15 @@ class Tlv_Test(unittest.TestCase):
                                      0, 4, 0, 4, 10, 11, 12, 13])
         actual = tlv.serialize()
         self.assertEqual(expected, actual)
+
+    def test_extend(self):
+        a = ccnpy.Tlv(1, array.array("B", [2, 3, 4]))
+        b = ccnpy.Tlv(5, array.array("B", [6, 7]))
+        c = a.extend(b)
+        actual = c.serialize()
+
+        expected = array.array("B", [0, 1, 0, 9,
+                                     2, 3, 4,
+                                     0, 5, 0, 2, 6, 7])
+        self.assertEqual(expected, actual)
+

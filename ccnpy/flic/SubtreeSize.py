@@ -27,6 +27,9 @@ class SubtreeSize(ccnpy.TlvType):
         self._size = size
         self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self._size)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __repr__(self):
         return "SubtreeSize(%r)" % self._size
 

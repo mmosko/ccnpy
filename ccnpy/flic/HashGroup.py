@@ -27,29 +27,25 @@ class HashGroup(ccnpy.TlvType):
         """
 
         :param group_data:
-        :param pointers:
+        :param pointers: A list of ccnpy.HashValue
         """
         ccnpy.TlvType.__init__(self)
         if group_data is not None and not isinstance(group_data, ccnpy.flic.GroupData):
-            raise TypeError("group_data must be ccnpy.flic.GrouData")
+            raise TypeError("group_data must be ccnpy.flic.GroupData")
 
-        if pointers is None:
-            raise ValueError("pointers must not be None")
-
-        if not isinstance(pointers, list) or len(pointers) == 0:
-            raise TypeError("pointers must be a list of one or more ccnpy.HashValue")
+        if pointers is None or not isinstance(pointers, ccnpy.flic.Pointers):
+            raise ValueError("pointers must not type ccnpy.flic.Pointers")
 
         self._group_data = group_data
         self._pointers = pointers
 
-        inner_tlvs = [self._group_data]
-        inner_tlvs.extend(self._pointers)
-        self._tlv = ccnpy.Tlv(self.class_type(), inner_tlvs)
+        self._tlv = ccnpy.Tlv(self.class_type(), [self._group_data, self._pointers])
+
+    def __len__(self):
+        return len(self._tlv)
 
     def __eq__(self, other):
-        if self.__dict__ == other.__dict__:
-            return True
-        return False
+        return self.__dict__ == other.__dict__
 
     def __repr__(self):
         return "HashGroup(%r, %r)" % (self._group_data, self._pointers)
@@ -69,18 +65,20 @@ class HashGroup(ccnpy.TlvType):
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
         group_data = None
-        pointers = []
+        pointers = None
 
         offset = 0
         while offset < tlv.length():
             inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
-            if tlv.type() == ccnpy.flic.GroupData.class_type():
+            if inner_tlv.type() == ccnpy.flic.GroupData.class_type():
                 assert group_data is None
                 group_data = ccnpy.flic.GroupData.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.flic.Pointers.class_type():
+                assert pointers is None
+                pointers = ccnpy.flic.Pointers.parse(inner_tlv)
             else:
-                hash_value = ccnpy.HashValue.parse(inner_tlv)
-                pointers.append(hash_value)
+                raise ValueError("Unsupported TLV %r" % inner_tlv)
 
         return cls(group_data=group_data, pointers=pointers)

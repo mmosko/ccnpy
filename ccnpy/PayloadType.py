@@ -20,10 +20,12 @@ class PayloadType(ccnpy.TlvType):
     __T_PAYLOADTYPE_DATA = 0
     __T_PAYLOADTYPE_KEY = 1
     __T_PAYLOADTYPE_LINK = 2
+    __T_PAYLOADTYPE_MANIFEST = 3
 
     __lookup = {__T_PAYLOADTYPE_DATA: "DATA",
                 __T_PAYLOADTYPE_KEY: "KEY",
-                __T_PAYLOADTYPE_LINK: "LINK"}
+                __T_PAYLOADTYPE_LINK: "LINK",
+                __T_PAYLOADTYPE_MANIFEST: "MANIFEST"}
 
     def __to_string(self):
         if self._payload_type in PayloadType.__lookup:
@@ -39,6 +41,9 @@ class PayloadType(ccnpy.TlvType):
         ccnpy.TlvType.__init__(self)
         self._payload_type = type
         self._tlv = ccnpy.Tlv.create_uint8(self.class_type(), self._payload_type)
+
+    def __len__(self):
+        return len(self._tlv)
 
     def __repr__(self):
         return "PLDTYP(%r)" % self.__to_string()
@@ -68,6 +73,10 @@ class PayloadType(ccnpy.TlvType):
     def create_link_type(cls):
         return cls(cls.__T_PAYLOADTYPE_LINK)
 
+    @classmethod
+    def create_manifest_type(cls):
+        return cls(cls.__T_PAYLOADTYPE_MANIFEST)
+
     def is_data(self):
         return self._payload_type == self.__T_PAYLOADTYPE_DATA
 
@@ -77,3 +86,5 @@ class PayloadType(ccnpy.TlvType):
     def is_link(self):
         return self._payload_type == self.__T_PAYLOADTYPE_LINK
 
+    def is_manifest(self):
+        return self._payload_type == self.__T_PAYLOADTYPE_MANIFEST

@@ -33,6 +33,9 @@ class SubtreeDigest(ccnpy.TlvType):
         self._digest = digest
         self._tlv = ccnpy.Tlv(self.class_type(), self._digest)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __repr__(self):
         return "SubtreeDigest(%r)" % self._digest
 

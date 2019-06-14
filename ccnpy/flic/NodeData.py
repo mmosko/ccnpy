@@ -58,10 +58,11 @@ class NodeData(ccnpy.TlvType):
 
         self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
 
+    def __len__(self):
+        return len(self._tlv)
+
     def __eq__(self, other):
-        if self.__dict__ == other.__dict__:
-            return True
-        return False
+        return self.__dict__ == other.__dict__
 
     def __repr__(self):
         return "NodeData(%r, %r, %r)" % (self._subtree_size, self._subtree_digest, self._locators)
@@ -92,14 +93,14 @@ class NodeData(ccnpy.TlvType):
 
             if inner_tlv.type() == ccnpy.flic.SubtreeSize.class_type():
                 assert subtree_size is None
-                subtree_size = ccnpy.flic.SubtreeSize.deserialize(inner_tlv)
+                subtree_size = ccnpy.flic.SubtreeSize.parse(inner_tlv)
             elif inner_tlv.type() == cls.__subtree_digest_type:
                 assert subtree_digest is None
                 subtree_digest = ccnpy.HashValue.deserialize(inner_tlv.value())
             elif inner_tlv.type() == ccnpy.flic.Locators.class_type():
                 assert locators is None
-                locators = ccnpy.flic.Locators.deserialize(inner_tlv)
+                locators = ccnpy.flic.Locators.parse(inner_tlv)
             else:
-                raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
+                raise RuntimeError("Unsupported NodeData TLV type %r" % inner_tlv)
 
         return cls(subtree_size=subtree_size, subtree_digest=subtree_digest, locators=locators)
