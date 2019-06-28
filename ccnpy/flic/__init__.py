@@ -21,7 +21,7 @@ from .Locator import Locator
 
 from .GroupData import GroupData
 from .HashGroup import HashGroup
-from .Locators import Locators
+from .LocatorList import LocatorList
 from .NodeData import NodeData
 from .Node import Node
 
@@ -30,6 +30,13 @@ from .AuthTag import AuthTag
 from .EncryptedNode import EncryptedNode
 from .Manifest import Manifest
 
-from .PresharedKey import PresharedKeyCtx
-from .PresharedKey import PresharedKey
+from .ManifestEncryptor import ManifestEncryptor
+from .ManifestDecryptor import ManifestDecryptor
+from .ManifestFactory import ManifestFactory
+
+from .ManifestTreeOptions import ManifestTreeOptions
+from .ManifestTree import ManifestTree
+
+from .HashGroupBuilder import HashGroupBuilder
+
 

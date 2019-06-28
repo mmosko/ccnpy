@@ -16,7 +16,10 @@ import ccnpy
 import ccnpy.flic
 
 
-class Locators(ccnpy.TlvType):
+class LocatorList(ccnpy.TlvType):
+    """
+    Represents a list of Locators (links).
+    """
     __type = 0x0003
     __final_type = 0x0001
     __locator_type = 0x0002
@@ -57,7 +60,7 @@ class Locators(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "Locators(%r, %r)" % (self._final, self._locators)
+        return "LocatorList(%r, %r)" % (self._final, self._locators)
 
     def final(self):
         return self._final

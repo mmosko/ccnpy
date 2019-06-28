@@ -15,7 +15,7 @@
 import unittest
 import array
 import ccnpy
-import ccnpy.flic
+from ccnpy.flic import Node
 
 
 class test_Node(unittest.TestCase):
@@ -32,7 +32,7 @@ class test_Node(unittest.TestCase):
         hg1 = ccnpy.flic.HashGroup(group_data=gd, pointers=p1)
         hg2 = ccnpy.flic.HashGroup(pointers=p2)
 
-        node = ccnpy.flic.Node(node_data=nd, hash_groups=[hg1, hg2])
+        node = Node(node_data=nd, hash_groups=[hg1, hg2])
         actual = node.serialize()
 
         expected = array.array("B", [0, 2, 0, 66,
@@ -54,4 +54,20 @@ class test_Node(unittest.TestCase):
                                      0, 2, 0,  6,
                                      0, 3, 0, 2, 5, 6
                                      ])
+        self.assertEqual(expected, actual)
+
+    def test_hash_values(self):
+        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
+        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
+        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
+        p1 = ccnpy.flic.Pointers([h1, h2])
+        p2 = ccnpy.flic.Pointers([h3])
+        gd = ccnpy.flic.GroupData(subtree_size=ccnpy.flic.SubtreeSize(0x0234))
+
+        hg1 = ccnpy.flic.HashGroup(group_data=gd, pointers=p1)
+        hg2 = ccnpy.flic.HashGroup(pointers=p2)
+
+        node = ccnpy.flic.Node(hash_groups=[hg1, hg2])
+        expected = [h1, h2, h3]
+        actual = node.hash_values()
         self.assertEqual(expected, actual)

@@ -15,27 +15,21 @@
 from abc import ABC, abstractmethod
 
 
-class Symmetric(ABC):
-
+class ManifestDecryptor(ABC):
     @abstractmethod
-    def encrypt(self, nonce, plaintext, associated_data):
+    def decrypt_manifest(self, manifest):
         """
-
-        :param nonce: A byte array
-        :param plaintext: A byte array
-        :param associated_data: (Optional) A byte array
-        :return: The pair (ciphertext, auth_tag), both byte arrays
+        :param encrypted_manifest:
+        :return: A decrypted manifest
         """
         pass
 
     @abstractmethod
-    def decrypt(self, nonce, ciphertext, associated_data, auth_tag):
+    def decrypt_node(self, security_ctx, encrypted_node, auth_tag):
         """
-
-        :param nonce:
-        :param ciphertext:
-        :param associated_data:
-        :param auth_tag:
-        :return:
+        :param security_ctx: A ccnpy.flic.PresharedKeyCtx
+        :param encrypted_node: A ccnpy.flic.EncryptedNode
+        :param auth_tag: A ccnpy.flic.AuthTag
+        :return: a ccnpy.flic.Node
         """
         pass

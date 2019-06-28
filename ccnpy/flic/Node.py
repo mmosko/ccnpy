@@ -27,7 +27,7 @@ class Node(ccnpy.TlvType):
         """
 
         :param node_data: (optional) ccnpy.flic.NodeData
-        :param hash_groups: A single HashGroup or a list of HashGroups
+        :param hash_groups: a list of HashGroups
         """
         ccnpy.TlvType.__init__(self)
         if node_data is not None and not isinstance(node_data, ccnpy.flic.NodeData):
@@ -53,7 +53,8 @@ class Node(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "Node(%r, %r)" % (self._node_data, self._hash_groups)
+        hash_values_len = len(self.hash_values())
+        return "Node(%r, %r, %r)" % (self._node_data, hash_values_len, self._hash_groups)
 
     def node_data(self):
         return self._node_data
@@ -72,6 +73,31 @@ class Node(ccnpy.TlvType):
         :return: byte array
         """
         return self._tlv.value()
+
+    def node_locator(self):
+        """
+        A short-cut to calling node_data().locators()[0]
+        :return: (node_data().locators[0], node_data.locators.final()) or (None, None)
+        """
+        locator = None
+        final = None
+        if self._node_data is not None:
+            locators = self._node_data.locators()
+            if locators is not None:
+                final = locators.final()
+                locator = locators[0]
+        return locator, final
+
+    def hash_values(self):
+        """
+        Return an in-order list of all pointer hash values from all hash groups
+        :return: A list
+        """
+        hash_values = []
+        for hg in self._hash_groups:
+            for hv in hg.pointers():
+                hash_values.append(hv)
+        return hash_values
 
     @classmethod
     def parse(cls, tlv):

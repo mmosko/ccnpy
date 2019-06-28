@@ -12,13 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import unittest
+import random
+import math
+import ccnpy.apps
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
 
-from .AesGcmKey import AesGcmKey
+class test_tree_optimizer(unittest.TestCase):
+
+    def test_minimize_k(self):
+        KB = 1000
+        MB = 1000 * KB
+        GB = 1000 * MB
+        file_size = int(random.random() * GB)
+        block_size = 1200
+        direct_nodes = int(math.ceil(file_size / block_size))
+
+        print("Solving for BS %r FS %r NODES %r" % (block_size, file_size, direct_nodes))
+        tb = ccnpy.apps.TreeOptimizer(total_direct_nodes=direct_nodes, num_pointers=12)
+        tb.minimize_k()
+        tb.minimize_waste()

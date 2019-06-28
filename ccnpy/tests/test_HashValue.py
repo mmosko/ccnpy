@@ -12,13 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import unittest
+import ccnpy.HashValue
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
 
-from .AesGcmKey import AesGcmKey
+class test_HashValue(unittest.TestCase):
+    def test_in_dictionary(self):
+        hv1 = ccnpy.HashValue.create_sha256([1, 2, 3])
+        hv2 = ccnpy.HashValue.create_sha256([1, 2, 3])
+        self.assertEqual(hash(hv1), hash(hv2))
+
+        d = {hv1: True}
+        self.assertTrue(d[hv1])
+
+        d[hv2] = False
+        self.assertFalse(d[hv1])

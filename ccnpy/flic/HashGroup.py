@@ -54,6 +54,10 @@ class HashGroup(ccnpy.TlvType):
         return self._group_data
 
     def pointers(self):
+        """
+
+        :return: A list of ccnpy.HashValue
+        """
         return self._pointers
 
     def serialize(self):

@@ -39,7 +39,7 @@ class SecurityCtx(ccnpy.TlvType):
     def parse(cls, tlv):
         # Due to circular reference between SecurityCtx and it's children, need
         # to defer the loading of the children
-        from ccnpy.flic import PresharedKeyCtx
+        from ccnpy.flic.presharedkey import PresharedKeyCtx
 
         if tlv.type() != cls.class_type():
             raise ValueError("Incorrect TLV type %r" % tlv)

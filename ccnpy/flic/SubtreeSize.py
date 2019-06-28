@@ -36,6 +36,9 @@ class SubtreeSize(ccnpy.TlvType):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def size(self):
+        return self._size
+
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():

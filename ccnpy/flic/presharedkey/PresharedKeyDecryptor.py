@@ -12,13 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import ccnpy.flic
+from ccnpy.flic.presharedkey import PresharedKey
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
 
-from .AesGcmKey import AesGcmKey
+class PresharedKeyDecryptor(ccnpy.flic.ManifestDecryptor):
+    def __init__(self, key, key_number):
+        self._psk = PresharedKey(key, key_number)
+
+    def decrypt_manifest(self, manifest):
+        return self._psk.decrypt_manifest(manifest)
+
+    def decrypt_node(self, security_ctx, encrypted_node, auth_tag):
+        return self._psk.decrypt_node(security_ctx, encrypted_node, auth_tag)

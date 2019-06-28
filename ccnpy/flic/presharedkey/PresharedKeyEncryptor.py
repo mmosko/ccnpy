@@ -13,12 +13,14 @@
 #  limitations under the License.
 
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
+import ccnpy.flic
+from ccnpy.flic.presharedkey import PresharedKey
 
-from .AesGcmKey import AesGcmKey
+
+class PresharedKeyEncryptor(ccnpy.flic.ManifestEncryptor):
+    def __init__(self, key, key_number):
+        self._psk = PresharedKey(key, key_number)
+
+    def encrypt(self, node):
+        return self._psk.encrypt(node)
+

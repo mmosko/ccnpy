@@ -46,3 +46,11 @@ class Interest(ccnpy.TlvType):
 
     def serialize(self):
         pass
+
+    @staticmethod
+    def is_content_object():
+        return False
+
+    @staticmethod
+    def is_interest():
+        return True

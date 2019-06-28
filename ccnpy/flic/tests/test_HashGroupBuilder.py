@@ -12,13 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import unittest
+import ccnpy
+import ccnpy.flic
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
 
-from .AesGcmKey import AesGcmKey
+class test_HashGroupBuilder(unittest.TestCase):
+    pass

@@ -42,8 +42,8 @@ class GroupData(ccnpy.TlvType):
         if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.HashValue):
             raise TypeError("subtree_digest, if present, must be ccnpy.HashValue")
 
-        if locators is not None and not isinstance(locators, ccnpy.flic.Locators):
-            raise TypeError("locators, if present, must be ccnpy.flic.Locators")
+        if locators is not None and not isinstance(locators, ccnpy.flic.LocatorList):
+            raise TypeError("locators, if present, must be ccnpy.flic.LocatorList")
 
         self._subtree_size = subtree_size
         self._subtree_digest = subtree_digest
@@ -100,9 +100,9 @@ class GroupData(ccnpy.TlvType):
             elif inner_tlv.type() == cls.__subtree_digest_type:
                 assert subtree_digest is None
                 subtree_digest = ccnpy.HashValue.deserialize(inner_tlv.value())
-            elif inner_tlv.type() == ccnpy.flic.Locators.class_type():
+            elif inner_tlv.type() == ccnpy.flic.LocatorList.class_type():
                 assert locators is None
-                locators = ccnpy.flic.Locators.parse(inner_tlv)
+                locators = ccnpy.flic.LocatorList.parse(inner_tlv)
             else:
                 raise RuntimeError("Unsupported GroupData TLV type %r" % inner_tlv)
 

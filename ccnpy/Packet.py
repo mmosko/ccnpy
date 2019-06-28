@@ -145,5 +145,5 @@ class Packet:
         if self.validation_payload() is not None:
             h.update(self.validation_payload().serialize())
         digest = h.digest()
-        tlv = ccnpy.HashValue.create_sha256(digest)
+        tlv = ccnpy.HashValue.create_sha256(array.array("B", digest))
         return tlv

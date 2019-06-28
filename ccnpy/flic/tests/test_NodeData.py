@@ -24,7 +24,7 @@ class test_NodeData(unittest.TestCase):
         digest = ccnpy.HashValue.create_sha256(array.array("B", [100, 110, 120]))
         loc1 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/a/b')))
         loc2 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/c')))
-        locators = ccnpy.flic.Locators(final=True, locators=[loc1, loc2])
+        locators = ccnpy.flic.LocatorList(final=True, locators=[loc1, loc2])
 
         nd = ccnpy.flic.NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
         actual = nd.serialize()
@@ -32,7 +32,7 @@ class test_NodeData(unittest.TestCase):
         expected = array.array("B", [0, 1, 0, 62,
                                      0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
                                      0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
-                                     # Locators
+                                     # LocatorList
                                      0, 3, 0, 35,
                                      0, 1, 0, 0,
                                      0, 2, 0, 14,
@@ -47,14 +47,14 @@ class test_NodeData(unittest.TestCase):
         digest = ccnpy.HashValue.create_sha256(array.array("B", [100, 110, 120]))
         loc1 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/a/b')))
         loc2 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/c')))
-        locators = ccnpy.flic.Locators(final=True, locators=[loc1, loc2])
+        locators = ccnpy.flic.LocatorList(final=True, locators=[loc1, loc2])
 
         expected = ccnpy.flic.NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
 
         wire_format = array.array("B", [0, 1, 0, 62,
                                         0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
                                         0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
-                                        # Locators
+                                        # LocatorList
                                         0, 3, 0, 35,
                                         0, 1, 0, 0,
                                         0, 2, 0, 14,

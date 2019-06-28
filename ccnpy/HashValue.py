@@ -66,6 +66,10 @@ class HashValue(ccnpy.TlvType):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __hash__(self):
+        # TODO: Inefficient way to get a hash of this array
+        return hash(str(self._wire_format))
+
     def hash_algorithm(self):
         return self._hash_algorithm
 

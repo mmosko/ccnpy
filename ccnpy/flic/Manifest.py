@@ -29,7 +29,7 @@ class Manifest:
         if not content_object.payload_type().is_manifest():
             raise ValueError("Payload is not of type Manifest")
 
-        return cls.deserialize(content_object.payload())
+        return cls.deserialize(content_object.payload().value())
 
     def __init__(self, security_ctx=None, node=None, auth_tag=None):
         """
@@ -57,6 +57,9 @@ class Manifest:
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __len__(self):
+        return len(self._wire_format)
 
     @classmethod
     def deserialize(cls, buffer):
@@ -101,3 +104,47 @@ class Manifest:
 
     def auth_tag(self):
         return self._auth_tag
+
+    def is_encrypted(self):
+        return isinstance(self._node, ccnpy.flic.EncryptedNode)
+
+    def content_object(self, name=None, expiry_time=None):
+        co = ccnpy.ContentObject(name=name,
+                                 payload_type=ccnpy.PayloadType.create_manifest_type(),
+                                 payload=ccnpy.Payload(self.serialize()),
+                                 expiry_time=expiry_time)
+        return co
+
+    def packet(self, name=None, expiry_time=None):
+        packet = ccnpy.Packet.create_content_object(body=self.content_object(name, expiry_time))
+        return packet
+
+    def hash_values(self):
+        """
+        An in-order list of pointer hashes from this Manifest's Node.
+
+        :return: A list, may be empty
+        """
+        if not isinstance(self._node, ccnpy.flic.Node):
+            raise TypeError("Manifest Node is not supported type: %r" % self._node)
+
+        return self._node.hash_values()
+
+    def interest_list(self, locator=None, final=False):
+        """
+        Create a list of ccnpy.Interest for the contents of this manifest.  The list will
+        be in traversal order.
+
+        :return: A list of ccnpy.Interest, which may be empty
+        """
+        interests = []
+        if not final:
+            node_locator, node_final = self.node().locator()
+            if node_locator is not None:
+                locator = node_locator
+                final = node_final
+
+        hash_values = self.hash_values()
+        raise RuntimeError("Not implemented")
+
+

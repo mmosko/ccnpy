@@ -13,12 +13,18 @@
 #  limitations under the License.
 
 
-from .Signer import Signer
-from .Verifier import Verifier
-from .Crc32c import Crc32c_Signer
-from .Crc32c import Crc32c_Verifier
-from .RsaKey import RsaKey
-from .RsaSha256 import RsaSha256_Signer
-from .RsaSha256 import RsaSha256_Verifier
+from abc import ABC, abstractmethod
 
-from .AesGcmKey import AesGcmKey
+
+class ManifestEncryptor(ABC):
+    """
+    Abstract class used to sign a Packet.
+    """
+    @abstractmethod
+    def encrypt(self, node):
+        """
+        Returns an encrypted Manifest
+        :param node: The plaintext Node
+        :return: The tuple (security_ctx, encrypted_node, auth_tag)
+        """
+        pass

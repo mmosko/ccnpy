@@ -21,7 +21,7 @@ class Link:
     __T_OBJHASHRESTR = 0x0003
 
     """
-    Serves as the base class for KeyLink and is used in Locators
+    Serves as the base class for KeyLink and is used in LocatorList
     """
     def __init__(self, name=None, keyid=None, digest=None):
         """

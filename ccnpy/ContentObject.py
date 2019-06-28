@@ -46,6 +46,7 @@ class ContentObject(ccnpy.TlvType):
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
     def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
+        ccnpy.TlvType.__init__(self)
         if name is not None:
             if not isinstance(name, ccnpy.Name):
                 raise TypeError("Name must be of type ccnpy.Name")
@@ -123,3 +124,10 @@ class ContentObject(ccnpy.TlvType):
     def serialize(self):
         return self._tlv.serialize()
 
+    @staticmethod
+    def is_content_object():
+        return True
+
+    @staticmethod
+    def is_interest():
+        return False
