@@ -14,43 +14,71 @@
 
 import argparse
 from datetime import datetime
+import getpass
+
 import array
 import math
 
 import ccnpy
+import ccnpy.crypto
 import ccnpy.flic
 import ccnpy.flic.tree
+from ccnpy.flic.presharedkey import PresharedKeyEncryptor
 
 
 class ManifestWriter:
     """
     """
 
-    def __init__(self, args):
-        self._name = args.name
-        self._tree_degree = args.tree_degree
-        self._root_flag = args.root_flag
-        self._key_file = args.key_file
+    def __init__(self, args, packet_writer=None):
+        """
+
+        :param args:
+        :param packet_writer: In testing, we pass our own packet writer, otherwise create one for the directory
+        """
+        self._name = ccnpy.Name.from_uri(args.name)
         self._max_size = args.max_size
         self._filename = args.filename
-        self._out_dir = args.out_dir
-        self._locator = args.locator
-        self._root_expiry = self._parse_time(args.root_expiry)
-        self._node_expiry = self._parse_time(args.node_expiry)
-        self._data_expiry = self._parse_time(args.data_expiry)
-        self._enc_key = args.enc_key
-        self._key_num = args.key_num
+        self._locators = None
+        if args.locator is not None:
+            locator = ccnpy.flic.Locator(link=ccnpy.Link(name=ccnpy.Name.from_uri(args.locator)))
+            self._locators = ccnpy.flic.LocatorList([locator])
 
-        # These are the DirectPointers for the file chunks.
-        self._file_chunks = ccnpy.flic.tree.FileChunks()
+        if packet_writer is None:
+            self._packet_writer = ccnpy.flic.tree.TreeIO.PacketDirectoryWriter(directory=args.out_dir)
+        else:
+            self._packet_writer = packet_writer
 
-    def run(self):
-        print("Splitting file %r" % self._filename)
-        total_file_bytes = self._split_file()
-        print("Total data objects %r" % len(self._file_chunks))
+        self._tree_options = self._create_tree_options(args)
+        signing_key = ccnpy.crypto.RsaKey.load_pem_key(args.key_file, args.key_pass)
+        self._signer = ccnpy.crypto.RsaSha256_Signer(signing_key)
 
+    def _create_tree_options(self, args):
+        encryptor = None
+        if args.enc_key is not None:
+            key_bytes = bytearray.fromhex(args.enc_key)
+            key = ccnpy.crypto.AesGcmKey(key_bytes)
+            encryptor=PresharedKeyEncryptor(key=key, key_number=args.key_num)
+
+        tree_options = ccnpy.flic.ManifestTreeOptions(root_expiry_time=self._parse_time(args.root_expiry),
+                                                      manifest_expiry_time=self._parse_time(args.node_expiry),
+                                                      data_expiry_time=self._parse_time(args.data_expiry),
+                                                      manifest_encryptor=encryptor,
+                                                      add_node_subtree_size=True,
+                                                      max_tree_degree=args.tree_degree,
+                                                      root_locators=self._locators,
+                                                      debug=True)
+        return tree_options
+
+    def build(self):
+        """
+
+        :return: The root manifest ccnpy.Packet
+        """
         print("Creating manifest tree")
-        self._create_manifest_tree()
+        packet = self._create_manifest_tree()
+        print("Root manifest hash: %r" % packet.content_object_hash())
+        return packet
 
     def _parse_time(self, value):
         """
@@ -69,9 +97,19 @@ class ManifestWriter:
         Builds the tree from the end to the beginning so we can link all the manifests together as we
         build the tree.  This means if the tree is unbalanced, it will be unbalanced on the left side.
 
-        :return:
+        :return: The root manifest ccnpy.Packet
         """
-        params = ccnpy.flic.tree.TreeParameters(self._file_chunks, self._max_size)
+        root_manifest_packet = None
+        with open(self._filename, 'rb') as data_input:
+            mt = ccnpy.flic.ManifestTree(data_input=data_input,
+                                         packet_output=self._packet_writer,
+                                         root_manifest_name=self._name,
+                                         root_manifest_signer=self._signer,
+                                         max_packet_size=self._max_size,
+                                         tree_options=self._tree_options)
+
+            root_manifest_packet = mt.build()
+        return root_manifest_packet
 
     def _calculate_nameless_payload_size(self):
         """
@@ -87,32 +125,6 @@ class ManifestWriter:
         payload_size = self._max_size - len(packet)
         return payload_size
 
-    def _split_file(self):
-        """
-        Splits a file into peices that fit into max_size.  Updates the self._chunks list with the
-        content object hash values of each chunk.   Saves each chunk to the file system in the directory
-        self._out_dir.
-
-        TODO: Does not save to self._out_dir
-
-        :return: total_file_bytes
-        """
-        total_file_bytes = 0
-        payload_size = self._calculate_nameless_payload_size()
-        with open(self._filename, 'rb') as f:
-            payload_value = f.read(payload_size)
-            total_file_bytes += len(payload_value)
-            payload_tlv = ccnpy.Payload(payload_value)
-            nameless = ccnpy.ContentObject.create_data(name=None, payload=payload_tlv, expiry_time=self._data_expiry)
-            packet = ccnpy.Packet.create_content_object(nameless)
-            assert len(packet) <= self._max_size
-            co_hash = packet.content_object_hash()
-            direct_pointer = ccnpy.flic.SizedPointer(content_object_hash=co_hash, length=len(payload_value))
-            self._file_chunks.append(direct_pointer)
-            filename = direct_pointer.file_name()
-            packet.save(filename)
-        return total_file_bytes
-
 
 if __name__ == "__main__":
     tree_degree = 3
@@ -121,8 +133,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", dest='name', help="root manifest name URI (e.g. ccnx:/example.com/foo)", required=True)
     parser.add_argument("-d", dest="tree_degree", default=tree_degree, type=int, help='manifest tree degree (default %(default))')
-    parser.add_argument('--root', dest="root_flag", action='store_true', help="use a named root manifest with a single pointer to nameless")
-    parser.add_argument('-k', dest="key_file", help="RSA private key in PEM format to sign the root manifest")
+    parser.add_argument('-k', dest="key_file", default=None, help="RSA private key in PEM format to sign the root manifest")
+    parser.add_argument('-p', dest="key_pass", default=None, help="RSA private key password (otherwise will prompt)")
     parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %(default))')
     parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%(default))")
     parser.add_argument('-l', dest="locator", help="URI of a locator (root manifest)")
@@ -136,5 +148,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(args)
+
+    if args.key_pass is None:
+        args.key_pass = getpass.getpass(prompt="Private key password")
+
     writer = ManifestWriter(args)
 

@@ -117,8 +117,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         if keyid is None:
             raise ValueError("Must provide a keyid and/or a public_key")
 
-        if keyid is not None:
-            tlvs.append(ccnpy.Tlv(self.__T_KEYID, keyid))
+        tlvs.append(ccnpy.Tlv(self.__T_KEYID, keyid))
 
         if public_key is not None:
             tlvs.append(ccnpy.Tlv(self.__T_PUBLICKEY, public_key.der()))
@@ -137,12 +136,32 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         tlvs.append(signature_time)
         self._tlv = ccnpy.Tlv(ccnpy.ValidationAlg.class_type(),
                               ccnpy.Tlv(self.class_type(), tlvs))
+        self._keyid = keyid
+        self._public_key = public_key
+        self._key_link = key_link
+        self._signature_time = signature_time
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
     def __len__(self):
         return len(self._tlv)
+
+    def __repr__(self):
+        return "{RsaSha256 keyid: %r, pk: %r, link: %r, time: %r}" % \
+               (self._keyid, self._public_key, self._key_link, self._signature_time)
+
+    def keyid(self):
+        return self._keyid
+
+    def public_key(self):
+        return self._public_key
+
+    def key_link(self):
+        return self._key_link
+
+    def signature_time(self):
+        return self._signature_time
 
     @classmethod
     def parse(cls, tlv):

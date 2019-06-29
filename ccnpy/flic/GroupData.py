@@ -27,11 +27,12 @@ class GroupData(ccnpy.TlvType):
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, subtree_size=None, subtree_digest=None, locators=None):
+    def __init__(self, subtree_size=None, subtree_digest=None, leaf_size=None, locators=None):
         """
 
-        :param subtree_size:
+        :param subtree_size: Total application bytes in direct or indirect pointers
         :param subtree_digest:
+        :param leaf_size: Total application bytes in direct pointers
         :param locators:
         """
         ccnpy.TlvType.__init__(self)
@@ -41,6 +42,9 @@ class GroupData(ccnpy.TlvType):
 
         if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.HashValue):
             raise TypeError("subtree_digest, if present, must be ccnpy.HashValue")
+
+        if leaf_size is not None:
+            raise RuntimeError("Not Implemented")
 
         if locators is not None and not isinstance(locators, ccnpy.flic.LocatorList):
             raise TypeError("locators, if present, must be ccnpy.flic.LocatorList")

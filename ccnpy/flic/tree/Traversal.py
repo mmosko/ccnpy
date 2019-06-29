@@ -57,12 +57,12 @@ class Traversal:
         if body.payload_type().is_manifest():
             manifest = self._manifest_from_content_object(body)
             if self.debug:
-                print(manifest)
+                print("Traversal: %r" % manifest)
 
             self._visit_children(manifest)
         elif body.payload_type().is_data():
             if self.debug:
-                print(body)
+                print("Traversal: %r" % body)
             self._write_data(body.payload())
 
         else:

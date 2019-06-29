@@ -83,6 +83,9 @@ class Packet:
     def __repr__(self):
         return "Packet(%r, %r, %r, %r)" % (self._header, self._body, self._validation_alg, self._validation_payload)
 
+    def __len__(self):
+        return len(self._wire_format)
+
     @classmethod
     def deserialize(cls, buffer):
         header = body = val_alg = val_payload = None

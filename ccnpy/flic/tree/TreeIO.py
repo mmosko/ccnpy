@@ -52,11 +52,13 @@ class TreeIO:
     class DataBuffer:
         def __init__(self):
             self.buffer = array("B", [])
+            self.count = 0
 
         def __repr__(self):
-            return "{DataBuffer %r}" % self.buffer
+            return "{DataBuffer %r, %r}" % (self.count, self.buffer)
 
         def append(self, data):
+            self.count += 1
             self.buffer.extend(data)
 
     class PacketMemoryReader:
@@ -81,6 +83,9 @@ class TreeIO:
             self.packets = []
             self.by_hash = {}
 
+        def __len__(self):
+            return len(self.by_hash)
+
         def put(self, packet):
             self.packets.append(packet)
             self.by_hash[packet.content_object_hash()] = packet
@@ -104,12 +109,12 @@ class TreeIO:
             self._directory = directory
 
         def put(self, packet):
-            ptr = ccnpy.flic.SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
+            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet.save(path)
 
         def get(self, hash_value):
-            ptr = ccnpy.flic.SizedPointer(content_object_hash=hash_value, length=0)
+            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet = ccnpy.Packet.load(path)
             return packet
@@ -129,7 +134,7 @@ class TreeIO:
             self._directory = directory
 
         def get(self, hash_value):
-            ptr = ccnpy.flic.SizedPointer(content_object_hash=hash_value, length=0)
+            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet = ccnpy.Packet.load(path)
             return packet

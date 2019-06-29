@@ -38,6 +38,19 @@ class Crc32c_Signer(Signer):
     def keyid(self):
         return None
 
+    def validation_alg(self, include_public_key=False, key_link=None, signature_time=None):
+        """
+        Does not support any options.
+
+        :param include_public_key: Must be False
+        :param key_link: Must be None
+        :param signature_time: Must be none
+        :return: A ccnpy.ValidationAlg_Crc32c
+        """
+        assert not include_public_key
+        assert key_link is None
+        assert signature_time is None
+        return ccnpy.ValidationAlg_Crc32c()
 
 class Crc32c_Verifier(Verifier):
     """

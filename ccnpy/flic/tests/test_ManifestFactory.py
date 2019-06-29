@@ -128,5 +128,26 @@ class test_ManiestFactory(unittest.TestCase):
 
         self.assertEqual(node, actual_manifest.node())
 
+    def test_node_locators(self):
+        hv = ccnpy.HashValue.create_sha256([1, 2])
+        ptr = ccnpy.flic.Pointers([hv])
+        locator = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri("ccnx:/example/pie")))
+        locator_list = ccnpy.flic.LocatorList(locators=[locator])
+        factory = ccnpy.flic.ManifestFactory()
+        manifest = factory.build(source=ptr, node_locators=locator_list)
+        actual = manifest.serialize()
+
+        expected = array('B', [0, 2, 0, 48,   # Node
+                               0, 1, 0, 30,   # NodeData
+                               0, 3, 0, 26,   # Locators
+                               0, 2, 0, 22,   # Locator
+                               0, 0, 0, 18,   # Name
+                               0, 1, 0, 7, 101, 120, 97, 109, 112, 108, 101,
+                               0, 1, 0,  3, 112, 105, 101,
+                               0, 2, 0, 10,   # HashGroup
+                               0, 2, 0,  6,   # Pointers
+                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
+                         )
+        self.assertEqual(expected, actual)
 
 

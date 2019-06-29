@@ -15,14 +15,18 @@
 
 class ManifestTreeOptions:
     def __init__(self,
+                 root_locators=None,
                  root_expiry_time=None,
                  manifest_expiry_time=None,
                  data_expiry_time=None,
                  manifest_encryptor=None,
                  add_group_subtree_size=False,
                  add_group_leaf_size=False,
-                 add_node_subtree_size=True):
+                 add_node_subtree_size=True,
+                 max_tree_degree=None,
+                 debug=False):
         """
+        :param root_locators: A ccnpy.LocatorList to put in the signed root manifest or None
         :param root_expiry_time: The ContentObject expiry time for the root manifest
         :param manifest_expiry_time: The ContentObject expiry time for non-root nameless manifests
         :param data_expiry_time: The ContentObject expiry time for the data content objects
@@ -30,7 +34,10 @@ class ManifestTreeOptions:
         :param add_group_subtree_size: If True, add a GroupData with SubtreeSize to each manifest
         :param add_group_leaf_size: If True, add a GroupData with LeafSize to each manifest
         :param add_node_subtree_size: If True, add a NodeData with SubtreeSize to each manifest
+        :param max_tree_degree: The maximum tree degree, limited by the packet size.  None for unlimited.
+        :param debug: Print debugging messages
         """
+        self.root_locators = root_locators
         self.root_expiry_time = root_expiry_time
         self.manifest_expiry_time = manifest_expiry_time
         self.data_expiry_time = data_expiry_time
@@ -38,3 +45,6 @@ class ManifestTreeOptions:
         self.add_group_subtree_size = add_group_subtree_size
         self.add_group_leaf_size = add_group_leaf_size
         self.add_node_subtree_size = add_node_subtree_size
+        self.max_tree_degree = max_tree_degree
+        self.debug = debug
+

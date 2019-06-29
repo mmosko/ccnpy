@@ -33,24 +33,24 @@ class ValidationAlg_Test(unittest.TestCase):
 
     def test_rsasha256_serialize_keyid(self):
         keyid = ccnpy.HashValue.create_sha256(b'abc')
-        sigtime = ccnpy.SignatureTime.parse(ccnpy.Tlv(ccnpy.SignatureTime.class_type(), array.array("B", [0, 1, 2, 3, 4, 5, 6, 7])))
+        sigtime = ccnpy.SignatureTime.parse(ccnpy.Tlv(ccnpy.SignatureTime.class_type(), array.array("B", [0, 0, 2, 3, 4, 5, 6, 7])))
         va = ccnpy.ValidationAlg_RsaSha256(keyid=keyid, signature_time=sigtime)
         actual = va.serialize()
         expected = array.array("B", [0,  3, 0, 27,
                                      0,  4, 0, 23,
                                      0,  9, 0,  7, 0, 1, 0, 3, 97, 98, 99,
-                                     0, 15, 0,  8, 0, 1, 2, 3, 4, 5, 6, 7])
+                                     0, 15, 0,  8, 0, 0, 2, 3, 4, 5, 6, 7])
         self.assertEqual(expected, actual, "Incorrect serialization")
 
     def test_rsasha256_deserialize_keyid(self):
         keyid = ccnpy.HashValue.create_sha256(b'abc')
-        sigtime = ccnpy.SignatureTime.parse(ccnpy.Tlv(ccnpy.SignatureTime.class_type(), array.array("B", [0, 1, 2, 3, 4, 5, 6, 7])))
+        sigtime = ccnpy.SignatureTime.parse(ccnpy.Tlv(ccnpy.SignatureTime.class_type(), array.array("B", [0, 0, 2, 3, 4, 5, 6, 7])))
         expected = ccnpy.ValidationAlg_RsaSha256(keyid=keyid, signature_time=sigtime)
 
         wire_format = array.array("B", [0,  3, 0, 27,
                                         0,  4, 0, 23,
                                         0,  9, 0,  7, 0, 1, 0, 3, 97, 98, 99,
-                                        0, 15, 0,  8, 0, 1, 2, 3, 4, 5, 6, 7])
+                                        0, 15, 0,  8, 0, 0, 2, 3, 4, 5, 6, 7])
         tlv = ccnpy.Tlv.deserialize(wire_format)
         actual = ccnpy.ValidationAlg.parse(tlv)
         self.assertEqual(expected, actual)

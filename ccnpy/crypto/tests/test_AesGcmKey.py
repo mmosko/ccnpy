@@ -28,9 +28,9 @@ class test_AesGcmKey(unittest.TestCase):
 
         key = ccnpy.crypto.AesGcmKey(self.key)
         iv = key.nonce()
-        (c, a) = key.encrypt(nonce=iv, buffer=buffer, associated_data=aad)
+        (c, a) = key.encrypt(nonce=iv, plaintext=buffer, associated_data=aad)
         # print("nonce      = %r" % iv)
         # print("ciphertext = %r" % c)
         # print("authtag    = %r" % a)
-        plaintext = key.decrypt(nonce=iv, ciphertext=c, associated_data=aad, authtag=a)
+        plaintext = key.decrypt(nonce=iv, ciphertext=c, associated_data=aad, auth_tag=a)
         self.assertEqual(buffer, plaintext)

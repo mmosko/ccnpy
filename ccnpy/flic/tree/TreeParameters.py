@@ -31,13 +31,21 @@ import ccnpy.flic
 
 class TreeParameters:
     @classmethod
-    def create_optimized_tree(cls, file_chunks, max_packet_size):
+    def create_optimized_tree(cls, file_chunks, max_packet_size, max_tree_degree=None):
         """
         :param file_chunks: A Pointers object
         :param max_packet_size: Maximum byte length of a CCNx Packet
+        :param max_tree_degree: Maximum degree, limited by packet size.  None means only limited by packet size.
         :return:
         """
         num_pointers_per_node = cls._calculate_max_pointers(max_packet_size=max_packet_size)
+        if num_pointers_per_node < 2:
+            raise ValueError("With a max_packet_size of %r there is only %r pointers per node, must have at least 2" %
+                             (max_packet_size, num_pointers_per_node))
+
+        if max_tree_degree is not None:
+            num_pointers_per_node = min(num_pointers_per_node, max_tree_degree)
+
         solution = cls._optimize_tree(total_direct_nodes=len(file_chunks), num_pointers_per_node=num_pointers_per_node)
         return cls(file_chunks=file_chunks, max_packet_size=max_packet_size, solution=solution)
 
@@ -125,9 +133,10 @@ class TreeParameters:
         hg = ccnpy.flic.HashGroup(group_data=None, pointers=ptrs)
         node = ccnpy.flic.Node(node_data=None, hash_groups=[hg])
         empty_manifest = ccnpy.flic.Manifest(security_ctx=ctx, node=node, auth_tag=tag)
-        length=len(empty_manifest)
+        packet = ccnpy.Packet.create_content_object(body=ccnpy.ContentObject.create_manifest(manifest=empty_manifest))
+        length=len(packet)
         if length >= max_packet_size:
-            raise ValueError("An empty manifest is %r bytes and exceeds max_size" % length)
+            raise ValueError("An empty manifest packet is %r bytes and exceeds max_size %r" % (length, max_packet_size))
 
         slack = max_packet_size - length
         # +1 because we already have 1 hash in the manifest
@@ -145,6 +154,11 @@ class TreeParameters:
             raise ValueError("A filled manifest is %r bytes and exceeds max_size" % length)
 
         print("calculate_max_pointers = %r in length %r, actual length %r" % (num_hashes, max_packet_size, length))
+
+        if num_hashes < 2:
+            min_packet_size = len(packet) + len(hv)
+            raise ValueError("With max_packet_size %r there are %r hashes/manifest, must have at least 2."
+                             "  Minimum packet_size is %r" % (max_packet_size, num_hashes, min_packet_size))
         return num_hashes
 
     @staticmethod

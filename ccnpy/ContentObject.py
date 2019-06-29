@@ -45,6 +45,27 @@ class ContentObject(ccnpy.TlvType):
             expiry_time = ccnpy.ExpiryTime.from_datetime(expiry_time)
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
+    @classmethod
+    def create_manifest(cls, manifest, name=None, expiry_time=None):
+        """
+
+        :param name: ccnpy.Name
+        :param manifest: A serializable object to put in the payload
+        :param expiry_time: A python datetime
+        :return: A ccnpy.ContentObject
+        """
+        if manifest is None:
+            raise ValueError("manifest must not be None")
+
+        payload_type = ccnpy.PayloadType.create_manifest_type()
+        payload = ccnpy.Payload(manifest.serialize())
+
+        if expiry_time is not None:
+            if not isinstance(expiry_time, datetime):
+                raise TypeError("expiry_time must be datetime")
+            expiry_time = ccnpy.ExpiryTime.from_datetime(expiry_time)
+        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
+
     def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
         ccnpy.TlvType.__init__(self)
         if name is not None:
@@ -69,7 +90,13 @@ class ContentObject(ccnpy.TlvType):
                                                   self._payload])
 
     def __repr__(self):
-        return "CO(%r, %r, %r, %r)" % (self.name(), self.expiry_time(), self.payload_type(), self.payload())
+        if self.is_manifest():
+            from ccnpy.flic import Manifest
+            payload = Manifest.deserialize(self._payload.value())
+        else:
+            payload = self.payload()
+
+        return "CO(%r, %r, %r, %r)" % (self.name(), self.expiry_time(), self.payload_type(), payload)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -127,6 +154,9 @@ class ContentObject(ccnpy.TlvType):
     @staticmethod
     def is_content_object():
         return True
+
+    def is_manifest(self):
+        return self.is_content_object() and self._payload_type is not None and self._payload_type.is_manifest()
 
     @staticmethod
     def is_interest():

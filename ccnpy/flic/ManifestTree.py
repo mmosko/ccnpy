@@ -14,7 +14,7 @@
 
 import ccnpy
 from ccnpy.flic.tree import FileChunks, TreeParameters, TreeBuilder
-from ccnpy.flic import ManifestFactory
+from ccnpy.flic import ManifestFactory, ManifestTreeOptions
 
 
 class ManifestTree:
@@ -34,7 +34,7 @@ class ManifestTree:
         :param tree_options: (optional) ManifestTree.TreeOptions.  If none, uses the default values.
         """
         if tree_options is None:
-            tree_options = self.TreeOptions()
+            tree_options = ManifestTreeOptions()
 
         self._data_input = data_input
         self._packet_output = packet_output
@@ -45,13 +45,26 @@ class ManifestTree:
         self._file_chunks = FileChunks()
 
     def build(self):
+        """
+        Builds the manifest tree, saving CCNx Packets to the packet_output.
+
+        :return: The root_manifest packet, which is the named and signed manifest
+        """
         total_file_bytes = self._chunk_input()
         optimized_params = self._calculate_optimal_tree()
-        manifest_factory = ManifestFactory(encryptor=self._tree_options.manifest_encryptor)
-        top_nameless_packet = self._build_tree(tree_parameters=optimized_params, manifest_factory=manifest_factory)
-        root_packet = self._create_root_manifest(top_nameless_packet)
 
-    def _create_root_manifest(self, top_nameless_packet, manifest_factory):
+        manifest_factory = ManifestFactory(encryptor=self._tree_options.manifest_encryptor,
+                                           tree_options=self._tree_options)
+
+        top_nameless_packet = self._build_tree(tree_parameters=optimized_params,
+                                               manifest_factory=manifest_factory)
+
+        root_packet = self._create_root_manifest(top_nameless_packet=top_nameless_packet,
+                                                 manifest_factory=manifest_factory,
+                                                 total_file_bytes=total_file_bytes)
+        return root_packet
+
+    def _create_root_manifest(self, top_nameless_packet, manifest_factory, total_file_bytes):
         """
         The root manifest has a CCNx Name and public key signature.  It is a manifest with one pointer to the
         top nameless packet.
@@ -60,7 +73,23 @@ class ManifestTree:
         :param manifest_factory: The factory to use to create manifests
         :return:
         """
-        root_manifest = Manifes
+        ptr = ccnpy.flic.Pointers([top_nameless_packet.content_object_hash()])
+        root_manifest = manifest_factory.build(source=ptr,
+                                               node_locators=self._tree_options.root_locators,
+                                               node_subtree_size=total_file_bytes,
+                                               group_subtree_size=total_file_bytes)
+
+        body = ccnpy.ContentObject.create_manifest(manifest=root_manifest,
+                                                   name=self._root_manifest_name,
+                                                   expiry_time=self._tree_options.root_expiry_time)
+
+        validation_alg = self._root_manifest_signer.validation_alg()
+        validation_payload = self._root_manifest_signer.sign(body.serialize(), validation_alg.serialize())
+
+        root_packet = ccnpy.Packet.create_signed_content_object(body, validation_alg, validation_payload)
+        self._packet_output.put(root_packet)
+
+        return root_packet
 
     def _build_tree(self, tree_parameters, manifest_factory):
         tree_builder = TreeBuilder(file_chunks=self._file_chunks,
@@ -71,8 +100,9 @@ class ManifestTree:
         return tree_builder.build()
 
     def _calculate_optimal_tree(self):
-        optimized_params = TreeParameters.create_optimized_tree(file_chunks=len(self._file_chunks),
-                                                                max_packet_size=self._max_packet_size)
+        optimized_params = TreeParameters.create_optimized_tree(file_chunks=self._file_chunks,
+                                                                max_packet_size=self._max_packet_size,
+                                                                max_tree_degree=self._tree_options.max_tree_degree)
         return optimized_params
 
     def _calculate_nameless_data_payload_size(self):
@@ -117,7 +147,7 @@ class ManifestTree:
 
     def _cache_file_chunk(self, packet, payload_length):
         co_hash = packet.content_object_hash()
-        direct_pointer = ccnpy.flic.SizedPointer(content_object_hash=co_hash, length=payload_length)
+        direct_pointer = ccnpy.flic.tree.SizedPointer(content_object_hash=co_hash, length=payload_length)
         self._file_chunks.append(direct_pointer)
 
 

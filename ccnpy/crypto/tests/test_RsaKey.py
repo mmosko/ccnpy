@@ -19,7 +19,7 @@ from ccnpy.crypto import RsaKey
 
 class RsaKey_Test(unittest.TestCase):
 
-    # openssl genrsa -out rsa_key.pem
+    # openssl genrsa -out test_key.pem
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
 NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
@@ -48,7 +48,7 @@ x03TA4KebgVHxWU+ozn/jOFwXg1m8inSt3LolR9pARSHXCbwerhvE9fN+QA9CPqq
 YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 -----END RSA PRIVATE KEY-----'''
 
-    # openssl rsa -in rsa_key.pem -pubout -out rsa_pub.pem
+    # openssl rsa -in test_key.pem -pubout -out rsa_pub.pem
     public_key = b'''-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7QdUuaoTr4gA1bMoCdjU
 NPqpb7f211TYFcahHhaBPnBwQwYjNIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/o
@@ -59,7 +59,7 @@ ewM/87c2S2qMwdocG0XZx90GqEI9Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2Gy
 YwIDAQAB
 -----END PUBLIC KEY-----'''
 
-    # openssl sha256 -sign rsa_key.pem -binary foo | xxd --include
+    # openssl sha256 -sign test_key.pem -binary foo | xxd --include
     # Note that this uses PKCS1 v1.5 padding, not PSS
 
     sign_buffer = [0x73, 0x6f, 0x6d, 0x65, 0x20, 0x6c, 0x6f, 0x6e,

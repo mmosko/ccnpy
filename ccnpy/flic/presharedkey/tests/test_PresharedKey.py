@@ -11,11 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
 import unittest
 import array
 import ccnpy
-import ccnpy.flic
+from ccnpy.flic.presharedkey import PresharedKey, PresharedKeyCtx
 import ccnpy.crypto
 
 
@@ -24,7 +36,7 @@ class test_Presharedkey(unittest.TestCase):
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
     def test_presharedkeyctx_serialize(self):
-        psk_ctx = ccnpy.flic.PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
+        psk_ctx = PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
         actual = psk_ctx.serialize()
 
         expected = array.array("B", [ # SecurityCtx
@@ -49,7 +61,7 @@ class test_Presharedkey(unittest.TestCase):
                                         ])
         tlv = ccnpy.Tlv.deserialize(wire_format)
         psk_ctx = ccnpy.flic.SecurityCtx.parse(tlv)
-        expected = ccnpy.flic.PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
+        expected = PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
         self.assertEqual(expected, psk_ctx)
 
     def test_encrypt_decrypt_node(self):
@@ -68,7 +80,7 @@ class test_Presharedkey(unittest.TestCase):
         node = ccnpy.flic.Node(node_data=nd, hash_groups=[hg1, hg2])
 
         aes_key = ccnpy.crypto.AesGcmKey(self.key)
-        psk = ccnpy.flic.PresharedKey(key=aes_key, key_number=55)
+        psk = PresharedKey(key=aes_key, key_number=55)
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
 
         plaintext = psk.decrypt_node(security_ctx=security_ctx,
@@ -93,7 +105,7 @@ class test_Presharedkey(unittest.TestCase):
         node = ccnpy.flic.Node(node_data=nd, hash_groups=[hg1, hg2])
 
         aes_key = ccnpy.crypto.AesGcmKey(self.key)
-        psk = ccnpy.flic.PresharedKey(key=aes_key, key_number=55)
+        psk = PresharedKey(key=aes_key, key_number=55)
         encrypted_manifest = psk.create_encrypted_manifest(node)
 
         decrypted_manifest = psk.decrypt_manifest(encrypted_manifest)

@@ -141,6 +141,9 @@ class TreeBuilder:
             self.manifest = manifest
             self.node = node
 
+        def __repr__(self):
+            return "{RV %r, %r}" % (self.packet.content_object_hash(), self.node)
+
     class Segment:
         """
         Represents a Python-like half-open range [head:tail), where
@@ -217,7 +220,6 @@ class TreeBuilder:
         self._factory = manifest_factory
         self._tree_options = tree_options
         self._packet_output = packet_output
-        self.debug = False
 
     def build(self):
         """
@@ -276,7 +278,7 @@ class TreeBuilder:
                                 include_subtree_size=self._tree_options.add_group_subtree_size)
 
         if self._tree_options.add_node_subtree_size:
-            node_size = builder.direct_size() + builder.indirect_size()
+            node_size = builder.direct_size()
             node_data = ccnpy.flic.NodeData(subtree_size=node_size)
         else:
             node_data = None
@@ -294,7 +296,7 @@ class TreeBuilder:
         return_value = self._build_leaf_packet(head=start, tail=segment.tail())
 
         segment.decrement_tail(segment.tail() - start)
-        if self.debug:
+        if self._tree_options.debug:
             print("leaf_manifest: %r" % return_value)
 
         self._write_packet(return_value.packet)
@@ -355,7 +357,7 @@ class TreeBuilder:
 
         return_value = self._interior_packet(builder)
 
-        if self.debug:
+        if self._tree_options.debug:
             print("node_manifest: %r" % return_value)
 
         self._write_packet(return_value.packet)

@@ -78,4 +78,11 @@ class Timestamp(ccnpy.TlvType):
         return msec
 
     def datetime(self):
-        return datetime.utcfromtimestamp(self._timestamp)
+        try:
+            return datetime.utcfromtimestamp(self._timestamp)
+        except ValueError:
+            return datetime.utcfromtimestamp(0)
+
+    @classmethod
+    def now(cls):
+        return cls.from_datetime(datetime.utcnow())

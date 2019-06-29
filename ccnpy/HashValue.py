@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
+import binascii
+from array import array
 import ccnpy
 
 
@@ -34,6 +35,10 @@ class HashValue(ccnpy.TlvType):
         :param value: The hash value
         """
         ccnpy.TlvType.__init__(self)
+
+        if not isinstance(value, array):
+            value = array("B", value)
+
         self._hash_algorithm = hash_algorithm
         self._value = value
         self._tlv = ccnpy.Tlv(hash_algorithm, self._value)
@@ -61,7 +66,7 @@ class HashValue(ccnpy.TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "HashValue(%r, %r)" % (self.__alg_string(), self._value)
+        return "HashValue(%r, %r)" % (self.__alg_string(), binascii.hexlify(self._value))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

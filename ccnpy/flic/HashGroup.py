@@ -34,7 +34,7 @@ class HashGroup(ccnpy.TlvType):
             raise TypeError("group_data must be ccnpy.flic.GroupData")
 
         if pointers is None or not isinstance(pointers, ccnpy.flic.Pointers):
-            raise ValueError("pointers must not type ccnpy.flic.Pointers")
+            raise ValueError("pointers must be type ccnpy.flic.Pointers")
 
         self._group_data = group_data
         self._pointers = pointers

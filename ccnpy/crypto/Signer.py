@@ -48,3 +48,19 @@ class Signer(ABC):
         :return: A HashValue, may be None
         """
         pass
+
+    @abstractmethod
+    def validation_alg(self, include_public_key=False, key_link=None, signature_time=None):
+        """
+        Generate a ValidationAlg for this key.  If `include_public_key` is True, embed the public key in
+        the ValidationAlg.  If key_link is a ccnpy.KeyLink, add it to the ValidationAlg.  If signature_time
+        is None, use the current UTC time, othewise use the provided signature_time.
+
+        Note: not all signers support all options.
+
+        :param include_public_key: True to embed the signer's public key
+        :param key_link: (optional) a ccnpy.KeyLink
+        :param signature_time: a datetime or a ccnpy.SignatureTime or None to use current UTC time.
+        :return: A ValidationAlg appropriate to the signer
+        """
+        pass

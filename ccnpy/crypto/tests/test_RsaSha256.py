@@ -17,7 +17,7 @@ import ccnpy.crypto
 
 
 class RsaSha256_Signer_Test(unittest.TestCase):
-    # openssl genrsa -out rsa_key.pem
+    # openssl genrsa -out test_key.pem
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
 NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
@@ -46,7 +46,7 @@ x03TA4KebgVHxWU+ozn/jOFwXg1m8inSt3LolR9pARSHXCbwerhvE9fN+QA9CPqq
 YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 -----END RSA PRIVATE KEY-----'''
 
-    # openssl rsa -in rsa_key.pem -pubout -out rsa_pub.pem
+    # openssl rsa -in test_key.pem -pubout -out rsa_pub.pem
     public_key = b'''-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7QdUuaoTr4gA1bMoCdjU
 NPqpb7f211TYFcahHhaBPnBwQwYjNIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/o
