@@ -77,9 +77,9 @@ class AesGcmKey:
             associated_data = associated_data.tobytes()
 
         output = self._impl.encrypt(nonce, plaintext, associated_data)
-        ciphertext = array.array("B", output[:self._tag_len])
-        authtag = array.array("B", output[self._tag_len:])
-        return (ciphertext, authtag)
+        ciphertext = array.array("B", output[:-self._tag_len])
+        authtag = array.array("B", output[len(ciphertext):])
+        return ciphertext, authtag
 
     def decrypt(self, nonce, ciphertext, associated_data, auth_tag):
         """

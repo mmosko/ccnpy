@@ -16,9 +16,6 @@ import argparse
 from datetime import datetime
 import getpass
 
-import array
-import math
-
 import ccnpy
 import ccnpy.crypto
 import ccnpy.flic
@@ -67,7 +64,7 @@ class ManifestWriter:
                                                       add_node_subtree_size=True,
                                                       max_tree_degree=args.tree_degree,
                                                       root_locators=self._locators,
-                                                      debug=True)
+                                                      debug=False)
         return tree_options
 
     def build(self):
@@ -127,22 +124,22 @@ class ManifestWriter:
 
 
 if __name__ == "__main__":
-    tree_degree = 3
+    tree_degree = 7
     max_size = 1500
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", dest='name', help="root manifest name URI (e.g. ccnx:/example.com/foo)", required=True)
-    parser.add_argument("-d", dest="tree_degree", default=tree_degree, type=int, help='manifest tree degree (default %(default))')
+    parser.add_argument("-d", dest="tree_degree", default=tree_degree, type=int, help='manifest tree degree default %r)' % tree_degree)
     parser.add_argument('-k', dest="key_file", default=None, help="RSA private key in PEM format to sign the root manifest")
     parser.add_argument('-p', dest="key_pass", default=None, help="RSA private key password (otherwise will prompt)")
-    parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %(default))')
-    parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%(default))")
+    parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %r)' % max_size)
+    parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%r)" % '.')
     parser.add_argument('-l', dest="locator", help="URI of a locator (root manifest)")
     parser.add_argument('--root-expiry', dest="root_expiry", help="Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest")
     parser.add_argument('--node-expiry', dest="node_expiry", help="Expiry time (ISO format) to expire node manifests")
     parser.add_argument('--data-expiry', dest="data_expiry", help="Expiry time (ISO format) to expire data nameless objects")
     parser.add_argument('--enc-key', dest="enc_key", help="AES encryption key (hex string)")
-    parser.add_argument('--key-num', dest="key_num", help="Key number of pre-shared key")
+    parser.add_argument('--key-num', dest="key_num", type=int, help="Key number of pre-shared key")
 
     parser.add_argument('filename', help='The filename to split into the manifest')
 
@@ -152,5 +149,8 @@ if __name__ == "__main__":
     if args.key_pass is None:
         args.key_pass = getpass.getpass(prompt="Private key password")
 
-    writer = ManifestWriter(args)
+    if len(args.key_pass) == 0:
+        args.key_pass = None
 
+    writer = ManifestWriter(args)
+    writer.build()

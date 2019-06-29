@@ -153,7 +153,7 @@ class TreeParameters:
         if length >= max_packet_size:
             raise ValueError("A filled manifest is %r bytes and exceeds max_size" % length)
 
-        print("calculate_max_pointers = %r in length %r, actual length %r" % (num_hashes, max_packet_size, length))
+        #print("calculate_max_pointers = %r in length %r, actual length %r" % (num_hashes, max_packet_size, length))
 
         if num_hashes < 2:
             min_packet_size = len(packet) + len(hv)
