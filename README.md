@@ -303,7 +303,7 @@ Manifest: {
 }
 ```
 
-#FLIC Manifests
+# FLIC Manifests
 
 A FLIC manifest is a way or organizing hash pointers to hash-named data objects.
 
