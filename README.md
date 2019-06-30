@@ -3,6 +3,9 @@
 ccnpy is a pure python implementation of the CCNx 1.0
 protocols (RFC xxxx and RFC yyyy).
 
+The primary use of this code, at the moment, is to prototype the FLIC Manifest specification.   Everything is
+still in play at the moment and this is not a final specification or implementation yet.
+
 Table Of Contents:
 * [Application Interface](#Application-Interface)
 * [Programming Interfaces](#Programming-Interfaces)
@@ -328,6 +331,210 @@ the manifest builder.  Typically, all the direct manifests come first, then the 
 * Manifest Waste: a metric used to measure the amount of waste in a manifest tree.  Waste is the number of unused
 pointers.  For example, a leaf manifest might be able to hold 40 direct pointers, but only 30 of them are used, so
 the waste of this node is 10.  Manifest tree waste is the sum of waste over all manifests in a tree.
+
+
+## Grammar (ABNF)
+
+    Manifest := Name? SecurityCtx? (EncryptedNode / Node)    
+
+    SecurityCtx := AlgorithmId AlgorithmData
+    AlgorithmId := PresharedKey / RsaKem / INTEGER
+    AlgorithmData := PresharedKeyData / RsaKemData / OCTET* ; Algorithm dependent data
+    
+    EncryptedNode := OCTET* AuthTag? ; Encrypted Node + AEAD Tag
+
+    Node := NodeData? HashGroup+
+    NodeData := SubtreeSize? SubtreeDigest? Locators?
+    SubtreeSize := INTEGER
+    SubtreeDigest := HashValue
+    
+    Locators := Final? Link+
+    Final := TRUE / FALSE
+    HashValue := ; See RFC 8506
+    Link := ; See RFC 8506
+    
+    HashGroup := GroupData? Pointers
+    Pointers := HashValue+
+    GroupData := LeafSize? LeafDigest? SubtreeSize? SubtreeDigest? SizeIndex? Locators?
+    LeafSize := INTEGER
+    LeafDigest := HashValue
+    
+    SizeIndex := INTEGER+ ; Array of integers same size as Ptr array
+    
+    PresharedKey := %x0001
+    PresharedKeyData := KeyNum IV Mode
+    KeyNum := INTEGER
+    IV := OCTET+
+    Mode := AES-GCM-128 AES-GCM-256
+    
+    RsaKem := %0x0002
+    RsaKemData := KeyId IV Mode WrappedKey LocatorPrefix
+    KeyId := HashValue
+    WrappedKey := OCTET+    
+    LocatorPrefix := Link
+
+## Grammar Description
+
+* Name: The optional ContentObject name
+* SecurityCtx: Information about how to decrypt an EncryptedNode. The structure will depend on the specific encryption algorithm.
+* AlgorithmId: The ID of the encryption method (e.g. preshared key, a broadcast encryption scheme, etc.)
+* AlgorithmData: The context for the encryption algorithm.
+* EncryptedNode: An opaque octet string with an optional authentication tag (i.e. for AEAD authentication tag)
+* Node: A plain-text manifest node. The structure allows for in-place encryption/decryption.
+* NodeData: the metadata about the Manifest node
+* SubtreeSize: The size of all application data at and below the Node
+* SubtreeDigest: The cryptographic digest of all application data at and below the Node
+* Locators: An array of routing hints to find the manifest components
+* Final: A flag that prevents Locators from being superseded by a child Manifest Node
+* HashGroup: A set of child pointers and associated metadata
+* Pointers: A list of one or more Hash Values
+* GroupData: Metadata that applies to a HashGroup
+* LeafSize: Size of all application data immediately under the Group (i.e. without recursion through other Manifests)
+* LeafDigest: Digest of all application data immediately under the Group
+* SubtreeSize: Size of all application data under the Group (i.e., with recursion)
+* SubtreeDigest: Digest of all application data under the Group (i.e. with recursion)
+* SizeIndex: An array of the same size as the Ptr array with the recursive size of application data under that Ptr
+* Ptr: The ContentObjectHash of a child, which may be a data ContentObject (i.e. with Payload) or another Manifest Node.
+* PresharedKey related fields are described below under Preshared Key Algorithm
+
+## Manifest Examples
+
+Example of a full Manifest node, such as a root manifest
+
+    [FIXED_HEADER OCTET[8]]
+    (ContentObject/T_OBJECT
+        (Name/T_NAME ...)
+        (ExpiryTime/T_EXPIRY 20190630Z000000)
+        (Manifest
+            (Node
+                (NodeData
+                    (SubtreeSize 5678)
+                    (SubtreeDigest (HashValue SHA256 a1b2...))
+                    (Locators (Final FALSE) (Link /example.com/repo))
+                )
+                (HashGroup
+                    (GroupData
+                        (SubtreeSize 1234)
+                        (SubtreeDigest (HashValue SHA256 abcd...))
+                )
+                (Pointers
+                    (Ptr ...)
+                    (Ptr ...)
+                )
+            )
+        )
+    )
+    (ValidationAlg ...)
+    (ValidationPayload ...)
+
+
+To use an encrypted manifest, create an unencrypted manifest with the SecurityCtx and AuthTag, then do an
+in-place encryption with AES-GCM-256. Put the Authentication Tag in the AuthTag value. After the encryption,
+change the TLV type of Node to EncryptedNode.
+Note that if the publisher should finish the encryption and TLV type changes before signing the ContentObject with the ValidationPayload.
+
+    [FIXED_HEADER OCTET[8]]
+    (ContentObject/T_OBJECT
+        (Name/T_NAME ...)
+        (ExpiryTime/T_EXPIRY 20190630Z000000)
+        (Manifest
+            (SecurityCtx
+                (PresharedKey (KeyNum 55) (IV 8585...) (Mode AES-GCM-256))
+            )
+            (Node
+                (NodeData
+                    (SubtreeSize 5678)
+                    (SubtreeDigest (HashValue SHA256 a1b2...))
+                    (Locators (Final FALSE) (Link /example.com/repo))
+                )
+                (HashGroup
+                    (GroupData
+                        (SubtreeSize 1234)
+                        (SubtreeDigest (HashValue SHA256 abcd...))
+                )
+                (Pointers
+                    (Ptr ...)
+                    (Ptr ...)
+                )
+            )
+            (AuthTag 0x00...)
+        )
+    )
+    (ValidationAlg ...)
+    (ValidationPayload ...)
+
+Example of a nameless and encrypted manifest node
+
+    [FIXED_HEADER OCTET[8]]
+    (ContentObject/T_OBJECT
+        (ExpiryTime/T_EXPIRY 20190630Z000000)
+        (Manifest
+            (SecurityCtx
+                (PresharedKey (KeyNum 55) (IV 8585...) (Mode AES-GCM-256))
+            )
+            (EncryptedNode ...)
+            (AuthTag ...)
+        )
+    )
+
+After in-place decryption, change type of EncryptedNode to Node
+and change AuthTag to PAD and overwrite the value with zeros.
+
+    [FIXED_HEADER OCTET[8]]    
+    (ContentObject/T_OBJECT
+        (ExpiryTime/T_EXPIRY 20190630Z000000)
+        (Manifest
+            (SecurityCtx
+                (PresharedKey (KeyNum 55) (IV 8585...) (Mode AES-GCM-256))
+            )
+            (Node ...)
+            (PAD ...)
+        )
+    )
+
+## PresharedKey Algorithm
+
+    PresharedKeyData := KeyNum IV Mode
+    KeyNum := INTEGER
+    IV := OCTET+
+    Mode := AES-GCM-128 AES-GCM-256
+
+The KeyNum identifies a key on the receiver. The key must be of the correct length of the Mode used. If the key is
+longer, use the left bits. Many receivers many have the same key with the same KeyId.
+A publisher creates a signed root manifest with a security context. A consumer must ensure that 
+the root manifest signer is the expected publisher for use with the pre-shared key, which may be shared with 
+many other consumers. The publisher may use either method 8.2.1 (deterministic IV) or 8.2.2 (RBG-based IV) 
+[NIST 800-38D] for creating the IV.
+
+Each encrypted manifest node (root manifest or internal manifest) has a full security
+
+context (KeyNum, IV, Mode). The AES-GCM decryption is independent for each manifest so Manifest objects can be 
+fetched and decrypted in any order. This design also ensures that if a manifest tree points to the same subtree 
+repeatedly, such as for deduplication, the decryptions are all idempotent.
+
+The functions for authenticated encryption and authenticated decryption are as given in Sections 7.1 and 7.2 of 
+NIST 800-38D: `GCM-AE_K(IV, P, A)` and `GCM-AD_K(IV, C, A, T)`.
+
+    EncryptNode(SecurityCtx, Node, K, IV) -> GCM-AE_K(IV, P, A) -> (C, T)
+        Node: The wire format of the Node (P)
+        SecurityCtx: The wire format of the SecurityCtx as the Additional Authenticated Data (A)
+        K: the pre-shared key (128 or 256 bits)
+        IV: The initialization vector (usually 96 or 128 bits)
+        C: The cipher text
+        T: The authentication tag
+
+The pair (C,T) is the OpaqueNode encoded as a TLV structure:
+
+    (OpaqueNode (CipherText C) (AuthTag T))
+
+    DecryptNode(SecurityCtx, C, T, K, IV) -> GCM-AD_K (IV, C, A, T) -> (Node, FailFlag)
+        Node: The wire format of the decrypted Node
+        FailFlag: Indicates authenticated decryption failure (true or false)
+
+If doing in-place decryption, the cipher text C will be enclosed in an EncryptedNode TLV value. After decryption, 
+change the TLV type to Node. The length should be the same. After decryption the AuthTag is no longer needed. The 
+TLV type should be changed to T_PAD and the value zeroed. The SecurityCtx could be changed to T_PAD and zeroed or 
+left as-is.
 
 # Implementation notes
 
