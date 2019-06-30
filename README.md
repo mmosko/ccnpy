@@ -336,17 +336,21 @@ the manifest builder.  Typically, all the direct manifests come first, then the 
 * Manifest Waste: a metric used to measure the amount of waste in a manifest tree.  Waste is the number of unused
 pointers.  For example, a leaf manifest might be able to hold 40 direct pointers, but only 30 of them are used, so
 the waste of this node is 10.  Manifest tree waste is the sum of waste over all manifests in a tree.
+* Root Manifest: A signed, named, manifest that points to nameless manifest nodes.  This structure means that the
+internal tree structure of internal and leaf manifests have no names and thus may be put located anywhere, while
+the root manifest has a name to fetch it by.  
 
 
 ## Grammar (ABNF)
 
-    Manifest := Name? SecurityCtx? (EncryptedNode / Node)    
+    Manifest := SecurityCtx? (EncryptedNode / Node) AuthTag?
 
     SecurityCtx := AlgorithmId AlgorithmData
     AlgorithmId := PresharedKey / RsaKem / INTEGER
     AlgorithmData := PresharedKeyData / RsaKemData / OCTET* ; Algorithm dependent data
     
-    EncryptedNode := OCTET* AuthTag? ; Encrypted Node + AEAD Tag
+    AuthTag := OCTET* ; e.g. AEAD authentication tag
+    EncryptedNode := OCTET* ; Encrypted Node
 
     Node := NodeData? HashGroup+
     NodeData := SubtreeSize? SubtreeDigest? Locators?
@@ -378,6 +382,15 @@ the waste of this node is 10.  Manifest tree waste is the sum of waste over all 
     WrappedKey := OCTET+    
     LocatorPrefix := Link
 
+A Manifest is embedded inside a CCNx Content Object:
+
+    ManifestContentObject := Name? ExpiryTime? PayloadType Payload
+    Name := the ccnx name of the manifest, used for a root manifest.
+    ExpiryTime: As per RFC8659
+    PayloadType: T_PYLDTYPE_MANIFEST ; TBD
+    Payload: OCTET* ; the serialized Manifest object
+    
+    
 ## Grammar Description
 
 * Name: The optional ContentObject name
@@ -403,6 +416,9 @@ the waste of this node is 10.  Manifest tree waste is the sum of waste over all 
 * PresharedKey related fields are described below under Preshared Key Algorithm
 
 ## Manifest Examples
+
+NOTE: These examples are a bit old and do not include the revision of putting the
+manifest inside the Payload.
 
 Example of a full Manifest node, such as a root manifest
 
