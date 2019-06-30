@@ -3,15 +3,21 @@
 ccnpy is a pure python implementation of the CCNx 1.0
 protocols (RFC xxxx and RFC yyyy).
 
+Table Of Contents:
+* [Application Interface](#Application-Interface)
+* [Programming Interfaces](#Programming-Interfaces)
+* [FLIC Manifests](#FLIC-Manifests)
+* [Implementation Notes and dependencies](#Implementation-Notes)
 
-# Application Interface
+# Usage
+## Application Interface
 
 * ccnpy.apps.manifest_writer: slice up a file into nameless data content objects and organize them into a manifest tree.
     The output packets are written to a file system directory.
 * ccnpy.apps.packet_reader: reads a packet from the file system and decodes it.  Still a little messy on the display.
 * ccnpy.apps.manifest_reader: given a manifest name, assembles the application data and writes it to a file. (IN PROGRESS)
 
-# Programming Interfaces
+## Programming Interfaces
 
 * ccnpy: This package has the main CCNx objects.
 * ccnpy.flic: The FLIC objects for manifests
@@ -19,7 +25,7 @@ protocols (RFC xxxx and RFC yyyy).
 * ccnpy.flic.presharedkey: The preshared key encryptor/decryptor for manifests
 * ccnpy.crypto: Crypto algorithms for AES and RSA.  Used by encryptor/decryptor and ccnpy signers and verifiers.
 
-# Example use to create a Manifest tree from a file:
+## Example use to create a Manifest tree from a file:
 
 In this example, we will use `ccnpy.apps.manifest_writer` to split a file into namesless content objects
 and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below
@@ -323,7 +329,7 @@ the manifest builder.  Typically, all the direct manifests come first, then the 
 pointers.  For example, a leaf manifest might be able to hold 40 direct pointers, but only 30 of them are used, so
 the waste of this node is 10.  Manifest tree waste is the sum of waste over all manifests in a tree.
 
-# Implementation nodes
+# Implementation notes
 
 ## dependencies
    
