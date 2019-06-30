@@ -23,7 +23,7 @@ protocols (RFC xxxx and RFC yyyy).
 
 In this example, we will use `ccnpy.apps.manifest_writer` to split a file into namesless content objects
 and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below
-for background on [CCNx FLIC manifets](FLIC Manifests)
+for background on [CCNx FLIC manifets](#FLIC-Manifests)
 
 ```bash
 ccnpy$ python3 -m ccnpy.apps.manifest_writer --help
