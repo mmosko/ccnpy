@@ -13,8 +13,6 @@
 #  limitations under the License.
 
 import unittest
-import ccnpy
-import ccnpy.flic
 
 
 class test_HashGroupBuilder(unittest.TestCase):

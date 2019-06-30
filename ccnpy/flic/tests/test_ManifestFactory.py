@@ -14,10 +14,12 @@
 
 import unittest
 from array import array
+
 import ccnpy
-import ccnpy.flic
 import ccnpy.crypto
+import ccnpy.flic
 from ccnpy.flic.presharedkey import PresharedKeyEncryptor, PresharedKeyDecryptor
+
 
 class test_ManiestFactory(unittest.TestCase):
     def test_unencrypted_nopts_pointers(self):

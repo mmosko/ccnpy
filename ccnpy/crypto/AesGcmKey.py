@@ -12,15 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import os
 import array
-import math
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os
+
 from cryptography.exceptions import InvalidTag
-import ccnpy
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
 class AesGcmKey:
+    __salt_length = 128
+
     def __init__(self, key):
         """
 
@@ -52,13 +53,13 @@ class AesGcmKey:
         """
         Generate a randomized nonce, such as for use as an IV
 
-        :param bits: 96 or 128
+        :param bits: 96 or 128 or 256
         :return:
         """
-        if bits not in [96, 128]:
-            raise ValueError("bits must be 96 or 128")
+        if bits not in [96, 128, 256]:
+            raise ValueError("bits must be 96 or 128 or 256")
 
-        nonce = array.array("B", os.urandom(int(math.ceil(bits / 8))))
+        nonce = array.array("B", os.urandom(bits // 8))
         return nonce
 
     def encrypt(self, nonce, plaintext, associated_data):

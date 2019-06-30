@@ -14,6 +14,7 @@
 
 import binascii
 from array import array
+
 import ccnpy
 
 

@@ -12,16 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import unittest
 import io
+import unittest
 from array import array
+
 import ccnpy
 import ccnpy.flic
+from ccnpy.crypto import RsaKey, RsaSha256_Signer
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.tree import Traversal
-from ccnpy.crypto import RsaKey, RsaSha256_Signer, RsaSha256
-
 from ccnpy.flic.tree import TreeIO
+
 
 class test_ManifestTree(unittest.TestCase):
 

@@ -24,11 +24,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import unittest
 import array
+import unittest
+
 import ccnpy
-from ccnpy.flic.presharedkey import PresharedKey, PresharedKeyCtx
 import ccnpy.crypto
+from ccnpy.flic.presharedkey import PresharedKey, PresharedKeyCtx
 
 
 class test_Presharedkey(unittest.TestCase):

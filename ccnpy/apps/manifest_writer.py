@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import argparse
-from datetime import datetime
 import getpass
+from datetime import datetime
 
 import ccnpy
 import ccnpy.crypto

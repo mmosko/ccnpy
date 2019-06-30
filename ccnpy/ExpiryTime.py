@@ -13,8 +13,6 @@
 #  limitations under the License.
 
 
-from datetime import datetime
-
 import ccnpy
 
 

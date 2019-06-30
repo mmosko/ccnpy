@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 
+from datetime import datetime
+
 import ccnpy
 from ccnpy.crypto import Signer, Verifier, RsaKey
-from datetime import datetime
 
 
 class RsaSha256_Signer(Signer):

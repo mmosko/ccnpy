@@ -17,6 +17,7 @@ from abc import abstractmethod
 import ccnpy
 import ccnpy.flic
 
+
 class SecurityCtx(ccnpy.TlvType):
     """
     Analogous to the ccnpy.ValidationAlg container.  It is an abstract intermediate class between

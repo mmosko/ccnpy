@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 
-import hashlib
 import array
+import hashlib
+
 import ccnpy
 
 

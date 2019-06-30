@@ -14,6 +14,7 @@
 
 import unittest
 from array import array
+
 import ccnpy
 import ccnpy.crypto
 import ccnpy.flic

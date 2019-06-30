@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 
-import struct
 import array
+import struct
 
 
 class FixedHeader:

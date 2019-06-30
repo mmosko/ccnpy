@@ -13,9 +13,8 @@
 #  limitations under the License.
 
 
-from urllib.parse import urlparse
 from pathlib import PurePath
-import array
+from urllib.parse import urlparse
 
 import ccnpy
 

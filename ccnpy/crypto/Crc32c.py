@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from crc32c import crc32
+
 import ccnpy
 from ccnpy.crypto import Signer, Verifier
 

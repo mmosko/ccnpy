@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import ccnpy
-from ccnpy.flic.tree import FileChunks, TreeParameters, TreeBuilder
 from ccnpy.flic import ManifestFactory, ManifestTreeOptions
+from ccnpy.flic.tree import FileChunks, TreeParameters, TreeBuilder
 
 
 class ManifestTree:

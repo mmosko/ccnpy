@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 
-import unittest
 import array
+import unittest
+
 import ccnpy
 
 
