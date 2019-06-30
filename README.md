@@ -319,7 +319,7 @@ Manifest: {
 
 # FLIC Manifests
 
-A FLIC manifest is a way or organizing hash pointers to hash-named data objects.
+A FLIC manifest is a way of organizing hash pointers to hash-named data objects.
 
 Terminology:
 * Data Object: A CCNx nameless Content Object that usually only has Payload.  It might also have an ExpiryTime to
