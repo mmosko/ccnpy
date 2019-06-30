@@ -3,6 +3,11 @@
 ccnpy is a pure python implementation of the CCNx 1.0
 protocols (RFC xxxx and RFC yyyy).
 
+The implementation focuses on the client libraries used to consume or produce content and to
+organize it in manifests.  There is no plan to create a python CCNx forwarder.  Currently,
+the code only writes packets, in wire format, to files or reads them from files; there are
+no network operations.
+
 The primary use of this code, at the moment, is to prototype the FLIC Manifest specification.   Everything is
 still in play at the moment and this is not a final specification or implementation yet.
 
