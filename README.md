@@ -14,6 +14,7 @@ still in play at the moment and this is not a final specification or implementat
 Table Of Contents:
 * [Application Interface](#Application-Interface)
 * [Programming Interfaces](#Programming-Interfaces)
+* [Command-line Examples](#Examples)
 * [FLIC Manifests](#FLIC-Manifests)
 * [Implementation Notes and dependencies](#Implementation-Notes)
 
@@ -33,7 +34,7 @@ Table Of Contents:
 * ccnpy.flic.presharedkey: The preshared key encryptor/decryptor for manifests
 * ccnpy.crypto: Crypto algorithms for AES and RSA.  Used by encryptor/decryptor and ccnpy signers and verifiers.
 
-## Example use to create a Manifest tree from a file:
+## Examples
 
 In this example, we will use `ccnpy.apps.manifest_writer` to split a file into namesless content objects
 and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below
@@ -74,6 +75,8 @@ optional arguments:
   --key-num KEY_NUM     Key number of pre-shared key
 ```
  
+### Small Packet Example
+
 We create an RSA key that will be used to sign the root manifest, create a temporary
 output directory, and then run `manifest_writer`.  We limit the tree to node degree 11
 and a maximum packet size of 500 bytes.  Using at 1500 byte packet will allow a tree degree
@@ -316,6 +319,79 @@ Manifest: {
    None
 }
 ```
+
+### Large Degree Tree
+
+We create a 1MiB file that has all zeros and put it in a Manifest limited to 1500 byte packets.  This should
+create only one or two nameless data objects, then a tree with many pointers to the same zeros.
+
+```bash
+ccnpy$ dd if=/dev/zero of=zeros bs=1000 count=1000
+ccnpy$ python3 -m ccnpy.apps.manifest_writer  \
+                   -n ccnx:/example.com/manifest \
+                   -k test_key.pem \
+                   -p '' \
+                   -s 1500 \
+                   -o ./out2  \
+                   --enc-key 0102030405060708090a0b0c0d0e0f10 \
+                   --key-num 22  \
+                   zeros
+                   
+Creating manifest tree
+Root manifest hash: HashValue: {alg: 'SHA256', val: '7848a8b2ecc2a40b86540cbb6e3f3936342fd30412095ce79a1a2489560178cf'}
+```
+
+The root manifest `7848...` is 490 bytes.  The main data object `81e2...` is exactly 1500 bytes.  The other
+manifests are -- incorrectly -- 1543 bytes (there must be an off-by-one bug).  The other small objects are
+the remaining zeros of the file's tail (`44b8...`) and a small internal manifest without all the pointers.
+
+```bash
+ccnpy$ ls -l out2
+total 168
+-rw-r--r--+ 1 mmosko  1987151510   607 Jun 30 11:54 038f39b597b3ee571f0610a0f9d86c53412eda71547ab69babd2d808583125d7
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 16feece0b9092d2167c7ca8a732baf84ddb3cbb436dc95afcf86c46c9c474382
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 3845d69ebddf314091fbaebffc6dda66429aec8a832bde830b4509e6ade6a2ec
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 3f176bb51a4d86a8f01a38106e61663252f7fca28b86d881075c05ce8c0bac8f
+-rw-r--r--+ 1 mmosko  1987151510   217 Jun 30 11:54 44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 4c91909e85e17dcc457b7b7f3da98f0403c2ed0c674f4746904acacff8008ddb
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 531933c7f31a7b458096ccee1f2ac501acdad02dc25d14fe28c4d80ca3543913
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 73e275b93b89c0b0cb9ccfbf33a79b3d796e678907788f3e89c0a4cc55e36acc
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 7795178a9756ed8140a72d26c4829e5e1619719be6b9a7a3231c30b659574340
+-rw-r--r--+ 1 mmosko  1987151510   490 Jun 30 11:54 7848a8b2ecc2a40b86540cbb6e3f3936342fd30412095ce79a1a2489560178cf
+-rw-r--r--+ 1 mmosko  1987151510  1500 Jun 30 11:54 81e24663be0c7c9a9e461c03392e30c7f0492fccbe0b59d41ee2913385dbf712
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 8b9693a081b092b1f2b9b40d611e5ee4bd3251dd2252cb794af6273ede0a5171
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 8ba3bad2b16d1662e3ba71224e04015bf336445e49890268c5255fadfdc488f1
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 a71d474d91e5dac9a4b2fd7d75b2db2374862f0e039e27a23000a011e5186b32
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 ae5a67b0920bc54e2b6bff1de914520546763789131188e9cf8ec9f64ad92ca9
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 c0ae8a51144ae06d945c0a89ed745eeacd20ef2aeb35f1c5ddaf1ab638ef8e2b
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 c9974e746610fe1eaca5cf8e9811d008f611d434129d8eeb2785854d568fc828
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 d9509c020306872b916447dc688a11e23c67e350cd78a5865a0bb82852685e01
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 dae6e4b84b93f5393863b3c29dbaf344d607cb50f792fb9b340fdc7cdcb31ca3
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 edde6c7cd66b50cc121a3b08295dc3e219503cab97244953bb1ecc19ae8c151d
+-rw-r--r--+ 1 mmosko  1987151510  1543 Jun 30 11:54 fe2a79a94d5b071f02647f7206a2b63b87aeeaf2b35f30b93a200391266e44ea
+```
+
+Packet `44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f` is:
+    {
+       Packet: {
+          FH: {
+             ver: 1,
+             pt: 1,
+             plen: 217,
+             flds: '000000',
+             hlen: 8
+          },
+          CO: {
+             None,
+             None,
+             PLDTYP: 'DATA',
+             PAYLOAD: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+          },
+          None,
+          None
+       }
+    }
+
 
 # FLIC Manifests
 

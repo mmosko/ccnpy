@@ -124,12 +124,11 @@ class ManifestWriter:
 
 
 if __name__ == "__main__":
-    tree_degree = 7
     max_size = 1500
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", dest='name', help="root manifest name URI (e.g. ccnx:/example.com/foo)", required=True)
-    parser.add_argument("-d", dest="tree_degree", default=tree_degree, type=int, help='manifest tree degree default %r)' % tree_degree)
+    parser.add_argument("-d", dest="tree_degree", type=int, help='manifest tree degree (default is max that fits in a packet)')
     parser.add_argument('-k', dest="key_file", default=None, help="RSA private key in PEM format to sign the root manifest")
     parser.add_argument('-p', dest="key_pass", default=None, help="RSA private key password (otherwise will prompt)")
     parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %r)' % max_size)
