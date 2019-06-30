@@ -21,19 +21,52 @@ protocols (RFC xxxx and RFC yyyy).
 
 # Example use to create a Manifest tree from a file:
 
-In this example, we create an RSA key that will be used to sign the root manifest, create a temporary
-output directory, and then run `manifest_writer`.
+In this example, we will use `ccnpy.apps.manifest_writer` to split a file into namesless content objects
+and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below
+for background on [CCNx FLIC manifets](#FLIC Manifests)
 
-The arguments to `manifest_writer` do the following:
- * -n is the CCNx name of the root manifest
- * -d limits the manifest to a degree 11 tree
- * -k is the RSA signing key filename
- * -p is the RSA key password.  An empty string is used so the program will not prompt us for one.
- * -s is the maximum packet length in bytes
- * -o is the output directory to write packets in wire format
- * --enc-key is the AES key to use to encrypt the manifests as a hex string
- * --key-num is the key identifier
+```bash
+ccnpy$ python3 -m ccnpy.apps.manifest_writer --help
+usage: manifest_writer.py [-h] -n NAME [-d TREE_DEGREE] [-k KEY_FILE]
+                          [-p KEY_PASS] [-s MAX_SIZE] [-o OUT_DIR]
+                          [-l LOCATOR] [--root-expiry ROOT_EXPIRY]
+                          [--node-expiry NODE_EXPIRY]
+                          [--data-expiry DATA_EXPIRY] [--enc-key ENC_KEY]
+                          [--key-num KEY_NUM]
+                          filename
+
+positional arguments:
+  filename              The filename to split into the manifest
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n NAME               root manifest name URI (e.g. ccnx:/example.com/foo)
+  -d TREE_DEGREE        manifest tree degree default 7)
+  -k KEY_FILE           RSA private key in PEM format to sign the root
+                        manifest
+  -p KEY_PASS           RSA private key password (otherwise will prompt)
+  -s MAX_SIZE           maximum content object size (default 1500)
+  -o OUT_DIR            output directory (default='.')
+  -l LOCATOR            URI of a locator (root manifest)
+  --root-expiry ROOT_EXPIRY
+                        Expiry time (ISO format, .e.g
+                        2020-12-31T23:59:59+00:00) to expire root manifest
+  --node-expiry NODE_EXPIRY
+                        Expiry time (ISO format) to expire node manifests
+  --data-expiry DATA_EXPIRY
+                        Expiry time (ISO format) to expire data nameless
+                        objects
+  --enc-key ENC_KEY     AES encryption key (hex string)
+  --key-num KEY_NUM     Key number of pre-shared key
+```
  
+We create an RSA key that will be used to sign the root manifest, create a temporary
+output directory, and then run `manifest_writer`.  We limit the tree to node degree 11
+and a maximum packet size of 500 bytes.  Using at 1500 byte packet will allow a tree degree
+of 41.  Internally, `ccnpy.flic.tree.TreeOptimizer` calculates the best tradeoff between
+direct and indirect pointers per internal manifest node to minimize the waste in the tree,
+so you do not need to specify the exact fanout.
+
 ```bash
 ccnpy$ openssl genrsa -out test_key.pem
 ccnpy$ mkdir output
@@ -270,6 +303,25 @@ Manifest: {
 }
 ```
 
+#FLIC Manifests
+A FLIC manifest is a way or organizing hash pointers to hash-named data objects.
+
+Terminology:
+* Data Object: A CCNx nameless Content Object that usually only has Payload.  It might also have an ExpiryTime to
+try a limit the lifetime of the data.
+* Direct Pointer: Borrowed from inode terminology, it is a CCNx link using a content object hash restriction and a
+locator name to point to a Data Object.
+* Indirect Pointer: Borrowed from inode terminology, it is a CCNx link using a content object hash restriction and
+a locator name to point to a manifest content object.
+* Manifest: A CCNx ContentObject with PayloadType 'Manifest' and a Payload of the encoded manifest.  A leaf manifest
+only has direct pointers.  An internal manifest has a mixture of direct and indirect manifests.
+* Leaf Manifest: all pointers are direct pointers.
+* Internal Manifest: some pointers are direct and some pointers are indirect.  The order and number of each is up to
+the manifest builder.  Typically, all the direct manifests come first, then the indirect.
+* Manifest Waste: a metric used to measure the amount of waste in a manifest tree.  Waste is the number of unused
+pointers.  For example, a leaf manifest might be able to hold 40 direct pointers, but only 30 of them are used, so
+the waste of this node is 10.  Manifest tree waste is the sum of waste over all manifests in a tree.
+
 # Implementation nodes
 
 ## dependencies
@@ -288,3 +340,117 @@ Typically, all one needs to do is call `ccnpy.Packet.deserialize(buffer)` or
 
 The `serialize()` methods always return a byte array (array.array("B", ...)).
 Typically, all one needs to do is call `ccnpy.Packet.serialize()` or `ccnpy.Packet.save(filename)`.
+
+## Building Trees
+
+`ccnpy.flic.tree.TreeBuilder` will construct a pre-order tree in a single pass going from the tail of the data to
+the beginning.  This allows us to create all the children of a parent before the parent, which means we can populate
+all the hash pointers.
+
+Pre-order traversal and the reverse pre-order traversal are shown below.  In a nutshell, we create the right-most-child
+manifest, then its parent, then the indirect pointers of that parent, then the parent's direct pointers, then
+the parent of the parent (repeating).  This process uses recursion, as I think it is the clearest way to show
+the code.  A more optimized approach could do it in a true single pass.
+
+Here is the pseudocode for `preorder` and `reverse_preorder` traversals of a tree.  The pseudocode below, and the class
+`TreeBuilder`, use the `reverse_preorder` approach to building the manifest tree.
+
+    preorder(node)
+        if (node = null)
+            return
+        visit(node)
+        preorder(node.left)
+        preorder(node.right)
+
+    reverse_preorder(node)
+        if (node = null)
+            return
+        reverse_preorder(node.right)
+        reverse_preorder(node.left)
+        visit(node)
+
+
+
+Because we're building from the bottom up, we use the term 'level' to be the distance from the right-most child
+up.  Level 0 is the bottom-most level of the tree, such as where node `7` is:
+
+            1
+        2       3
+      4  5    6  7
+      preorder: 1 2 4 5 3 6 7
+      reverse:  7 6 3 5 4 2 1
+
+Here is the pseudo-code for what `TreeBuilder` does:
+
+    build_tree(data[0..n-1], n, k, m)
+        # data is the application data
+        # n is the number of data items
+        # k is the number of direct pointers per internal node
+        # m is the number of indirect pointers per internal node
+
+        segment = namedtuple('Segment', 'head tail')(0, n)
+        level = 0
+
+        # This bootstraps the process by creating the right most child manifest
+        # A leaf manifest has no indirect pointers, so k+m are direct pointers
+        root = leaf_manifest(data, segment, k + m)
+
+        # Keep building subtrees until we're out of direct pointers
+        while not segment.empty():
+            level += 1
+            root = bottom_up_preorder(data, segment, level, k, m, root)
+
+        return root
+
+    bottom_up_preorder(data, segment, level, k, m, right_most_child=None)
+        manifest = None
+        if level == 0:
+            assert right_most_child is None
+            # build a leaf manifest with only direct pointers
+            manifest = leaf_manifest(data, segment, k + m)
+        else:
+            # If the number of remaining direct pointers will fit in a leaf node, make one of those.
+            # Otherwise, we need to be an interior node
+            if right_most_child is None and segment.length() <= k + m:
+                manifest = leaf_manifest(data, segment, k+m)
+            else:
+                manifest = interior_manifest(data, segment, level, k, m, right_most_child)
+        return manifest
+
+    leaf_manifest(data, segment, count)
+        # At most count items, but never go before the head
+        start = max(segment.head(), segment.tail() - count)
+        manifest = Manifest(data[start:segment.tail])
+        segment.tail -= segment.tail() - start
+        return manifest
+
+    interior_manifest(data, segment, level, k, m, right_most_child)
+        children = []
+        if right_most_child is not None:
+            children.append(right_most_child)
+
+        interior_indirect(data, segment, level, k, m, children)
+        interior_direct(data, segment, level, k, m, children)
+
+        manifest = Manifest(children)
+        return manifest, tail
+
+    interior_indirect(data, segment, level, k, m, children)
+        # Reserve space at the head of the segment for this node's direct pointers before
+        # descending to children.  We want the top of the tree packed.
+        reserve_count = min(m, segment.tail - segment.head)
+        segment.head += reserve_count
+
+        while len(children) < m and not segment.head == segment.tail:
+            child = bottom_up_preorder(data, segment, level - 1, k, m)
+            # prepend
+            children.insert(0, child)
+
+        # Pull back our reservation and put those pointers in our direct children
+        segment.head -= reserve_count
+
+    interior_direct(data, segment, level, k, m, children)
+        while len(children) < k+m and not segment.head == segment.tail:
+            pointer = data[segment.tail() - 1]
+            children.insert(0, pointer)
+            segment.tail -= 1
