@@ -76,6 +76,9 @@ class ValidationAlg_Crc32c(ValidationAlg):
     def __len__(self):
         return len(self._tlv)
 
+    def __repr__(self):
+        return "Crc32c: {}"
+
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != ValidationAlg_Crc32c.class_type():
@@ -149,7 +152,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         return len(self._tlv)
 
     def __repr__(self):
-        return "{RsaSha256 keyid: %r, pk: %r, link: %r, time: %r}" % \
+        return "RsaSha256: {keyid: %r, pk: %r, keylink: %r, %r}" % \
                (self._keyid, self._public_key, self._key_link, self._signature_time)
 
     def keyid(self):

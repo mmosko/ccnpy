@@ -15,6 +15,7 @@
 
 import array
 import struct
+import ccnpy
 
 
 class FixedHeader:
@@ -45,8 +46,9 @@ class FixedHeader:
         self._header_length = header_length
 
     def __repr__(self):
-        return "FH(%r, %r, %r, %r, %r)" % (self._ver, self._packet_type, self._packet_length,
-                                           self._fields, self._header_length)
+        return "FH: {ver: %r, pt: %r, plen: %r, flds: %r, hlen: %r}" % \
+               (self._ver, self._packet_type, self._packet_length,
+                ccnpy.DisplayFormatter.hexlify(self._fields), self._header_length)
 
     def __eq__(self, other):
         if self.__dict__ == other.__dict__:

@@ -42,7 +42,7 @@ class Payload(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "PAYLOAD(%r)" % self._value
+        return "PAYLOAD: %r" % ccnpy.DisplayFormatter.hexlify(self._value)
 
     def value(self):
         return self._value

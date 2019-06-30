@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 
+from ccnpy.DisplayFormatter import DisplayFormatter
 from ccnpy.TlvType import TlvType
 from ccnpy.Tlv import Tlv
 from ccnpy.Name import NameComponent

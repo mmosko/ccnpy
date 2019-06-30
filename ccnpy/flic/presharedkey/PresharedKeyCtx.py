@@ -94,7 +94,9 @@ class PresharedKeyCtx(SecurityCtx):
         return len(self._tlv)
 
     def __repr__(self):
-        return "PSK(%r, %r, %r)" % (self._key_number, self._iv, self.__mode_string())
+        return "PSK: {kn: %r, iv: %r, mode: %r}" % (self._key_number,
+                                                    ccnpy.DisplayFormatter.hexlify(self._iv),
+                                                    self.__mode_string())
 
     @classmethod
     def parse(cls, tlv):

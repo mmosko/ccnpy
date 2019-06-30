@@ -23,12 +23,15 @@ class KeyLink(ccnpy.TlvType):
         return cls.__T_KEYLINK
 
     def __init__(self, link):
-        ccnpy.TlvType.__init__(self, self.class_type())
+        ccnpy.TlvType.__init__(self)
         self._link = link
         self._tlv = ccnpy.Tlv(self.class_type(), link)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return "KeyLink: {link: %r}" % self._link
 
     def serialize(self):
         return self._tlv.serialize()

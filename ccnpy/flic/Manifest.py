@@ -54,7 +54,7 @@ class Manifest:
             self._wire_format.extend(self._auth_tag.serialize())
 
     def __repr__(self):
-        return "Manifest(%r, %r, %r)" % (self._security_ctx, self._node, self._auth_tag)
+        return "Manifest: {%r, %r, %r}" % (self._security_ctx, self._node, self._auth_tag)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

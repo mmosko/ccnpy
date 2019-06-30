@@ -54,7 +54,7 @@ class Pointers(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "Ptrs(%r)" % self._hash_values
+        return "Ptrs: %r" % self._hash_values
 
     def __getitem__(self, item):
         return self._hash_values[item]

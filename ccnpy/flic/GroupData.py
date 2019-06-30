@@ -72,7 +72,7 @@ class GroupData(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "GroupData(%r, %r, %r)" % (self._subtree_size, self._subtree_digest, self._locators)
+        return "GroupData: {%r, %r, %r}" % (self._subtree_size, self._subtree_digest, self._locators)
 
     def subtree_size(self):
         return self._subtree_size

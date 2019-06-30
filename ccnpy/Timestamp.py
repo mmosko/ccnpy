@@ -42,7 +42,7 @@ class Timestamp(ccnpy.TlvType):
         return self.timestamp() == other.timestamp()
 
     def __repr__(self):
-        return "Timestamp(%r)" % self.datetime().isoformat()
+        return "%r: %r" % (self.__class__.__name__, self.datetime().isoformat())
 
     def __len__(self):
         return len(self._tlv)

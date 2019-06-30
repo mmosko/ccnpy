@@ -60,7 +60,7 @@ class LocatorList(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "LocatorList(%r, %r)" % (self._final, self._locators)
+        return "LocatorList: {final: %r, locs: %r}" % (self._final, self._locators)
 
     def final(self):
         return self._final

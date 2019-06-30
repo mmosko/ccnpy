@@ -42,7 +42,7 @@ class Locator(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "Locator(%r)" % self._link
+        return "Locator: %r" % self._link
 
     def serialize(self):
         return self._tlv.serialize()

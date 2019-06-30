@@ -58,10 +58,10 @@ class Name(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __str__(self):
-        return "NAME(%r)" % self._components
+        return "NAME: %r" % self._components
 
     def __repr__(self):
-        return "NAME(%r)" % self._components
+        return "NAME: %r" % self._components
 
     def __getitem__(self, index):
         """

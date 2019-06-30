@@ -31,7 +31,7 @@ class SubtreeSize(ccnpy.TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "SubtreeSize(%r)" % self._size
+        return "SubtreeSize: %r" % self._size
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

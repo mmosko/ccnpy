@@ -41,4 +41,4 @@ class AuthTag(ccnpy.Payload):
         ccnpy.Payload.__init__(self, value)
 
     def __repr__(self):
-        return "AuthTag(%r)" % self._value
+        return "AuthTag: %r" % ccnpy.DisplayFormatter.hexlify(self._value)

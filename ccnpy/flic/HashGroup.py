@@ -48,7 +48,7 @@ class HashGroup(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "HashGroup(%r, %r)" % (self._group_data, self._pointers)
+        return "HashGroup: {%r, %r}" % (self._group_data, self._pointers)
 
     def group_data(self):
         return self._group_data

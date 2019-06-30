@@ -46,7 +46,7 @@ class PayloadType(ccnpy.TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "PLDTYP(%r)" % self.__to_string()
+        return "PLDTYP: %r" % self.__to_string()
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

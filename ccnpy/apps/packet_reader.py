@@ -33,6 +33,7 @@ class PacketReader:
         :param packet_writer: In testing, we pass our own packet writer, otherwise create one for the directory
         """
         self._path = PurePath(args.in_dir, args.filename)
+        self._prettify = args.prettify
 
         self._decryptor=None
         if args.enc_key is not None:
@@ -40,18 +41,25 @@ class PacketReader:
             key = ccnpy.crypto.AesGcmKey(key_bytes)
             self._decryptor=PresharedKeyDecryptor(key=key, key_number=args.key_num)
 
+    def _output(self, value):
+        if self._prettify:
+            print(ccnpy.DisplayFormatter.prettify(value))
+        else:
+            print(value)
+
     def read(self):
         """
         """
         packet = ccnpy.Packet.load(self._path)
-        print(packet)
+        self._output(packet)
+
         if packet.body().is_manifest():
             manifest = ccnpy.flic.Manifest.from_content_object(packet.body())
             if manifest.is_encrypted():
                 if self._decryptor is not None:
                     plaintext = self._decryptor.decrypt_manifest(manifest)
                     print("Decryption successful")
-                    print(plaintext)
+                    self._output(plaintext)
                 else:
                     print("No decryption key provided")
 
@@ -61,7 +69,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', dest="in_dir", default='.', help="input directory (default=%r)" % '.')
     parser.add_argument('--enc-key', dest="enc_key", help="AES decryption key (hex string)")
     parser.add_argument('--key-num', dest="key_num", type=int, help="Key number of pre-shared key")
-
+    parser.add_argument('--pretty', dest="prettify", action='store_true', help="pretty print the packets")
     parser.add_argument('filename', help='The filename to read and display')
 
     args = parser.parse_args()

@@ -66,7 +66,7 @@ class RsaKey:
                                 backend=default_backend())
 
     def __repr__(self):
-        return "RsaKey(%r, %r)" % (self._private_key, self._public_key)
+        return "RsaKey: {%r, %r}" % (self._private_key, self._public_key)
 
     def has_private_key(self):
         """

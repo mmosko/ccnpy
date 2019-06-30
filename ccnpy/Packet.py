@@ -82,7 +82,7 @@ class Packet:
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "Packet(%r, %r, %r, %r)" % (self._header, self._body, self._validation_alg, self._validation_payload)
+        return "{Packet: {%r, %r, %r, %r}}" % (self._header, self._body, self._validation_alg, self._validation_payload)
 
     def __len__(self):
         return len(self._wire_format)

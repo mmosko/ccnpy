@@ -54,7 +54,7 @@ class Node(ccnpy.TlvType):
 
     def __repr__(self):
         hash_values_len = len(self.hash_values())
-        return "Node(%r, %r, %r)" % (self._node_data, hash_values_len, self._hash_groups)
+        return "Node: {%r, %r, %r}" % (self._node_data, hash_values_len, self._hash_groups)
 
     def node_data(self):
         return self._node_data

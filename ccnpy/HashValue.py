@@ -67,7 +67,7 @@ class HashValue(ccnpy.TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "HashValue(%r, %r)" % (self.__alg_string(), binascii.hexlify(self._value))
+        return "HashValue: {alg: %r, val: %r}" % (self.__alg_string(), ccnpy.DisplayFormatter.hexlify(self._value))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

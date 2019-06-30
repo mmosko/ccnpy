@@ -68,7 +68,7 @@ class NodeData(ccnpy.TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "NodeData(%r, %r, %r)" % (self._subtree_size, self._subtree_digest, self._locators)
+        return "NodeData: {%r, %r, %r}" % (self._subtree_size, self._subtree_digest, self._locators)
 
     def subtree_size(self):
         return self._subtree_size

@@ -42,6 +42,6 @@ class EncryptedNode(ccnpy.Payload):
         ccnpy.Payload.__init__(self, value)
 
     def __repr__(self):
-        return "EncNode(%r)" % self._value
+        return "EncNode: %r" % ccnpy.DisplayFormatter.hexlify(self._value)
 
 

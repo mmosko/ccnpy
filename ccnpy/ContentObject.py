@@ -97,7 +97,7 @@ class ContentObject(ccnpy.TlvType):
         else:
             payload = self.payload()
 
-        return "CO(%r, %r, %r, %r)" % (self.name(), self.expiry_time(), self.payload_type(), payload)
+        return "CO: {%r, %r, %r, %r}" % (self.name(), self.expiry_time(), self.payload_type(), payload)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

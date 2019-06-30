@@ -37,14 +37,16 @@ The arguments to `manifest_writer` do the following:
 ```bash
 ccnpy$ openssl genrsa -out test_key.pem
 ccnpy$ mkdir output
-ccnpy$ python3 -m ccnpy.apps.manifest_writer -n ccnx:/example.com/manifest \
+ccnpy$ python3 -m ccnpy.apps.manifest_writer \
+                    -n ccnx:/example.com/manifest \
                     -d 11 \
                     -k test_key.pem \
                     -p '' \
                     -s 500 \
                     -o ./output \
                     --enc-key 0102030405060708090a0b0c0d0e0f10 \
-                    --key-num 22 LICENSE
+                    --key-num 22 \
+                    LICENSE
                     
 Creating manifest tree
 Root manifest hash: HashValue('SHA256', b'47bb45364425f9d081b4d95b4a39456db55dd53e0c6deb770d534c347333e592'
@@ -88,24 +90,81 @@ total 224
 -rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 f68375a22c5654f1f180c12dc040e8a94cc7aae5edaebfd7ab02a3a92094a47d
 ```
 
-We can look into each of these packets.
+We can look into each of these packets.  First, look at the root manifest, whose hash-based name was in the
+output of `manifest_writer`.
 
 ```bash
-ccnpy$ python3 -m ccnpy.apps.packet_reader -i output \
+ccnpy$ python3 -m ccnpy.apps.packet_reader \
+                --pretty \
+                -i output \
                 --enc-key 0102030405060708090a0b0c0d0e0f10 \
                 --key-num 22 \
                 47bb45364425f9d081b4d95b4a39456db55dd53e0c6deb770d534c347333e592
-                
-Packet(FH(1, 1, 490, array('B', [0, 0, 0]), 8), CO(NAME([TLV(1, 11, b'example.com'), TLV(1, 8, b'manifest')]), None, 
-    PLDTYP('MANIFEST'), 
-    Manifest(PSK(22, array('B', [119, 165, 253, 146, 200, 137, 10, 243, 213, 113, 18, 57]), 'AES-GCM-128'), 
-    EncNode(array('B', [249, 16, 190, 170, 252, 54, 195, 27, 68, 176, 164, 156, 226, 236, 77, 71, 192, 194, 30, 143, 130, 30, 144, 39, 32, 109, 142, 69, 43, 8, 162, 108, 131, 18, 145, 42, 181, 35, 148, 85, 198, 153, 83, 38, 10, 73, 52, 200, 248, 120, 17, 223, 183, 124, 155, 136, 126, 168, 47, 137])), 
-    AuthTag(array('B', [126, 157, 64, 217, 8, 107, 180, 165, 159, 159, 98, 47, 186, 186, 10, 66])))), 
-    {RsaSha256 keyid: HashValue('SHA256', b'c00fdfa98ea156913fb229dd121c1d1f4b32b4c28a557cdeefa04eed59f8bd8e'), pk: None, link: None, time: Timestamp('2019-06-29T13:56:23.910000')}, 
-    ValPld(b'234e9de696dc8956586b30f899a0dc9bff1c2db4c155950f32264bd472cc735180beef17a6e4fe44449af0a727857befb98a2e4fb40ed7d9ea4a94f5cedd9ee15391f73fa8a1444861a1ee2809c1d6f023d7e5818fceddf07badf83bdff2bc898d0552993cb642622c10691ccc48b1df9434e1e5bb9bbcf5be0b80a717c66e8a7b9cbdd508569342445f5a49a1aa59ac7aaa620ec225570d779d0a59c502994c5a5d56f7e51e86977727d61d7878aefaace428aa0c2b055d2a6c4bbd4d3767817924fd14dcedef6e0d97edf6342cb4158cce91cb4cb545798f5cac8752cb01eac14ffaa263f40237a5e87349c6bf809ed1de7a1d934557167865f74e2d0c6c70'))
+
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 490,
+         flds: '000000',
+         hlen: 8
+      },
+      CO: {
+         NAME: [TLV: {
+            T: 1,
+            L: 11,
+            V: 'example.com'
+         }, TLV: {
+            T: 1,
+            L: 8,
+            V: 'manifest'
+         }],
+         None,
+         PLDTYP: 'MANIFEST',
+         Manifest: {
+            PSK: {
+               kn: 22,
+               iv: '77a5fd92c8890af3d5711239',
+               mode: 'AES-GCM-128'
+            },
+            EncNode: 'f910beaafc36c31b44b0a49ce2ec4d47c0c21e8f821e9027206d8e452b08a26c8312912ab5239455c69953260a4934c8f87811dfb77c9b887ea82f89',
+            AuthTag: '7e9d40d9086bb4a59f9f622fbaba0a42'
+         }
+      },
+      RsaSha256: {
+         keyid: HashValue: {
+            alg: 'SHA256',
+            val: 'c00fdfa98ea156913fb229dd121c1d1f4b32b4c28a557cdeefa04eed59f8bd8e'
+         },
+         pk: None,
+         keylink: None,
+         'SignatureTime': '2019-06-29T13:56:23.910000'
+      },
+      ValPld: '234e9de696dc8956586b30f899a0dc9bff1c2db4c155950f32264bd472cc735180beef17a6e4fe44449af0a727857befb98a2e4fb40ed7d9ea4a94f5cedd9ee15391f73fa8a1444861a1ee2809c1d6f023d7e5818fceddf07badf83bdff2bc898d0552993cb642622c10691ccc48b1df9434e1e5bb9bbcf5be0b80a717c66e8a7b9cbdd508569342445f5a49a1aa59ac7aaa620ec225570d779d0a59c502994c5a5d56f7e51e86977727d61d7878aefaace428aa0c2b055d2a6c4bbd4d3767817924fd14dcedef6e0d97edf6342cb4158cce91cb4cb545798f5cac8752cb01eac14ffaa263f40237a5e87349c6bf809ed1de7a1d934557167865f74e2d0c6c70'
+   }
+}
+
 Decryption successful
-Manifest(None, Node(NodeData(SubtreeSize(11357), None, None), 1, [HashGroup(None, Ptrs([
-    HashValue('SHA256', b'7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb')]))]), None)
+Manifest: {
+   None,
+   Node: {
+      NodeData: {
+         SubtreeSize: 11357,
+         None,
+         None
+      },
+      1,
+      [HashGroup: {
+         None,
+         Ptrs: [HashValue: {
+            alg: 'SHA256',
+            val: '7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb'
+         }]
+      }]
+   },
+   None
+}
 ```
 
 This is the root manifest from above.  The packet dump shows it is a `PLDTYP('MANIFEST')` so the contents of the
@@ -124,35 +183,98 @@ pointers.  A quick scan of the file list above shows that the `1da...` file is t
 exactly 500 bytes, so there are 8 direct pointers and 3 indirect pointers.
 
 ```bash
-ccnpy$ python3 -m ccnpy.apps.packet_reader -i output \
+ccnpy$ python3 -m ccnpy.apps.packet_reader \
+                    --pretty \
+                    -i output \
                     --enc-key 0102030405060708090a0b0c0d0e0f10 \
                     --key-num 22 \
                     7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb
 
-Packet(FH(1, 1, 499, array('B', [0, 0, 0]), 8), CO(None, None, PLDTYP('MANIFEST'), 
-    Manifest(PSK(22, array('B', [65, 221, 233, 98, 71, 150, 11, 28, 23, 63, 88, 220]), 'AES-GCM-128'), 
-    EncNode(array('B', [58, 247, 190, 55, 181, 72, 229, 93, 179, 137, 23, 206, 81, 16, 97, 180, 95, 10, 138, 2, 2, 225, 248, 143, 20, 105, 65, 63, 207, 4, 121, 183, 79, 204, 161, 76, 62, 155, 25, 163, 249, 7, 22, 115, 171, 118, 206, 129, 119, 18, 89, 210, 166, 44, 147, 239, 246, 208, 202, 12, 21, 149, 30, 176, 64, 79, 255, 8, 213, 92, 1, 95, 55, 207, 160, 201, 131, 131, 61, 235, 235, 220, 200, 81, 187, 137, 34, 220, 109, 219, 185, 5, 27, 107, 128, 197, 77, 42, 84, 95, 23, 19, 74, 207, 212, 209, 245, 174, 118, 193, 42, 103, 187, 159, 149, 49, 189, 6, 93, 71, 137, 160, 218, 97, 37, 197, 175, 208, 215, 106, 59, 44, 182, 35, 85, 184, 110, 81, 97, 68, 123, 24, 62, 89, 174, 24, 108, 157, 178, 28, 16, 111, 214, 33, 179, 27, 202, 157, 65, 59, 182, 9, 238, 68, 45, 125, 99, 244, 231, 199, 28, 99, 109, 122, 155, 139, 161, 29, 48, 197, 174, 12, 156, 107, 182, 215, 164, 108, 34, 38, 70, 39, 164, 71, 198, 7, 71, 209, 230, 192, 100, 145, 34, 195, 203, 237, 208, 142, 150, 235, 110, 207, 233, 118, 155, 170, 85, 193, 93, 213, 59, 50, 101, 50, 232, 17, 227, 224, 35, 131, 207, 183, 228, 18, 11, 153, 249, 188, 2, 201, 211, 255, 182, 241, 212, 0, 76, 221, 30, 227, 226, 164, 199, 102, 227, 228, 105, 91, 64, 179, 67, 145, 178, 48, 36, 133, 13, 18, 199, 161, 20, 115, 241, 187, 165, 197, 84, 232, 180, 93, 18, 247, 202, 203, 19, 80, 68, 135, 64, 180, 103, 45, 134, 149, 21, 65, 106, 107, 60, 184, 56, 214, 154, 96, 48, 54, 226, 90, 190, 47, 210, 122, 199, 160, 63, 15, 156, 30, 207, 119, 134, 127, 49, 61, 68, 53, 224, 58, 229, 157, 101, 86, 248, 77, 226, 131, 182, 50, 203, 240, 159, 186, 225, 118, 166, 200, 167, 194, 32, 232, 50, 145, 176, 93, 105, 68, 55, 61, 32, 63, 254, 24, 47, 38, 36, 233, 211, 84, 13, 126, 154, 162, 234, 91, 235, 116, 163, 159, 50, 36, 95, 229, 136, 227, 132, 148, 168, 192, 153, 7, 226, 221, 104, 38, 140, 189, 126, 169, 233, 185, 51, 80, 20, 223, 183, 87, 129, 250, 24, 221, 61, 145, 162, 36, 139, 159, 16, 178, 228, 212])), 
-    AuthTag(array('B', [39, 102, 54, 91, 228, 44, 20, 223, 19, 100, 25, 215, 132, 237, 31, 143])))), None, None)
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 499,
+         flds: '000000',
+         hlen: 8
+      },
+      CO: {
+         None,
+         None,
+         PLDTYP: 'MANIFEST',
+         Manifest: {
+            PSK: {
+               kn: 22,
+               iv: '41dde96247960b1c173f58dc',
+               mode: 'AES-GCM-128'
+            },
+            EncNode: '3af7be37b548e55db38917ce511061b45f0a8a0202e1f88f1469413fcf0479b74fcca14c3e9b19a3f9071673ab76ce81771259d2a62c93eff6d0ca0c15951eb0404fff08d55c015f37cfa0c983833debebdcc851bb8922dc6ddbb9051b6b80c54d2a545f17134acfd4d1f5ae76c12a67bb9f9531bd065d4789a0da6125c5afd0d76a3b2cb62355b86e5161447b183e59ae186c9db21c106fd621b31bca9d413bb609ee442d7d63f4e7c71c636d7a9b8ba11d30c5ae0c9c6bb6d7a46c22264627a447c60747d1e6c0649122c3cbedd08e96eb6ecfe9769baa55c15dd53b326532e811e3e02383cfb7e4120b99f9bc02c9d3ffb6f1d4004cdd1ee3e2a4c766e3e4695b40b34391b23024850d12c7a11473f1bba5c554e8b45d12f7cacb1350448740b4672d869515416a6b3cb838d69a603036e25abe2fd27ac7a03f0f9c1ecf77867f313d4435e03ae59d6556f84de283b632cbf09fbae176a6c8a7c220e83291b05d6944373d203ffe182f2624e9d3540d7e9aa2ea5beb74a39f32245fe588e38494a8c09907e2dd68268cbd7ea9e9b9335014dfb75781fa18dd3d91a2248b9f10b2e4d4',
+            AuthTag: '2766365be42c14df136419d784ed1f8f'
+         }
+      },
+      None,
+      None
+   }
+}
+
 Decryption successful
-Manifest(None, Node(NodeData(SubtreeSize(11357), None, None), 11, [HashGroup(None, Ptrs([
-    HashValue('SHA256', b'31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90'), 
-    HashValue('SHA256', b'e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1'), 
-    HashValue('SHA256', b'af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185'), 
-    HashValue('SHA256', b'887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d'), 
-    HashValue('SHA256', b'e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527'), 
-    HashValue('SHA256', b'4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac'), 
-    HashValue('SHA256', b'83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f'), 
-    HashValue('SHA256', b'1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4'), 
-    HashValue('SHA256', b'0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd'), 
-    HashValue('SHA256', b'0a88e7d58d1a25cad1cc188c7043c92b6e9ae8764ec6405a5124b086cc7623ac'), 
-    HashValue('SHA256', b'71cab6317b43b201d57cd0c524687a9cf7ef302f579c3929bab1899a3d2d8095')]))]), None)
+Manifest: {
+   None,
+   Node: {
+      NodeData: {
+         SubtreeSize: 11357,
+         None,
+         None
+      },
+      11,
+      [HashGroup: {
+         None,
+         Ptrs: [HashValue: {
+            alg: 'SHA256',
+            val: '31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: 'e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: 'af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: 'e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '0a88e7d58d1a25cad1cc188c7043c92b6e9ae8764ec6405a5124b086cc7623ac'
+         }, HashValue: {
+            alg: 'SHA256',
+            val: '71cab6317b43b201d57cd0c524687a9cf7ef302f579c3929bab1899a3d2d8095'
+         }]
+      }]
+   },
+   None
+}
 ```
 
 # Implementation nodes
 
 ## dependencies
    
-```python3 -m pip install cryptography crc32c```
+```python3 -m pip install cryptography crc32c jsbeautifier```
 
 ## Serialization and Deserialization
 The class methods `deserialize(buffer)` 

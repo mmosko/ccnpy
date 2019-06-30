@@ -13,8 +13,6 @@
 #  limitations under the License.
 
 
-import binascii
-
 import ccnpy
 
 
@@ -36,7 +34,7 @@ class ValidationPayload(ccnpy.TlvType):
         return self.payload() == other.payload()
 
     def __repr__(self):
-        return "ValPld(%r)" % binascii.hexlify(self._payload)
+        return "ValPld: %r" % ccnpy.DisplayFormatter.hexlify(self._payload)
 
     def __len__(self):
         return len(self._tlv)

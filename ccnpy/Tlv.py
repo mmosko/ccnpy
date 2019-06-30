@@ -46,10 +46,10 @@ class Tlv:
         self._wire_format = self._serialize()
 
     def __str__(self):
-        return "TLV(%r, %r, %r)" % (self._tlv_type, self.length(), self._value)
+        return "TLV: {T: %r, L: %r, V: %r}" % (self._tlv_type, self.length(), self._value)
 
     def __repr__(self):
-        return "TLV(%r, %r, %r)" % (self._tlv_type, self.length(), self._value)
+        return "TLV: {T: %r, L: %r, V: %r}" % (self._tlv_type, self.length(), self._value)
 
     def __len__(self):
         """
