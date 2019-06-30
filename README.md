@@ -557,6 +557,94 @@ change the TLV type to Node. The length should be the same. After decryption the
 TLV type should be changed to T_PAD and the value zeroed. The SecurityCtx could be changed to T_PAD and zeroed or 
 left as-is.
 
+
+## RSA/EC Key Wrapping Method
+
+Similar to Key Encapsulation, but use something like RSA-PSS or RSA-OAEP or EC-KEM 
+[NIST Special Publication 800-56A Rev 3] or EC-MQV.  We could also look at existing
+IETF work, e.g. Cryptographic Message Syntax (CMS).
+
+## RSA Key Encapsulation Method
+
+* See also RFC 5990
+* See also NIST SP 800-56B Rev. 2
+* See also https://lists.w3.org/Archives/Public/public-xmlsec/2009May/att-0032/Key_Encapsulation.pdf
+
+In this system, a key manager (KM) (which could be the publisher) creates a Content
+Encryption Key (CEK) and a key wrapping pair with a Key Encryption Key (KEK) and Key Decryption Key (KDK). 
+Each publisher and consumer has its own public/private key pair, and the KM knows each publisher’s and consumer’s 
+identity and its public key (PK_x).
+
+We do not describe the publisher-key manager protocol to request a CEK. The publisher will obtain the 
+(CEK, E_KEK(Z), KeyId, Locator), where each element is: the content encryption key, the CEK precursor, Z, 
+encrypted with the KEK (an RSA operation), and the KeyId of the corresponding KDK, and the Locator is the CCNx 
+name prefix to fetch the KDK (see below). The precursor Z is chosen randomly z < n-1, where n is KEK’s public modulus. 
+Note that CEK = KDF(Z). Note that the publisher does not see KEK or Z.
+
+We use HKDF (RFC 5869) for the KDF. CEK = HKDF-Expand(HKDF-Extract(0, Z), ‘CEK’, KeyLen), where KenLen is usually 
+32 bytes (256 bits).
+
+    RsaKemData := KeyId IV Mode WrappedKey LocatorPrefix
+    KeyId := HashValue
+    IV := OCTET+
+    Mode := AES-GCM-128 AES-GCM-256
+    WrappedKey := OCTET+
+    LocatorPrefix := Link
+    KeyId: the ID of the KDK
+    IV: The initialization vector for AES-GCM
+    Mode: The encryption mode for the Manifest’s EncryptedNode value
+    WrappedKey: E_KEK(Z)
+    LocatorPrefix: Link with name = KM prefix, KeyId = KM KeyId
+
+To fetch the KDK, a consumer with public key PK_c constructs an Interest with name 
+`/LocatorPrefix/<KeyId>/<PK_c keyid>` and a KeyIdRestriction of the KM’s KeyId 
+(from the LocatorPrefix Link). It should receive back a signed Content Object with the KDK wrapped for the 
+consumer, or a NAK from the KM. The payload of the ContentObject will be RsaKemWrap(PK, KDK). The signed 
+ContentObject must have a KeyLocator to the KM’s public key. The consumer will trust the KM’s public key because 
+the publisher, whom the consumer trusts, relayed that KeyId inside its own signed Manifest.
+
+The signed Content Object should have an ExpiryTime, which may be shorter than the Manifest’s, but should not 
+be substantially longer than the Manifest’s ExpiryTime. The KM may decide how to handle the Recommended Cache Time, 
+or if caching of the response is even permissible. The KM may require on-line fetching of the response via a 
+CCNxKE encrypted transport tunnel.
+
+    RsaKemWrap(PK, K, KeyLen = 256):    
+        choose a z < n-1, where n is PK’s public modulus
+        encrypt c = z^e mod n
+        prk = HKDF-Extract(0, Z)
+        kek = HKDF-Expand(prk, ‘RsaKemWrap’, KeyLen)
+        wrap WK = E_KEK(K) [AES-WRAP, RFC 3394]
+        output (c, WK)
+
+A consumer must verify the signed content object’s signature against the Key Manager’s public key. The consumer 
+then unwraps the KDK from the Content Object’s payload using RsaKemUnwrap(). The KeyLen is taken from the WrapMode 
+parameter.
+
+    RsaKemUnwrap(SK, c, WK, KeyLen = 256):
+        Using the consumers private key SK, decrypt Z from c.
+        prk = HKDF-Extract(0, Z)
+        kek = HKDF-Expand(prk, ‘RsaKemWrap’, KeyLen)
+        K = D_KEK(WK) [AES-UNWRAP, RFC 33940]
+        output K
+
+The consumer then unwraps the CEK precursor by using the KDK to decrypt Z. It then derives CEK as above.
+
+Manifest encryption and decryption proceed as with PresharedKey, but using the CEK.
+
+##  Broadcast Encryption Method
+
+WORK IN PROGRESS
+
+* See Boneh, Dan, Craig Gentry, and Brent Waters. "Collusion resistant broadcast encryption with short ciphertexts 
+and private keys." In Annual International Cryptology Conference, pp. 258-275. Springer, Berlin, Heidelberg, 2005.
+
+The Key Manager (KM) knows all consumers and each consumers RSA/EC public key. Each consumer has an ID
+
+The publisher requests a key from the KM for a set of consumers identities or pre-defined groups, and receives 
+(HDR, K, KeyId(PK), S, LocatorPrefix).
+
+    BEMData := KeyId IV Mode HDR S LocatorPrefix
+
 # Implementation notes
 
 ## dependencies
