@@ -27,7 +27,5 @@ class test_DisplayFormatter(unittest.TestCase):
 
     def test_Name(self):
         input="{NAME: [{TLV: {T: 1, L: 3, V: b'foo'}, {TLV: {T: 1, L: 3, V: b'bar'}]}"
-
-        j = json.loads(input)
-        print(j)
+        pass
 

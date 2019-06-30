@@ -148,9 +148,11 @@ class TreeParameters:
         hg = ccnpy.flic.HashGroup(group_data=None, pointers=ptrs)
         node = ccnpy.flic.Node(node_data=None, hash_groups=[hg])
         empty_manifest = ccnpy.flic.Manifest(security_ctx=ctx, node=node, auth_tag=tag)
-        length=len(empty_manifest)
+        packet = ccnpy.Packet.create_content_object(body=ccnpy.ContentObject.create_manifest(manifest=empty_manifest))
+        length=len(packet)
         if length >= max_packet_size:
-            raise ValueError("A filled manifest is %r bytes and exceeds max_size" % length)
+            raise ValueError("A filled manifest packet is %r bytes with %r hashes, a hash is %r bytes, and exceeds max_size %r" %
+                             (length, num_hashes, len(hv), max_packet_size))
 
         #print("calculate_max_pointers = %r in length %r, actual length %r" % (num_hashes, max_packet_size, length))
 
