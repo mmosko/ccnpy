@@ -30,14 +30,20 @@ import ccnpy.flic
 
 class TreeParameters:
     @classmethod
-    def create_optimized_tree(cls, file_chunks, max_packet_size, max_tree_degree=None):
+    def create_optimized_tree(cls, file_chunks, max_packet_size, max_tree_degree=None, manifest_factory=None):
         """
-        :param file_chunks: A Pointers object
+        :param file_chunks: A Pointers object listing all the file hashes in order
         :param max_packet_size: Maximum byte length of a CCNx Packet
         :param max_tree_degree: Maximum degree, limited by packet size.  None means only limited by packet size.
+        :param manifest_factory: If using non-standard tree options, pass your own factory to get correct sizes.
         :return:
         """
-        num_pointers_per_node = cls._calculate_max_pointers(max_packet_size=max_packet_size)
+        if manifest_factory is None:
+            manifest_factory = ccnpy.flic.ManifestFactory()
+
+        num_pointers_per_node = cls._calculate_max_pointers(max_packet_size=max_packet_size,
+                                                            manifest_factory=manifest_factory)
+
         if num_pointers_per_node < 2:
             raise ValueError("With a max_packet_size of %r there is only %r pointers per node, must have at least 2" %
                              (max_packet_size, num_pointers_per_node))
@@ -58,12 +64,6 @@ class TreeParameters:
         self._total_direct_nodes = len(file_chunks)
         self._num_pointers_per_node = solution.indirect_per_node() + solution.direct_per_node()
         self._solution = solution
-
-        #self._total_internal_direct = self._solution.num_internal_nodes() * self._solution.direct_per_node()
-        #self._total_leaf_direct = self._solution.total_direct_nodes() - self._total_internal_direct
-        #assert self._total_leaf_direct >= 0
-
-        #self._total_leaf_manifests = int(math.ceil(self._total_leaf_direct / self._num_pointers_per_node))
 
     def __repr__(self):
         return "{TreeParams pkt_size=%r, solution=%r}" % (self._max_size, self._solution)
@@ -115,49 +115,53 @@ class TreeParameters:
     #     return self._total_internal_direct
 
     @staticmethod
-    def _calculate_max_pointers(max_packet_size):
+    def _build_manifest_packet(manifest_factory, num_hashes, hv):
+        # we will assume a SHA256 hash
+        hashes = num_hashes*[hv]
+        ptrs = ccnpy.flic.Pointers(hash_values=hashes)
+
+        # Pass values for each item so if the tree options allow it, they will be put in the manifest
+        packet = manifest_factory.build_packet(source=ptrs, node_subtree_size=1000,
+                                                 group_subtree_size=1000, group_leaf_size=1000)
+
+        return packet
+
+    @classmethod
+    def _calculate_max_pointers(cls, max_packet_size, manifest_factory):
         """
         Create a Manifest with the specified number of tree pointers and figure out how much space we have left
         out of self._max_size.  The figure out how many data pointers we can fit in.
 
         We only put metadata and locators and things like that in the root manifest.
+
+        :param max_packet_size: The maximum ccnpy.Packet size (bytes)
+        :param manifest_factory: Factory used to create manifests
         :return: The number of data points we can fit in a max_size nameless manifest
         """
-        ctx = node = tag = None
-        # we will assume a SHA256 hash
-        hv = ccnpy.HashValue.create_sha256(32*[0])
-        hashes = [hv]
-        #print(hashes)
-        ptrs = ccnpy.flic.Pointers(hash_values=hashes)
-        hg = ccnpy.flic.HashGroup(group_data=None, pointers=ptrs)
-        node = ccnpy.flic.Node(node_data=None, hash_groups=[hg])
-        empty_manifest = ccnpy.flic.Manifest(security_ctx=ctx, node=node, auth_tag=tag)
-        packet = ccnpy.Packet.create_content_object(body=ccnpy.ContentObject.create_manifest(manifest=empty_manifest))
+        hv = ccnpy.HashValue.create_sha256(32 * [0])
+        hash_value_len = len(hv)
+        packet = cls._build_manifest_packet(manifest_factory, 1, hv)
         length=len(packet)
         if length >= max_packet_size:
             raise ValueError("An empty manifest packet is %r bytes and exceeds max_size %r" % (length, max_packet_size))
 
         slack = max_packet_size - length
         # +1 because we already have 1 hash in the manifest
-        num_hashes = int(slack / len(hv)) + 1
+        num_hashes = int(slack / hash_value_len) + 1
         #print("empty manifest length = %r, num_hashes = %r" % (length, num_hashes))
 
         # Now validate that it works
-        hashes = num_hashes*[hv]
-        ptrs = ccnpy.flic.Pointers(hash_values=hashes)
-        hg = ccnpy.flic.HashGroup(group_data=None, pointers=ptrs)
-        node = ccnpy.flic.Node(node_data=None, hash_groups=[hg])
-        empty_manifest = ccnpy.flic.Manifest(security_ctx=ctx, node=node, auth_tag=tag)
-        packet = ccnpy.Packet.create_content_object(body=ccnpy.ContentObject.create_manifest(manifest=empty_manifest))
+
+        packet = cls._build_manifest_packet(manifest_factory, num_hashes, hv)
         length=len(packet)
         if length >= max_packet_size:
             raise ValueError("A filled manifest packet is %r bytes with %r hashes, a hash is %r bytes, and exceeds max_size %r" %
-                             (length, num_hashes, len(hv), max_packet_size))
+                             (length, num_hashes, hash_value_len, max_packet_size))
 
         #print("calculate_max_pointers = %r in length %r, actual length %r" % (num_hashes, max_packet_size, length))
 
         if num_hashes < 2:
-            min_packet_size = len(packet) + len(hv)
+            min_packet_size = len(packet) + hash_value_len
             raise ValueError("With max_packet_size %r there are %r hashes/manifest, must have at least 2."
                              "  Minimum packet_size is %r" % (max_packet_size, num_hashes, min_packet_size))
         return num_hashes

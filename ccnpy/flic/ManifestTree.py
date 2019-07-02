@@ -51,10 +51,11 @@ class ManifestTree:
         :return: The root_manifest packet, which is the named and signed manifest
         """
         total_file_bytes = self._chunk_input()
-        optimized_params = self._calculate_optimal_tree()
 
         manifest_factory = ManifestFactory(encryptor=self._tree_options.manifest_encryptor,
                                            tree_options=self._tree_options)
+
+        optimized_params = self._calculate_optimal_tree(manifest_factory)
 
         top_nameless_packet = self._build_tree(tree_parameters=optimized_params,
                                                manifest_factory=manifest_factory)
@@ -99,10 +100,11 @@ class ManifestTree:
                                    tree_options=self._tree_options)
         return tree_builder.build()
 
-    def _calculate_optimal_tree(self):
+    def _calculate_optimal_tree(self, manifest_factory):
         optimized_params = TreeParameters.create_optimized_tree(file_chunks=self._file_chunks,
                                                                 max_packet_size=self._max_packet_size,
-                                                                max_tree_degree=self._tree_options.max_tree_degree)
+                                                                max_tree_degree=self._tree_options.max_tree_degree,
+                                                                manifest_factory=manifest_factory)
         return optimized_params
 
     def _calculate_nameless_data_payload_size(self):

@@ -87,7 +87,7 @@ YwIDAQAB
                                        packet_output=packet_buffer,
                                        root_manifest_name=root_name,
                                        root_manifest_signer=root_signer,
-                                       max_packet_size = 145,
+                                       max_packet_size = 175,
                                        tree_options = ManifestTreeOptions(debug=False))
 
         root_manifest = tree.build()
@@ -97,13 +97,13 @@ YwIDAQAB
         traversal = Traversal(packet_input=packet_buffer, data_buffer=actual_data, decryptor=None)
         traversal.preorder(root_manifest)
 
-        # We have 1674 bytes.  We can fit 124 bytes in a data content object, so we need 14 data object.
-        # With 3 pointers per node, we need 4 leaf manifests and 3 interior manifests.
+        # We have 1674 bytes.  We can fit 159 bytes in a data content object, so we need 11 data object.
+        # With 3 pointers per node, we need 3 leaf manifests and 2 interior manifests.
 
         self.assertEqual(expected, actual_data.buffer)
-        self.assertEqual(14, actual_data.count)
-        # 14 data nodes plus 4 leaf manifests plus 3 interior manifests plus 1 root manifest
-        self.assertEqual(22, len(packet_buffer))
+        self.assertEqual(11, actual_data.count)
+        # 11 data nodes plus 3 leaf manifests plus 1 interior manifests plus 1 root manifest
+        self.assertEqual(17, len(packet_buffer))
 
     def test_max_tree_degree(self):
         """

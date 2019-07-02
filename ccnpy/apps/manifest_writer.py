@@ -108,20 +108,6 @@ class ManifestWriter:
             root_manifest_packet = mt.build()
         return root_manifest_packet
 
-    def _calculate_nameless_payload_size(self):
-        """
-        Create a nameless object with empty payload and see how much space we have left.
-        :return: payload size of each nameless data object
-        """
-        nameless = ccnpy.ContentObject.create_data(name=None, expiry_time=self._data_expiry, payload=ccnpy.Payload([]))
-        packet = ccnpy.Packet.create_content_object(body=nameless)
-        if len(packet) >= self._max_size:
-            raise ValueError("An empty nameless ContentObject is %r bytes, but max_size is only %r" %
-                             (len(packet), self._max_size))
-
-        payload_size = self._max_size - len(packet)
-        return payload_size
-
 
 if __name__ == "__main__":
     max_size = 1500

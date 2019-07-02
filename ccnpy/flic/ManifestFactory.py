@@ -44,6 +44,22 @@ class ManifestFactory:
         else:
             self._tree_options = tree_options
 
+    def build_packet(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None, group_leaf_size=None):
+        """
+        Calls `build()` and then construct a content object and packet to contain it.  Includes a maniest expiry time
+        from tree_options.
+
+        :param source:
+        :param node_locators:
+        :param node_subtree_size:
+        :param group_subtree_size:
+        :param group_leaf_size:
+        :return:
+        """
+        manifest = self.build(source, node_locators, node_subtree_size, group_subtree_size, group_leaf_size)
+        packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
+        return packet
+
     def build(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None, group_leaf_size=None):
         """
         depending on the level of control you wish to have over the manifest creation, you can

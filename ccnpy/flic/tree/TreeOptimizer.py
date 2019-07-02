@@ -27,6 +27,7 @@
 import math
 
 from ccnpy.flic.tree import Solution
+from ccnpy.flic import ManifestFactory
 
 
 class TreeOptimizer:
