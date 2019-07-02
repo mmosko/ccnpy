@@ -394,6 +394,32 @@ Packet `44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f` is:
        }
     }
 
+If we did not use encryption, then the output would be even more compressed.  That is because most of the manifest
+nodes look just like the other manifest nodes, so we get data de-duplication of manifest nodes.  With encryption,
+each manifest node is unique due to different IVs.
+
+```
+ccnpy$ python3 -m ccnpy.apps.manifest_writer  \
+                   -n ccnx:/example.com/manifest \
+                   -k test_key.pem \
+                   -p '' \
+                   -s 1500 \
+                   -o ./out3  \
+                   zeros
+                   
+Creating manifest tree
+Root manifest hash: HashValue: {alg: 'SHA256', val: '96dc49fa08b26d569e652e6dfe2890b901f98f7ed71b57b8084f873bafd61e80'}
+
+ccnpy$ ls -l out3
+total 56
+-rw-r--r--+ 1 mmosko  1987151510  1489 Jul  1 22:38 1cf93ae7af50140435592e5fc10e07fe5c8ec0e356ceb93c4b847eb2a04373a4
+-rw-r--r--+ 1 mmosko  1987151510  1489 Jul  1 22:38 1d9eb906e894ec892eff2f10d6664909668c7d19ba7300cca7c10af5a63db990
+-rw-r--r--+ 1 mmosko  1987151510   553 Jul  1 22:38 29f93a68e2402dc163954e21975c6031064b6f82f81773776167a5a9f5b2262f
+-rw-r--r--+ 1 mmosko  1987151510  1489 Jul  1 22:38 4037ff9614afd66ef676b6beab14ca93a3cd2ebbb79684f3bded8f93ee3e2f90
+-rw-r--r--+ 1 mmosko  1987151510   217 Jul  1 22:38 44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f
+-rw-r--r--+ 1 mmosko  1987151510  1500 Jul  1 22:38 81e24663be0c7c9a9e461c03392e30c7f0492fccbe0b59d41ee2913385dbf712
+-rw-r--r--+ 1 mmosko  1987151510   436 Jul  1 22:38 96dc49fa08b26d569e652e6dfe2890b901f98f7ed71b57b8084f873bafd61e80
+```
 
 # FLIC Manifests
 
