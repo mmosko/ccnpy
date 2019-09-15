@@ -447,52 +447,61 @@ the root manifest has a name to fetch it by.
 
 ## Grammar (ABNF)
 
-    Manifest := SecurityCtx? (EncryptedNode / Node) AuthTag?
+    TYPE = INTEGER ; As per TLV encoding
+    LENGTH = INTEGER ; As per TLV encoding
+    
+    Manifest = TYPE LENGTH [SecurityCtx] (EncryptedNode / Node) [AuthTag]
 
-    SecurityCtx := AlgorithmId AlgorithmData
-    AlgorithmId := PresharedKey / RsaKem / INTEGER
-    AlgorithmData := PresharedKeyData / RsaKemData / OCTET* ; Algorithm dependent data
-    
-    AuthTag := OCTET* ; e.g. AEAD authentication tag
-    EncryptedNode := OCTET* ; Encrypted Node
+    SecurityCtx = TYPE LENGTH AlgorithmCtx
+    AlgorithmCtx = PresharedKeyCtx /     
+    AuthTag = TYPE LENGTH *OCTET ; e.g. AEAD authentication tag
+    EncryptedNode = TYPE LENGTH *OCTET ; Encrypted Node
 
-    Node := NodeData? HashGroup+
-    NodeData := SubtreeSize? SubtreeDigest? Locators?
-    SubtreeSize := INTEGER
-    SubtreeDigest := HashValue
+    Node = TYPE LENGTH [NodeData] 1*HashGroup
+    NodeData = TYPE LENGTH [SubtreeSize] [SubtreeDigest] [Locators] [NSDef]
+    SubtreeSize = TYPE LENGTH INTEGER
+    SubtreeDigest = TYPE LENGTH HashValue
+    NSDef = TYPE LENGTH NsId NsSchema
+    NsId = TYPE LENGTH INTEGER
+    NsSchema = HashSchema / SinglePrefixSchema / SegmentedPrefixSchema
+    HashSchema = TYPE 0
+    SinglePrefixSchema = TYPE LENGTH Name
+    SegmentedPrefixSchema = TYPE LENGTH Name
     
-    Locators := Final? Link+
-    Final := TRUE / FALSE
-    HashValue := ; See RFC 8506
-    Link := ; See RFC 8506
+    Locators = TYPE LENGTH 1*Link
+    HashValue = TYPE LENGTH *OCTET ; See RFC 8506 or NDN ImplicitSha256DigestComponent
+    Link = TYPE LENGTH *OCTET ; See RFC 8506 Link or NDN Delegation (from Link Object)
+     
+    HashGroup = TYPE LENGTH [GroupData] (Ptrs / AnnotatedPtrs)
+    Ptrs = TYPE LENGTH *HashValue
+    AnnotatedPtrs = TYPE LENGTH *PointerBlock
+    PointerBlock = TYPE LENGTH *Annotation Ptr
+    Ptr = TYPE LENGTH HashValue
+    Annotation = SizeAnnotation / Vendor
+
+    GroupData = TYPE LENGTH [LeafSize] [LeafDigest] [SubtreeSize] [SubtreeDigest] [NsId]
+    LeafSize = TYPE LENGTH INTEGER
+    LeafDigest = TYPE LENGTH HashValue
     
-    HashGroup := GroupData? Pointers
-    Pointers := HashValue+
-    GroupData := LeafSize? LeafDigest? SubtreeSize? SubtreeDigest? SizeIndex? Locators?
-    LeafSize := INTEGER
-    LeafDigest := HashValue
+    PresharedKeyCtx = 1 LENGTH PresharedKeyData
+    PresharedKeyData = KeyNum IV Mode
+    KeyNum = TYPE LENGTH INTEGER
+    IV = TYPE LENGTH 1*OCTET
+    Mode = TYPE LENGTH (AES-GCM-128 / AES-GCM-256)
     
-    SizeIndex := INTEGER+ ; Array of integers same size as Ptr array
-    
-    PresharedKey := %x0001
-    PresharedKeyData := KeyNum IV Mode
-    KeyNum := INTEGER
-    IV := OCTET+
-    Mode := AES-GCM-128 AES-GCM-256
-    
-    RsaKem := %0x0002
-    RsaKemData := KeyId IV Mode WrappedKey LocatorPrefix
-    KeyId := HashValue
-    WrappedKey := OCTET+    
-    LocatorPrefix := Link
+    RsaKemCtx = 2 LENGTH RsaKemData
+    RsaKemData = KeyId IV Mode WrappedKey LocatorPrefix
+    KeyId = TYPE LENGTH HashValue 
+    WrappedKey = TYPE LENGTH 1*OCTET    
+    LocatorPrefix = TYPE LENGTH Link
 
 A Manifest is embedded inside a CCNx Content Object:
 
-    ManifestContentObject := Name? ExpiryTime? PayloadType Payload
-    Name := the ccnx name of the manifest, used for a root manifest.
-    ExpiryTime: As per RFC8659
-    PayloadType: T_PYLDTYPE_MANIFEST ; TBD
-    Payload: OCTET* ; the serialized Manifest object
+    ManifestContentObject = TYPE LENGTH [Name] [ExpiryTime] PayloadType Payload
+    Name = TYPE LENGTH *OCTET ; As per RFC8569
+    ExpiryTime = TYPE LENGTH *OCTET ; As per RFC8569
+    PayloadType = TYPE LENGTH T_PYLDTYPE_MANIFEST ; Value TBD
+    Payload : TYPE LENGTH *OCTET ; the serialized Manifest object
     
     
 ## Grammar Description
@@ -509,13 +518,12 @@ A Manifest is embedded inside a CCNx Content Object:
 * Locators: An array of routing hints to find the manifest components
 * Final: A flag that prevents Locators from being superseded by a child Manifest Node
 * HashGroup: A set of child pointers and associated metadata
-* Pointers: A list of one or more Hash Values
+* Ptrs: A list of one or more Hash Values
 * GroupData: Metadata that applies to a HashGroup
 * LeafSize: Size of all application data immediately under the Group (i.e. without recursion through other Manifests)
 * LeafDigest: Digest of all application data immediately under the Group
 * SubtreeSize: Size of all application data under the Group (i.e., with recursion)
 * SubtreeDigest: Digest of all application data under the Group (i.e. with recursion)
-* SizeIndex: An array of the same size as the Ptr array with the recursive size of application data under that Ptr
 * Ptr: The ContentObjectHash of a child, which may be a data ContentObject (i.e. with Payload) or another Manifest Node.
 * PresharedKey related fields are described below under Preshared Key Algorithm
 
