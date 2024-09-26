@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from crc32c import crc32
+from crc32c import crc32c
 
 import ccnpy
 from ccnpy.crypto import Signer, Verifier
@@ -32,7 +32,7 @@ class Crc32c_Signer(Signer):
     def sign(self, *buffers):
         checksum = 0
         for buffer in buffers:
-            checksum = crc32(buffer, checksum)
+            checksum = crc32c(buffer, checksum)
         payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
         return payload
 

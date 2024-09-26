@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import abc
 import os
+import socket
 from array import array
 from pathlib import PurePath
 
 import ccnpy
+from ccnpy import Packet
 
 
 class TreeIO:
@@ -62,6 +64,14 @@ class TreeIO:
             self.count += 1
             self.buffer.extend(data)
 
+    class PacketWriter(abc.ABC):
+        @abc.abstractmethod
+        def put(self, packet: Packet):
+            pass
+
+        def close(self):
+            pass
+
     class PacketMemoryReader:
         """
         An in-memory cache of packets that can be fetch by their content object hash
@@ -75,7 +85,7 @@ class TreeIO:
         def get(self, hash_value):
             return self.index[hash_value]
 
-    class PacketMemoryWriter:
+    class PacketMemoryWriter(PacketWriter):
         """
         An in-memory cache of packets that can be written to.  They are stored as an in-order
         list and a map by content-object hash.
@@ -87,14 +97,14 @@ class TreeIO:
         def __len__(self):
             return len(self.by_hash)
 
-        def put(self, packet):
+        def put(self, packet: Packet):
             self.packets.append(packet)
             self.by_hash[packet.content_object_hash()] = packet
 
         def get(self, hash_value):
             return self.by_hash[hash_value]
 
-    class PacketDirectoryWriter:
+    class PacketDirectoryWriter(PacketWriter):
         """
         A file-system based write.  Packets are saved to the directory using their
         hash-based named (in UTF-8 hex).
@@ -109,7 +119,7 @@ class TreeIO:
 
             self._directory = directory
 
-        def put(self, packet):
+        def put(self, packet: Packet):
             ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet.save(path)
@@ -139,3 +149,21 @@ class TreeIO:
             path = PurePath(self._directory, ptr.file_name())
             packet = ccnpy.Packet.load(path)
             return packet
+
+    class PacketNetworkWriter(PacketWriter):
+        """
+        Packets are written to a ccnxd via a network socket.
+        """
+        def __init__(self, host="127.0.0.1", port=9896):
+            """
+            """
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.connect((host, port))
+
+        def close(self):
+            if self._socket is not None:
+                self._socket.close()
+            self._socket = None
+
+        def put(self, packet: Packet):
+            self._socket.sendall(packet.serialize().tobytes())

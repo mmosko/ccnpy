@@ -48,6 +48,8 @@ class RsaKey:
             self.__initialize_private_key(pem_key, password)
         elif pem_key.startswith(b'-----BEGIN RSA PRIVATE KEY-----\n'):
             self.__initialize_private_key(pem_key, password)
+        elif pem_key.startswith(b'-----BEGIN PRIVATE KEY-----\n'):
+            self.__initialize_private_key(pem_key, password)
         elif pem_key.startswith(b'-----BEGIN PUBLIC KEY-----\n'):
             self.__initialize_public_key(pem_key)
         else:

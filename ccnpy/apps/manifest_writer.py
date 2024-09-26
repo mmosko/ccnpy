@@ -21,13 +21,14 @@ import ccnpy.crypto
 import ccnpy.flic
 import ccnpy.flic.tree
 from ccnpy.flic.presharedkey import PresharedKeyEncryptor
+from ccnpy.flic.tree.TreeIO import TreeIO
 
 
 class ManifestWriter:
     """
     """
 
-    def __init__(self, args, packet_writer=None):
+    def __init__(self, args, packet_writer: TreeIO.PacketWriter):
         """
 
         :param args:
@@ -41,10 +42,7 @@ class ManifestWriter:
             locator = ccnpy.flic.Locator(link=ccnpy.Link(name=ccnpy.Name.from_uri(args.locator)))
             self._locators = ccnpy.flic.LocatorList([locator])
 
-        if packet_writer is None:
-            self._packet_writer = ccnpy.flic.tree.TreeIO.PacketDirectoryWriter(directory=args.out_dir)
-        else:
-            self._packet_writer = packet_writer
+        self._packet_writer = packet_writer
 
         self._tree_options = self._create_tree_options(args)
         signing_key = ccnpy.crypto.RsaKey.load_pem_key(args.key_file, args.key_pass)
@@ -120,6 +118,8 @@ if __name__ == "__main__":
     parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %r)' % max_size)
     parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%r)" % '.')
     parser.add_argument('-l', dest="locator", help="URI of a locator (root manifest)")
+    parser.add_argument('-T', dest="use_tcp", default=False, action=argparse.BooleanOptionalAction, help="Use TCP to 127.0.0.1:9896")
+
     parser.add_argument('--root-expiry', dest="root_expiry", help="Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest")
     parser.add_argument('--node-expiry', dest="node_expiry", help="Expiry time (ISO format) to expire node manifests")
     parser.add_argument('--data-expiry', dest="data_expiry", help="Expiry time (ISO format) to expire data nameless objects")
@@ -137,5 +137,15 @@ if __name__ == "__main__":
     if len(args.key_pass) == 0:
         args.key_pass = None
 
-    writer = ManifestWriter(args)
-    writer.build()
+    if args.use_tcp:
+        packet_writer = TreeIO.PacketNetworkWriter("127.0.0.1", 9896)
+    else:
+        packet_writer = TreeIO.PacketDirectoryWriter(directory=args.out_dir)
+
+    try:
+        writer = ManifestWriter(args=args, packet_writer=packet_writer)
+        writer.build()
+    finally:
+        if packet_writer is not None:
+            packet_writer.close()
+

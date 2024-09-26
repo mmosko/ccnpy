@@ -1,3 +1,6 @@
 .DS_Store
 .coverage
 *__pycache__*
+.idea/
+output/
+test_key.pem
