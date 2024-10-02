@@ -11,26 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-
 
 from array import array
 
-import ccnpy
+from .DisplayFormatter import DisplayFormatter
+from .Tlv import Tlv
+from .TlvType import TlvType
 
 
-class HashValue(ccnpy.core.TlvType):
+class HashValue(TlvType):
     __T_SHA_256 = 0x0001
 
     @classmethod
@@ -47,14 +36,14 @@ class HashValue(ccnpy.core.TlvType):
         :param hash_algorithm: The method used to compute the hash (e.g. T_SHA_256)
         :param value: The hash value
         """
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
 
         if not isinstance(value, array):
             value = array("B", value)
 
         self._hash_algorithm = hash_algorithm
         self._value = value
-        self._tlv = ccnpy.core.Tlv(hash_algorithm, self._value)
+        self._tlv = Tlv(hash_algorithm, self._value)
         self._wire_format = self._tlv.serialize()
 
     def __iter__(self):
@@ -79,7 +68,7 @@ class HashValue(ccnpy.core.TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "HashValue: {alg: %r, val: %r}" % (self.__alg_string(), ccnpy.core.DisplayFormatter.hexlify(self._value))
+        return "HashValue: {alg: %r, val: %r}" % (self.__alg_string(), DisplayFormatter.hexlify(self._value))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -99,8 +88,8 @@ class HashValue(ccnpy.core.TlvType):
 
     @classmethod
     def parse(cls, tlv):
-        if not isinstance(tlv, ccnpy.core.Tlv):
-            raise TypeError('tlv must be ccnpy.core.Tlv')
+        if not isinstance(tlv, Tlv):
+            raise TypeError('tlv must be Tlv')
         return cls(tlv.type(), tlv.value())
 
     @classmethod
@@ -111,15 +100,15 @@ class HashValue(ccnpy.core.TlvType):
         do something like this.
 
         Example:
-            keyid = ccnpy.core.Tlv(T_KEYID, ccnpy.core.HashValue(1, [2]))
+            keyid = Tlv(T_KEYID, HashValue(1, [2]))
             wire = keyid.serialize()
-            keyid2 = ccnpy.core.Tlv.deserialize(wire)
-            hv = ccnpy.core.HashValue.deserialize(keyid2.value())
+            keyid2 = Tlv.deserialize(wire)
+            hv = HashValue.deserialize(keyid2.value())
 
         :param buffer:
         :return:
         """
-        tlv = ccnpy.core.Tlv.deserialize(buffer)
+        tlv = Tlv.deserialize(buffer)
         return cls.parse(tlv)
 
     @classmethod

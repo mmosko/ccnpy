@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class LocatorList(ccnpy.TlvType):
+class LocatorList(ccnpy.core.TlvType):
     """
     Represents a list of Locators (links).
     """
@@ -33,9 +32,9 @@ class LocatorList(ccnpy.TlvType):
         """
 
         :param final:
-        :param locators: a list of ccnpy.flic.Locator
+        :param locators: a list of ccnpy.core.core.flic.Locator
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
         if final is None:
             final = False
@@ -45,12 +44,12 @@ class LocatorList(ccnpy.TlvType):
 
         tlvs = []
         if final:
-            tlvs.append(ccnpy.Tlv(self.__final_type, []))
+            tlvs.append(ccnpy.core.Tlv(self.__final_type, []))
 
         if self._locators is not None:
             tlvs.extend(locators)
 
-        self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), tlvs)
 
     def __len__(self):
         return len(self._tlv)
@@ -81,7 +80,7 @@ class LocatorList(ccnpy.TlvType):
         locators = []
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
             if inner_tlv.type() == cls.__final_type:
                 assert final is None

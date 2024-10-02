@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
 class ManifestTreeOptions:
     def __init__(self,
                  root_locators=None,
@@ -48,4 +46,3 @@ class ManifestTreeOptions:
         self.add_node_subtree_size = add_node_subtree_size
         self.max_tree_degree = max_tree_degree
         self.debug = debug
-

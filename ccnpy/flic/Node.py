@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class Node(ccnpy.TlvType):
+class Node(ccnpy.core.TlvType):
     __type = 0x0002
 
     @classmethod
@@ -30,7 +29,7 @@ class Node(ccnpy.TlvType):
         :param node_data: (optional) ccnpy.flic.NodeData
         :param hash_groups: a list of HashGroups
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         if node_data is not None and not isinstance(node_data, ccnpy.flic.NodeData):
             raise TypeError("node_data must be ccnpy.flic.NodeData")
 
@@ -43,7 +42,7 @@ class Node(ccnpy.TlvType):
         self._node_data = node_data
         self._hash_groups = hash_groups
 
-        self._tlv = ccnpy.Tlv(self.class_type(), [self._node_data, *self._hash_groups])
+        self._tlv = ccnpy.core.Tlv(self.class_type(), [self._node_data, *self._hash_groups])
 
     def __len__(self):
         return len(self._tlv)
@@ -110,7 +109,7 @@ class Node(ccnpy.TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
             if inner_tlv.type() == ccnpy.flic.NodeData.class_type():

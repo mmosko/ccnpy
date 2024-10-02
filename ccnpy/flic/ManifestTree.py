@@ -12,8 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 from ccnpy.flic import ManifestFactory, ManifestTreeOptions
 from ccnpy.flic.tree import FileChunks, TreeParameters, TreeBuilder
 
@@ -22,6 +21,7 @@ class ManifestTree:
     """
     Builds a manifest tree.
     """
+
     def __init__(self, data_input, packet_output, root_manifest_name, root_manifest_signer,
                  max_packet_size=1500, tree_options=None):
         """
@@ -81,14 +81,14 @@ class ManifestTree:
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes)
 
-        body = ccnpy.ContentObject.create_manifest(manifest=root_manifest,
-                                                   name=self._root_manifest_name,
-                                                   expiry_time=self._tree_options.root_expiry_time)
+        body = ccnpy.core.ContentObject.create_manifest(manifest=root_manifest,
+                                                        name=self._root_manifest_name,
+                                                        expiry_time=self._tree_options.root_expiry_time)
 
         validation_alg = self._root_manifest_signer.validation_alg()
         validation_payload = self._root_manifest_signer.sign(body.serialize(), validation_alg.serialize())
 
-        root_packet = ccnpy.Packet.create_signed_content_object(body, validation_alg, validation_payload)
+        root_packet = ccnpy.core.Packet.create_signed_content_object(body, validation_alg, validation_payload)
         self._packet_output.put(root_packet)
 
         return root_packet
@@ -113,10 +113,10 @@ class ManifestTree:
         Create a nameless object with empty payload and see how much space we have left.
         :return: payload size of a nameless data object
         """
-        nameless = ccnpy.ContentObject.create_data(name=None,
-                                                   expiry_time=self._tree_options.data_expiry_time,
-                                                   payload=ccnpy.Payload([]))
-        packet = ccnpy.Packet.create_content_object(body=nameless)
+        nameless = ccnpy.core.ContentObject.create_data(name=None,
+                                                        expiry_time=self._tree_options.data_expiry_time,
+                                                        payload=ccnpy.core.Payload([]))
+        packet = ccnpy.core.Packet.create_content_object(body=nameless)
         if len(packet) >= self._max_packet_size:
             raise ValueError("An empty nameless ContentObject is %r bytes, but max_size is only %r" %
                              (len(packet), self._max_packet_size))
@@ -140,11 +140,11 @@ class ManifestTree:
         return total_file_bytes
 
     def _create_nameless_data_packet(self, payload_value):
-        payload_tlv = ccnpy.Payload(payload_value)
-        nameless = ccnpy.ContentObject.create_data(name=None,
-                                                   payload=payload_tlv,
-                                                   expiry_time=self._tree_options.data_expiry_time)
-        packet = ccnpy.Packet.create_content_object(nameless)
+        payload_tlv = ccnpy.core.Payload(payload_value)
+        nameless = ccnpy.core.ContentObject.create_data(name=None,
+                                                        payload=payload_tlv,
+                                                        expiry_time=self._tree_options.data_expiry_time)
+        packet = ccnpy.core.Packet.create_content_object(nameless)
         assert len(packet) <= self._max_packet_size
         return packet
 
@@ -179,4 +179,3 @@ class TreeOptions:
         self.add_group_subtree_size = add_group_subtree_size
         self.add_group_leaf_size = add_group_leaf_size
         self.add_node_subtree_size = add_node_subtree_size
-

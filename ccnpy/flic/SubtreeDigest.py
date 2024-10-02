@@ -13,10 +13,10 @@
 #  limitations under the License.
 
 
-import ccnpy
+import ccnpy.core
 
 
-class SubtreeDigest(ccnpy.TlvType):
+class SubtreeDigest(ccnpy.core.TlvType):
     __type = 0x0002
 
     @classmethod
@@ -24,15 +24,15 @@ class SubtreeDigest(ccnpy.TlvType):
         return cls.__type
 
     def __init__(self, digest):
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
         if digest is None:
             raise ValueError("digest must not be None")
-        if not isinstance(digest, ccnpy.HashValue):
+        if not isinstance(digest, ccnpy.core.HashValue):
             raise TypeError("digest must be ccnpy.HashValue")
 
         self._digest = digest
-        self._tlv = ccnpy.Tlv(self.class_type(), self._digest)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), self._digest)
 
     def __len__(self):
         return len(self._tlv)
@@ -48,8 +48,8 @@ class SubtreeDigest(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
-        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-        digest = ccnpy.HashValue.parse(inner_tlv)
+        inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
+        digest = ccnpy.core.HashValue.parse(inner_tlv)
         return cls(digest)
 
     def serialize(self):

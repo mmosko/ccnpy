@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import argparse
 from pathlib import PurePath
 
-import ccnpy
+import ccnpy.core
 import ccnpy.crypto
 import ccnpy.flic
 import ccnpy.flic.tree
@@ -44,14 +43,14 @@ class PacketReader:
 
     def _output(self, value):
         if self._prettify:
-            print(ccnpy.DisplayFormatter.prettify(value))
+            print(ccnpy.core.DisplayFormatter.prettify(value))
         else:
             print(value)
 
     def read(self):
         """
         """
-        packet = ccnpy.Packet.load(self._path)
+        packet = ccnpy.core.Packet.load(self._path)
         self._output(packet)
 
         if packet.body().is_manifest():

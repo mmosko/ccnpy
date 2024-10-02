@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import ccnpy.core
 
-import ccnpy
 
-
-class Locator(ccnpy.TlvType):
+class Locator(ccnpy.core.TlvType):
     __type = 0x0002
 
     @classmethod
@@ -26,15 +25,15 @@ class Locator(ccnpy.TlvType):
     def __init__(self, link):
         """
 
-        :param links: A ccnpy.Link
+        :param links: A ccnpy.core.Link
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
-        if not isinstance(link, ccnpy.Link):
-            raise TypeError("link must be ccnpy.Link")
+        if not isinstance(link, ccnpy.core.Link):
+            raise TypeError("link must be ccnpy.core.Link")
 
         self._link = link
-        self._tlv = ccnpy.Tlv(self.class_type(), link.serialize())
+        self._tlv = ccnpy.core.Tlv(self.class_type(), link.serialize())
 
     def __len__(self):
         return len(self._tlv)
@@ -53,6 +52,5 @@ class Locator(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise TypeError("tlv type %r must be %r" % (tlv.type(), cls.class_type()))
 
-        link = ccnpy.Link.deserialize(tlv.value())
+        link = ccnpy.core.Link.deserialize(tlv.value())
         return cls(link)
-

@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import array
 
-import ccnpy
+import ccnpy.core
 
 
 class Manifest:
@@ -26,8 +25,8 @@ class Manifest:
 
     @classmethod
     def from_content_object(cls, content_object):
-        if not isinstance(content_object, ccnpy.ContentObject):
-            raise TypeError("content_object must be ccnpy.ContentObject")
+        if not isinstance(content_object, ccnpy.core.ContentObject):
+            raise TypeError("content_object must be ccnpy.core.ContentObject")
         if not content_object.payload_type().is_manifest():
             raise ValueError("Payload is not of type Manifest")
 
@@ -73,7 +72,7 @@ class Manifest:
         offset = 0
         security_ctx = node = auth_tag = None
         while offset < len(buffer):
-            tlv = ccnpy.Tlv.deserialize(buffer[offset:])
+            tlv = ccnpy.core.Tlv.deserialize(buffer[offset:])
             if tlv.type() == ccnpy.flic.SecurityCtx.class_type():
                 assert security_ctx is None
                 security_ctx = ccnpy.flic.SecurityCtx.parse(tlv)
@@ -111,14 +110,14 @@ class Manifest:
         return isinstance(self._node, ccnpy.flic.EncryptedNode)
 
     def content_object(self, name=None, expiry_time=None):
-        co = ccnpy.ContentObject(name=name,
-                                 payload_type=ccnpy.PayloadType.create_manifest_type(),
-                                 payload=ccnpy.Payload(self.serialize()),
-                                 expiry_time=expiry_time)
+        co = ccnpy.core.ContentObject(name=name,
+                                      payload_type=ccnpy.core.PayloadType.create_manifest_type(),
+                                      payload=ccnpy.core.Payload(self.serialize()),
+                                      expiry_time=expiry_time)
         return co
 
     def packet(self, name=None, expiry_time=None):
-        packet = ccnpy.Packet.create_content_object(body=self.content_object(name, expiry_time))
+        packet = ccnpy.core.Packet.create_content_object(body=self.content_object(name, expiry_time))
         return packet
 
     def hash_values(self):
@@ -134,10 +133,10 @@ class Manifest:
 
     def interest_list(self, locator=None, final=False):
         """
-        Create a list of ccnpy.Interest for the contents of this manifest.  The list will
+        Create a list of ccnpy.core.Interest for the contents of this manifest.  The list will
         be in traversal order.
 
-        :return: A list of ccnpy.Interest, which may be empty
+        :return: A list of ccnpy.core.Interest, which may be empty
         """
         interests = []
         if not final:
@@ -148,5 +147,3 @@ class Manifest:
 
         hash_values = self.hash_values()
         raise RuntimeError("Not implemented")
-
-

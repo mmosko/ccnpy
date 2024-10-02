@@ -15,10 +15,11 @@
 from abc import ABC
 from datetime import datetime, UTC
 
-import ccnpy
+from .Tlv import Tlv
+from .TlvType import TlvType
 
 
-class Timestamp(ccnpy.core.TlvType, ABC):
+class Timestamp(TlvType, ABC):
     """
     base class for ExpiryTime and SignatureTime.
 
@@ -33,9 +34,9 @@ class Timestamp(ccnpy.core.TlvType, ABC):
         """
         :param timestamp: Python datetime timestamp (seconds float)
         """
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
         self._timestamp = timestamp
-        self._tlv = ccnpy.core.Tlv.create_uint64(self.class_type(), self.milliseconds())
+        self._tlv = Tlv.create_uint64(self.class_type(), self.milliseconds())
         self._wire_format = self._tlv.serialize()
 
     def __eq__(self, other):

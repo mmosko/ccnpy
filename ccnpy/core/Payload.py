@@ -14,10 +14,12 @@
 
 import array
 
-import ccnpy
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Tlv import Tlv
+from ccnpy.core.TlvType import TlvType
 
 
-class Payload(ccnpy.core.TlvType):
+class Payload(TlvType):
     __T_PAYLOAD = 0x0001
 
     @classmethod
@@ -25,13 +27,13 @@ class Payload(ccnpy.core.TlvType):
         return cls.__T_PAYLOAD
 
     def __init__(self, value):
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
 
         if isinstance(value, list):
             value = array.array("B", value)
 
         self._value = value
-        self._tlv = ccnpy.core.Tlv(self.class_type(), self._value)
+        self._tlv = Tlv(self.class_type(), self._value)
 
     def __len__(self):
         return len(self._tlv)
@@ -42,7 +44,7 @@ class Payload(ccnpy.core.TlvType):
         return False
 
     def __repr__(self):
-        return "PAYLOAD: %r" % ccnpy.core.DisplayFormatter.hexlify(self._value)
+        return "PAYLOAD: %r" % DisplayFormatter.hexlify(self._value)
 
     def value(self):
         return self._value

@@ -12,14 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 from abc import abstractmethod
 
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class SecurityCtx(ccnpy.TlvType):
+class SecurityCtx(ccnpy.core.TlvType):
     """
     Analogous to the ccnpy.ValidationAlg container.  It is an abstract intermediate class between
     TlvType and the concrete algorithms.
@@ -31,7 +30,7 @@ class SecurityCtx(ccnpy.TlvType):
         return cls.__type
 
     def __init__(self):
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
     @abstractmethod
     def __len__(self):
@@ -46,7 +45,7 @@ class SecurityCtx(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise ValueError("Incorrect TLV type %r" % tlv)
 
-        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+        inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
         if inner_tlv.type() == PresharedKeyCtx.class_type():
             return PresharedKeyCtx.parse(inner_tlv)
 

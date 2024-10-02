@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class NodeData(ccnpy.TlvType):
+class NodeData(ccnpy.core.TlvType):
     __type = 0x0001
     __subtree_digest_type = 0x0002
 
@@ -32,7 +31,7 @@ class NodeData(ccnpy.TlvType):
         :param subtree_digest:
         :param locators:
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
         if isinstance(subtree_size, int):
             subtree_size = ccnpy.flic.SubtreeSize(subtree_size)
@@ -40,7 +39,7 @@ class NodeData(ccnpy.TlvType):
         if subtree_size is not None and not isinstance(subtree_size, ccnpy.flic.SubtreeSize):
             raise TypeError("subtree_size, if present, must be ccnpy.flic.SubtreeSize")
 
-        if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.HashValue):
+        if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.core.HashValue):
             raise TypeError("subtree_digest, if present, must be ccnpy.HashValue")
 
         if locators is not None and not isinstance(locators, ccnpy.flic.LocatorList):
@@ -55,12 +54,12 @@ class NodeData(ccnpy.TlvType):
             tlvs.append(subtree_size)
 
         if self._subtree_digest is not None:
-            tlvs.append(ccnpy.Tlv(NodeData.__subtree_digest_type, self._subtree_digest))
+            tlvs.append(ccnpy.core.Tlv(NodeData.__subtree_digest_type, self._subtree_digest))
 
         if self._locators is not None:
             tlvs.append(self._locators)
 
-        self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), tlvs)
 
     def __len__(self):
         return len(self._tlv)
@@ -92,7 +91,7 @@ class NodeData(ccnpy.TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
             if inner_tlv.type() == ccnpy.flic.SubtreeSize.class_type():
@@ -100,7 +99,7 @@ class NodeData(ccnpy.TlvType):
                 subtree_size = ccnpy.flic.SubtreeSize.parse(inner_tlv)
             elif inner_tlv.type() == cls.__subtree_digest_type:
                 assert subtree_digest is None
-                subtree_digest = ccnpy.HashValue.deserialize(inner_tlv.value())
+                subtree_digest = ccnpy.core.HashValue.deserialize(inner_tlv.value())
             elif inner_tlv.type() == ccnpy.flic.LocatorList.class_type():
                 assert locators is None
                 locators = ccnpy.flic.LocatorList.parse(inner_tlv)

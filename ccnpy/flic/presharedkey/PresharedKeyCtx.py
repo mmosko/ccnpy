@@ -12,9 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
-import ccnpy
+import ccnpy.core
 import ccnpy.crypto
 
 #import ccnpy.flic
@@ -69,12 +67,12 @@ class PresharedKeyCtx(SecurityCtx):
         self._iv = iv
         self._mode = mode
 
-        key_tlv = ccnpy.Tlv(self.__T_KEYNUM, ccnpy.Tlv.number_to_array(self._key_number))
-        iv_tlv = ccnpy.Tlv(self.__T_IV, self._iv)
-        mode_tlv = ccnpy.Tlv.create_uint8(self.__T_MODE, self._mode)
+        key_tlv = ccnpy.core.Tlv(self.__T_KEYNUM, ccnpy.core.Tlv.number_to_array(self._key_number))
+        iv_tlv = ccnpy.core.Tlv(self.__T_IV, self._iv)
+        mode_tlv = ccnpy.core.Tlv.create_uint8(self.__T_MODE, self._mode)
 
-        self._tlv = ccnpy.Tlv(ccnpy.flic.SecurityCtx.class_type(),
-                              ccnpy.Tlv(self.class_type(), [key_tlv, iv_tlv, mode_tlv]))
+        self._tlv = ccnpy.core.Tlv(ccnpy.flic.SecurityCtx.class_type(),
+                              ccnpy.core.Tlv(self.class_type(), [key_tlv, iv_tlv, mode_tlv]))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -84,7 +82,7 @@ class PresharedKeyCtx(SecurityCtx):
 
     def __repr__(self):
         return "PSK: {kn: %r, iv: %r, mode: %r}" % (self._key_number,
-                                                    ccnpy.DisplayFormatter.hexlify(self._iv),
+                                                    ccnpy.core.DisplayFormatter.hexlify(self._iv),
                                                     self.__mode_string())
 
     @classmethod
@@ -95,7 +93,7 @@ class PresharedKeyCtx(SecurityCtx):
         key_number = iv = mode = None
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             if inner_tlv.type() == cls.__T_KEYNUM:
                 assert key_number is None
                 key_number = inner_tlv.value_as_number()

@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import ccnpy.flic
 from ccnpy.flic.presharedkey import PresharedKey
 

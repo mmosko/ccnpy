@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from .DisplayFormatter import DisplayFormatter
+from .Tlv import Tlv
+from .TlvType import TlvType
 
-import ccnpy.core
 
-
-class ValidationPayload(ccnpy.core.TlvType):
+class ValidationPayload(TlvType):
     __T_VALIDATION_PAYLOAD = 0x0004
 
     @classmethod
@@ -25,15 +26,15 @@ class ValidationPayload(ccnpy.core.TlvType):
     def __init__(self, payload):
         """
         """
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
         self._payload = payload
-        self._tlv = ccnpy.core.Tlv(self.class_type(), self._payload)
+        self._tlv = Tlv(self.class_type(), self._payload)
 
     def __eq__(self, other):
         return self.payload() == other.payload()
 
     def __repr__(self):
-        return "ValPld: %r" % ccnpy.core.DisplayFormatter.hexlify(self._payload)
+        return "ValPld: %r" % DisplayFormatter.hexlify(self._payload)
 
     def __len__(self):
         return len(self._tlv)

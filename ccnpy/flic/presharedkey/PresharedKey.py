@@ -12,14 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
-import ccnpy
+import ccnpy.core
 import ccnpy.crypto
 
 import ccnpy.flic
 
 from ccnpy.flic.presharedkey import PresharedKeyCtx
+
 
 class PresharedKey:
     """
@@ -28,6 +27,7 @@ class PresharedKey:
     Typically, you will use `PresharedKey.create_manifest(...)` to create a Manifest TLV out of
     a ccnpy.flic.Node.
     """
+
     def __init__(self, key, key_number):
         """
 
@@ -61,8 +61,8 @@ class PresharedKey:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
         ciphertext, a = self._key.encrypt(nonce=iv,
-                                                plaintext=plaintext,
-                                                associated_data=security_ctx.serialize())
+                                          plaintext=plaintext,
+                                          associated_data=security_ctx.serialize())
 
         encrypted_node = ccnpy.flic.EncryptedNode(ciphertext)
         auth_tag = ccnpy.flic.AuthTag(a)
@@ -117,7 +117,7 @@ class PresharedKey:
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())
 
-        node_tlv = ccnpy.Tlv(ccnpy.flic.Node.class_type(), plaintext)
+        node_tlv = ccnpy.core.Tlv(ccnpy.flic.Node.class_type(), plaintext)
         node = ccnpy.flic.Node.parse(node_tlv)
         return node
 
@@ -156,4 +156,3 @@ class PresharedKey:
 
         manifest = ccnpy.flic.Manifest(node=node)
         return manifest
-
