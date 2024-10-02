@@ -15,8 +15,11 @@
 
 from crc32c import crc32c
 
-import ccnpy
-from ccnpy.crypto import Signer, Verifier
+from .Verifier import Verifier
+from ..core.Tlv import Tlv
+from ..core.ValidationAlg import ValidationAlg_Crc32c
+from ..core.ValidationPayload import ValidationPayload
+from ..crypto.Signer import Signer
 
 
 class Crc32c_Signer(Signer):
@@ -34,7 +37,7 @@ class Crc32c_Signer(Signer):
         checksum = 0
         for buffer in buffers:
             checksum = crc32c(buffer, checksum)
-        payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
+        payload = ValidationPayload(Tlv.uint32_to_array(checksum))
         return payload
 
     def keyid(self):
@@ -52,7 +55,7 @@ class Crc32c_Signer(Signer):
         assert not include_public_key
         assert key_link is None
         assert signature_time is None
-        return ccnpy.ValidationAlg_Crc32c()
+        return ValidationAlg_Crc32c()
 
 
 class Crc32c_Verifier(Verifier):
@@ -79,5 +82,5 @@ class Crc32c_Verifier(Verifier):
         for buffer in buffers:
             checksum = crc32c(buffer, checksum)
 
-        check_payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
+        check_payload = ValidationPayload(Tlv.uint32_to_array(checksum))
         return check_payload == validation_payload

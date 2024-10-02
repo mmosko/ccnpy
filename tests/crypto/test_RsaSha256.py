@@ -15,10 +15,11 @@
 
 import unittest
 
-import ccnpy.crypto
+from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.crypto.RsaSha256 import RsaSha256_Signer, RsaSha256_Verifier
 
 
-class RsaSha256_Signer_Test(unittest.TestCase):
+class RsaSha256_SignerTest(unittest.TestCase):
     # openssl genrsa -out test_key.pem
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
@@ -65,11 +66,11 @@ YwIDAQAB
                    b'The quick brown fox jumps over the lazy dog',
                    b'abcdefg']
 
-        private_key = ccnpy.crypto.RsaKey(self.private_key)
-        public_key = ccnpy.crypto.RsaKey(self.public_key)
+        private_key = RsaKey(self.private_key)
+        public_key = RsaKey(self.public_key)
 
-        signer = ccnpy.crypto.RsaSha256_Signer(private_key)
-        verifier = ccnpy.crypto.RsaSha256_Verifier(public_key)
+        signer = RsaSha256_Signer(private_key)
+        verifier = RsaSha256_Verifier(public_key)
 
         for buffer in vectors:
             signature = signer.sign(buffer)

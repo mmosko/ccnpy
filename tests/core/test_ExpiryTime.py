@@ -15,7 +15,6 @@
 import array
 import unittest
 
-import ccnpy
 from ccnpy.core.ExpiryTime import ExpiryTime
 from ccnpy.core.Tlv import Tlv
 

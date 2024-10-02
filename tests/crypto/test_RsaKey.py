@@ -16,10 +16,10 @@
 import array
 import unittest
 
-from ccnpy.crypto import RsaKey
+from ccnpy.crypto.RsaKey import RsaKey
 
 
-class RsaKey_Test(unittest.TestCase):
+class RsaKeyTest(unittest.TestCase):
 
     # openssl genrsa -out test_key.pem
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----

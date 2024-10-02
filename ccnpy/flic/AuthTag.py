@@ -13,10 +13,11 @@
 #  limitations under the License.
 
 
-import ccnpy.core
+from ..core.DisplayFormatter import DisplayFormatter
+from ..core.Payload import Payload
 
 
-class AuthTag(ccnpy.core.Payload):
+class AuthTag(Payload):
     """
     AuthTag works just like ccnpy.core.Payload -- it stores a byte array.
     """
@@ -27,7 +28,7 @@ class AuthTag(ccnpy.core.Payload):
         return cls.__T_AUTHTAG
 
     def __init__(self, value):
-        ccnpy.core.Payload.__init__(self, value)
+        super().__init__(value)
 
     def __repr__(self):
-        return "AuthTag: %r" % ccnpy.core.DisplayFormatter.hexlify(self._value)
+        return "AuthTag: %r" % DisplayFormatter.hexlify(self._value)

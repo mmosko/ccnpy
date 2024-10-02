@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-from ccnpy.flic.tree import SizedPointer
+from .SizedPointer import SizedPointer
 
 
 class FileChunks:

@@ -18,8 +18,10 @@ import socket
 from array import array
 from pathlib import PurePath
 
-import ccnpy
-from ccnpy import Packet
+from .SizedPointer import SizedPointer
+from ...core.ContentObject import ContentObject
+from ...core.Packet import Packet
+from ...core.Payload import Payload
 
 
 class TreeIO:
@@ -30,8 +32,8 @@ class TreeIO:
 
     @staticmethod
     def _create_data_packet(application_data):
-        payload = ccnpy.Payload(application_data)
-        packet = ccnpy.Packet.create_content_object(ccnpy.ContentObject.create_data(payload=payload))
+        payload = Payload(application_data)
+        packet = Packet.create_content_object(ContentObject.create_data(payload=payload))
         return packet
 
     @classmethod
@@ -121,14 +123,14 @@ class TreeIO:
             self._directory = directory
 
         def put(self, packet: Packet):
-            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
+            ptr = SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet.save(path)
 
         def get(self, hash_value):
-            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=hash_value, length=0)
+            ptr = SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
-            packet = ccnpy.Packet.load(path)
+            packet = Packet.load(path)
             return packet
 
     class PacketDirectoryReader:
@@ -146,9 +148,9 @@ class TreeIO:
             self._directory = directory
 
         def get(self, hash_value):
-            ptr = ccnpy.flic.tree.SizedPointer(content_object_hash=hash_value, length=0)
+            ptr = SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
-            packet = ccnpy.Packet.load(path)
+            packet = Packet.load(path)
             return packet
 
     class PacketNetworkWriter(PacketWriter):

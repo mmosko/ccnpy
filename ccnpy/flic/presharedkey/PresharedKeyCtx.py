@@ -12,11 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import ccnpy.core
-import ccnpy.crypto
-
-#import ccnpy.flic
-from ccnpy.flic import SecurityCtx
+from ..SecurityCtx import SecurityCtx
+from ...core.DisplayFormatter import DisplayFormatter
+from ...core.Tlv import Tlv
 
 
 class PresharedKeyCtx(SecurityCtx):
@@ -62,17 +60,17 @@ class PresharedKeyCtx(SecurityCtx):
         :param iv: A byte array
         :param mode: One of the allowed modes (use a class create_x method to create)
         """
-        ccnpy.flic.SecurityCtx.__init__(self)
+        SecurityCtx.__init__(self)
         self._key_number = key_number
         self._iv = iv
         self._mode = mode
 
-        key_tlv = ccnpy.core.Tlv(self.__T_KEYNUM, ccnpy.core.Tlv.number_to_array(self._key_number))
-        iv_tlv = ccnpy.core.Tlv(self.__T_IV, self._iv)
-        mode_tlv = ccnpy.core.Tlv.create_uint8(self.__T_MODE, self._mode)
+        key_tlv = Tlv(self.__T_KEYNUM, Tlv.number_to_array(self._key_number))
+        iv_tlv = Tlv(self.__T_IV, self._iv)
+        mode_tlv = Tlv.create_uint8(self.__T_MODE, self._mode)
 
-        self._tlv = ccnpy.core.Tlv(ccnpy.flic.SecurityCtx.class_type(),
-                              ccnpy.core.Tlv(self.class_type(), [key_tlv, iv_tlv, mode_tlv]))
+        self._tlv = Tlv(SecurityCtx.class_type(),
+                        Tlv(self.class_type(), [key_tlv, iv_tlv, mode_tlv]))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -82,7 +80,7 @@ class PresharedKeyCtx(SecurityCtx):
 
     def __repr__(self):
         return "PSK: {kn: %r, iv: %r, mode: %r}" % (self._key_number,
-                                                    ccnpy.core.DisplayFormatter.hexlify(self._iv),
+                                                    DisplayFormatter.hexlify(self._iv),
                                                     self.__mode_string())
 
     @classmethod
@@ -93,7 +91,7 @@ class PresharedKeyCtx(SecurityCtx):
         key_number = iv = mode = None
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
             if inner_tlv.type() == cls.__T_KEYNUM:
                 assert key_number is None
                 key_number = inner_tlv.value_as_number()

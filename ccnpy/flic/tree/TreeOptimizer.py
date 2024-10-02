@@ -15,7 +15,7 @@
 
 import math
 
-from ccnpy.flic.tree import Solution
+from ccnpy.flic.tree.Solution import Solution
 
 
 class TreeOptimizer:

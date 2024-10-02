@@ -17,10 +17,11 @@ import argparse
 import getpass
 from datetime import datetime
 
-import ccnpy.core
 import ccnpy.crypto
-import ccnpy.flic
-import ccnpy.flic.tree
+
+from ccnpy.core.Name import Name
+from ccnpy.core.Link import Link
+from ccnpy.flic import Locator, LocatorList
 from ccnpy.flic.presharedkey import PresharedKeyEncryptor
 from ccnpy.flic.tree.TreeIO import TreeIO
 
@@ -35,13 +36,13 @@ class ManifestWriter:
         :param args:
         :param packet_writer: In testing, we pass our own packet writer, otherwise create one for the directory
         """
-        self._name = ccnpy.core.Name.from_uri(args.name)
+        self._name = Name.from_uri(args.name)
         self._max_size = args.max_size
         self._filename = args.filename
         self._locators = None
         if args.locator is not None:
-            locator = ccnpy.flic.Locator(link=ccnpy.core.Link(name=ccnpy.core.Name.from_uri(args.locator)))
-            self._locators = ccnpy.flic.LocatorList([locator])
+            locator = Locator(link=Link(name=Name.from_uri(args.locator)))
+            self._locators = LocatorList([locator])
 
         self._packet_writer = packet_writer
 
@@ -149,4 +150,3 @@ if __name__ == "__main__":
     finally:
         if packet_writer is not None:
             packet_writer.close()
-

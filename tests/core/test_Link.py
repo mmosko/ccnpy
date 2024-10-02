@@ -16,15 +16,17 @@
 import array
 import unittest
 
-import ccnpy
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Link import Link
+from ccnpy.core.Name import Name
 
 
-class Link_Test(unittest.TestCase):
+class LinkTest(unittest.TestCase):
     def test_serialize(self):
-        name=ccnpy.Name.from_uri('ccnx:/a/b')
-        keyid=ccnpy.HashValue(1, b'ab')
-        digest=ccnpy.HashValue(2, b'ABCD')
-        link = ccnpy.Link(name=name, keyid=keyid, digest=digest)
+        name = Name.from_uri('ccnx:/a/b')
+        keyid = HashValue(1, b'ab')
+        digest = HashValue(2, b'ABCD')
+        link = Link(name=name, keyid=keyid, digest=digest)
         actual = link.serialize()
         expected = array.array("B", [0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                      0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
@@ -35,11 +37,10 @@ class Link_Test(unittest.TestCase):
         wire_format = array.array("B", [0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                         0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
                                         0, 3, 0, 8, 0, 2, 0, 4, 65, 66, 67, 68])
-        link = ccnpy.Link.deserialize(wire_format)
+        link = Link.deserialize(wire_format)
 
-        name=ccnpy.Name.from_uri('ccnx:/a/b')
-        keyid=ccnpy.HashValue(1, array.array("B", b'ab'))
-        digest=ccnpy.HashValue(2, array.array("B", b'ABCD'))
-        expected = ccnpy.Link(name=name, keyid=keyid, digest=digest)
+        name = Name.from_uri('ccnx:/a/b')
+        keyid = HashValue(1, array.array("B", b'ab'))
+        digest = HashValue(2, array.array("B", b'ABCD'))
+        expected = Link(name=name, keyid=keyid, digest=digest)
         self.assertEqual(expected, link)
-

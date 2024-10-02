@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from ..core.DisplayFormatter import DisplayFormatter
+from ..core.Payload import Payload
 
-import ccnpy.core
-import ccnpy.crypto
 
-
-class EncryptedNode(ccnpy.core.Payload):
+class EncryptedNode(Payload):
     """
     EncryptedNode works just like ccnpy.Payload -- it stores a byte array.
     """
@@ -28,9 +27,7 @@ class EncryptedNode(ccnpy.core.Payload):
         return cls.__T_ENC_NODE
 
     def __init__(self, value):
-        ccnpy.core.Payload.__init__(self, value)
+        Payload.__init__(self, value)
 
     def __repr__(self):
-        return "EncNode: %r" % ccnpy.core.DisplayFormatter.hexlify(self._value)
-
-
+        return "EncNode: %r" % DisplayFormatter.hexlify(self._value)

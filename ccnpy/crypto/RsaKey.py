@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import utils
 
-import ccnpy
+from ..core.HashValue import HashValue
 
 
 class RsaKey:
@@ -230,5 +230,5 @@ class RsaKey:
         h = hashlib.sha256()
         h.update(der)
         digest = h.digest()
-        tlv = ccnpy.HashValue.create_sha256(digest)
+        tlv = HashValue.create_sha256(digest)
         return tlv

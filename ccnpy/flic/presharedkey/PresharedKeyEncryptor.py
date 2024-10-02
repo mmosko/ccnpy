@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from .PresharedKey import PresharedKey
+from ..ManifestEncryptor import ManifestEncryptor
 
-import ccnpy.flic
-from ccnpy.flic.presharedkey import PresharedKey
 
-
-class PresharedKeyEncryptor(ccnpy.flic.ManifestEncryptor):
+class PresharedKeyEncryptor(ManifestEncryptor):
     def __init__(self, key, key_number):
         self._psk = PresharedKey(key, key_number)
 

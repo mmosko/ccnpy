@@ -14,40 +14,42 @@
 
 
 import unittest
-import ccnpy
-import ccnpy.crypto
-import ccnpy.flic
-import ccnpy.flic.presharedkey
-import ccnpy.flic.tree
+
+from ccnpy.core.HashValue import HashValue
+from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.Pointers import Pointers
+from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 
-class test_TreeParameters(unittest.TestCase):
+class TreeParametersTest(unittest.TestCase):
     def test_unencrypted_maxsize(self):
-        hv = ccnpy.HashValue.create_sha256(32*[0])
-        factory = ccnpy.flic.ManifestFactory()
-        chunks = ccnpy.flic.Pointers(hash_values=1000*[hv])
+        hv = HashValue.create_sha256(32 * [0])
+        factory = ManifestFactory()
+        chunks = Pointers(hash_values=1000 * [hv])
         max_packet_size = 1500
-        params = ccnpy.flic.tree.TreeParameters.create_optimized_tree(file_chunks=chunks,
-                                                                      max_packet_size=max_packet_size,
-                                                                      manifest_factory=factory)
+        params = TreeParameters.create_optimized_tree(file_chunks=chunks,
+                                                      max_packet_size=max_packet_size,
+                                                      manifest_factory=factory)
 
-        piece = ccnpy.flic.Pointers(hash_values=params.num_pointers_per_node()*[hv])
+        piece = Pointers(hash_values=params.num_pointers_per_node() * [hv])
         packet = factory.build_packet(source=piece)
         self.assertTrue(len(packet) < max_packet_size)
         self.assertEqual(40, params.num_pointers_per_node())
 
     def test_encrypted_maxsize(self):
-        key=ccnpy.crypto.AesGcmKey.generate(128)
-        encryptor=ccnpy.flic.presharedkey.PresharedKeyEncryptor(key=key, key_number=22)
-        hv = ccnpy.HashValue.create_sha256(32*[0])
-        factory = ccnpy.flic.ManifestFactory(encryptor=encryptor)
-        chunks = ccnpy.flic.Pointers(hash_values=1000*[hv])
+        key = AesGcmKey.generate(128)
+        encryptor = PresharedKeyEncryptor(key=key, key_number=22)
+        hv = HashValue.create_sha256(32 * [0])
+        factory = ManifestFactory(encryptor=encryptor)
+        chunks = Pointers(hash_values=1000 * [hv])
         max_packet_size = 1500
-        params = ccnpy.flic.tree.TreeParameters.create_optimized_tree(file_chunks=chunks,
-                                                                      max_packet_size=max_packet_size,
-                                                                      manifest_factory=factory)
+        params = TreeParameters.create_optimized_tree(file_chunks=chunks,
+                                                      max_packet_size=max_packet_size,
+                                                      manifest_factory=factory)
 
-        piece = ccnpy.flic.Pointers(hash_values=params.num_pointers_per_node()*[hv])
+        piece = Pointers(hash_values=params.num_pointers_per_node() * [hv])
         packet = factory.build_packet(source=piece)
         self.assertTrue(len(packet) < max_packet_size)
         self.assertEqual(38, params.num_pointers_per_node())

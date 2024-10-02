@@ -16,10 +16,10 @@
 import array
 import unittest
 
-import ccnpy.crypto
+from ccnpy.crypto.AesGcmKey import AesGcmKey
 
 
-class test_AesGcmKey(unittest.TestCase):
+class AesGcmKeyTest(unittest.TestCase):
     # openssl rand 16 | xxd - -include
     key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
@@ -28,7 +28,7 @@ class test_AesGcmKey(unittest.TestCase):
         buffer = array.array("B", b'somewhere over the rainbow')
         aad = array.array("B", b'way up high')
 
-        key = ccnpy.crypto.AesGcmKey(self.key)
+        key = AesGcmKey(self.key)
         iv = key.nonce()
         (c, a) = key.encrypt(nonce=iv, plaintext=buffer, associated_data=aad)
         # print("nonce      = %r" % iv)

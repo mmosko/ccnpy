@@ -17,6 +17,11 @@ import math
 
 
 class Solution:
+    """
+    Determines tree structure based on certain input parameters.
+
+    Solution is used by `TreeOptimizer`.
+    """
     def __init__(self, total_direct_nodes, num_pointers, direct_per_node, indirect_per_node, num_internal_nodes, waste):
         self._total_direct_nodes = total_direct_nodes
         self._num_pointers = num_pointers

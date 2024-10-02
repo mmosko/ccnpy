@@ -12,23 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import array
 import unittest
 
-import ccnpy
+from ccnpy.core.Payload import Payload
+from ccnpy.core.Tlv import Tlv
 
 
-class Payload_Test(unittest.TestCase):
+class PayloadTest(unittest.TestCase):
     def test_serialize(self):
-        payload = ccnpy.Payload(array.array("B", [1, 2, 3, 4]))
-        expected = array.array("B", [0, ccnpy.Payload.class_type(), 0, 4, 1, 2, 3, 4])
+        payload = Payload(array.array("B", [1, 2, 3, 4]))
+        expected = array.array("B", [0, Payload.class_type(), 0, 4, 1, 2, 3, 4])
         actual = payload.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, ccnpy.Payload.class_type(), 0, 4, 1, 2, 3, 4])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.Payload.parse(tlv)
-        expected = ccnpy.Payload(array.array("B", [1, 2, 3, 4]))
+        wire_format = array.array("B", [0, Payload.class_type(), 0, 4, 1, 2, 3, 4])
+        tlv = Tlv.deserialize(wire_format)
+        actual = Payload.parse(tlv)
+        expected = Payload(array.array("B", [1, 2, 3, 4]))
         self.assertEqual(expected, actual)
