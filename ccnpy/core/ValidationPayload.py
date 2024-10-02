@@ -1,23 +1,21 @@
 #  Copyright 2024 Marc Mosko
-#
+# 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#
+# 
 #      http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import ccnpy.core
 
 
-import ccnpy
-
-
-class ValidationPayload(ccnpy.TlvType):
+class ValidationPayload(ccnpy.core.TlvType):
     __T_VALIDATION_PAYLOAD = 0x0004
 
     @classmethod
@@ -27,15 +25,15 @@ class ValidationPayload(ccnpy.TlvType):
     def __init__(self, payload):
         """
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         self._payload = payload
-        self._tlv = ccnpy.Tlv(self.class_type(), self._payload)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), self._payload)
 
     def __eq__(self, other):
         return self.payload() == other.payload()
 
     def __repr__(self):
-        return "ValPld: %r" % ccnpy.DisplayFormatter.hexlify(self._payload)
+        return "ValPld: %r" % ccnpy.core.DisplayFormatter.hexlify(self._payload)
 
     def __len__(self):
         return len(self._tlv)

@@ -11,28 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import ccnpy
-
-
-class ExpiryTime(ccnpy.Timestamp):
-    __T_EXPIRY = 0x0006
-
-    @classmethod
-    def class_type(cls):
-        return cls.__T_EXPIRY
-
-    def __init__(self, timestamp):
-        """
-        :param timestamp: Python datetime timestamp (seconds float)
-        """
-        ccnpy.Timestamp.__init__(self, timestamp)
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
-
-        msec = tlv.value_as_number()
-        timestamp = msec / 1000.0
-        return cls(timestamp)

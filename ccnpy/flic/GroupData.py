@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class GroupData(ccnpy.TlvType):
+class GroupData(ccnpy.core.TlvType):
     """
     TODO: Should extend NodeData instead of repeating all the code
     """
@@ -36,19 +35,19 @@ class GroupData(ccnpy.TlvType):
         :param leaf_size: Total application bytes in direct pointers
         :param locators:
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
         if subtree_size is not None and not isinstance(subtree_size, ccnpy.flic.SubtreeSize):
-            raise TypeError("subtree_size, if present, must be ccnpy.flic.SubtreeSize")
+            raise TypeError("subtree_size, if present, must be ccnpy.core.flic.SubtreeSize")
 
-        if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.HashValue):
-            raise TypeError("subtree_digest, if present, must be ccnpy.HashValue")
+        if subtree_digest is not None and not isinstance(subtree_digest, ccnpy.core.HashValue):
+            raise TypeError("subtree_digest, if present, must be ccnpy.core.HashValue")
 
         if leaf_size is not None:
             raise RuntimeError("Not Implemented")
 
         if locators is not None and not isinstance(locators, ccnpy.flic.LocatorList):
-            raise TypeError("locators, if present, must be ccnpy.flic.LocatorList")
+            raise TypeError("locators, if present, must be ccnpy.core.flic.LocatorList")
 
         self._subtree_size = subtree_size
         self._subtree_digest = subtree_digest
@@ -59,12 +58,12 @@ class GroupData(ccnpy.TlvType):
             tlvs.append(subtree_size)
 
         if self._subtree_digest is not None:
-            tlvs.append(ccnpy.Tlv(GroupData.__subtree_digest_type, self._subtree_digest))
+            tlvs.append(ccnpy.core.Tlv(GroupData.__subtree_digest_type, self._subtree_digest))
 
         if self._locators is not None:
             tlvs.append(self._locators)
 
-        self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), tlvs)
 
     def __len__(self):
         return len(self._tlv)
@@ -96,7 +95,7 @@ class GroupData(ccnpy.TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
             if inner_tlv.type() == ccnpy.flic.SubtreeSize.class_type():
@@ -104,7 +103,7 @@ class GroupData(ccnpy.TlvType):
                 subtree_size = ccnpy.flic.SubtreeSize.parse(inner_tlv)
             elif inner_tlv.type() == cls.__subtree_digest_type:
                 assert subtree_digest is None
-                subtree_digest = ccnpy.HashValue.deserialize(inner_tlv.value())
+                subtree_digest = ccnpy.core.HashValue.deserialize(inner_tlv.value())
             elif inner_tlv.type() == ccnpy.flic.LocatorList.class_type():
                 assert locators is None
                 locators = ccnpy.flic.LocatorList.parse(inner_tlv)

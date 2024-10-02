@@ -12,15 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
 from pathlib import PurePath
 from urllib.parse import urlparse
 
 import ccnpy
 
 
-class NameComponent(ccnpy.Tlv):
+class NameComponent(ccnpy.core.Tlv):
     __T_NAMESEGMENT=0x0001
     __T_IPID=0x0002
 
@@ -33,10 +31,10 @@ class NameComponent(ccnpy.Tlv):
         return cls(cls.__T_IPID, value)
 
     def __init__(self, tlv_type, value):
-        ccnpy.Tlv.__init__(self, tlv_type=tlv_type, value=value)
+        ccnpy.core.Tlv.__init__(self, tlv_type=tlv_type, value=value)
 
 
-class Name(ccnpy.TlvType):
+class Name(ccnpy.core.TlvType):
     __T_NAME = 0x0000
 
     @classmethod
@@ -48,9 +46,9 @@ class Name(ccnpy.TlvType):
 
         :param components: An array of NameComponents
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         self._components = components
-        self._tlv = ccnpy.Tlv(self.class_type(), self._components)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), self._components)
 
     def __len__(self):
         return len(self._tlv)
@@ -99,7 +97,7 @@ class Name(ccnpy.TlvType):
         components = []
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.NameComponent.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.NameComponent.deserialize(tlv.value()[offset:])
             if len(inner_tlv) == 0:
                 raise RuntimeError("Inner TLV length is 0, must be at least 4")
             offset += len(inner_tlv)
@@ -108,7 +106,7 @@ class Name(ccnpy.TlvType):
             converted_tlv = inner_tlv
             try:
                 encoded = inner_tlv.value().tobytes()
-                converted_tlv = ccnpy.NameComponent(inner_tlv.type(), encoded)
+                converted_tlv = ccnpy.core.NameComponent(inner_tlv.type(), encoded)
             except RuntimeError:
                 pass
 
@@ -129,4 +127,3 @@ class Name(ccnpy.TlvType):
             components.append(c)
 
         return cls(components)
-

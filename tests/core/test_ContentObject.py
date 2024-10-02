@@ -17,15 +17,18 @@ import array
 import unittest
 from datetime import datetime, UTC
 
-import ccnpy
+from ccnpy.core.ContentObject import ContentObject
+from ccnpy.core.Name import Name
+from ccnpy.core.Payload import Payload
+from ccnpy.core.Tlv import Tlv
 
 
-class ContentObject_Test(unittest.TestCase):
+class ContentObjectTest(unittest.TestCase):
     def test_serialize(self):
-        name = ccnpy.Name.from_uri('ccnx:/apple/pie')
-        payload = ccnpy.Payload(array.array("B", [1, 3, 5, 7, 9]))
+        name = Name.from_uri('ccnx:/apple/pie')
+        payload = Payload(array.array("B", [1, 3, 5, 7, 9]))
         dt = datetime.fromtimestamp(1560252745.906, UTC)
-        co = ccnpy.ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
+        co = ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
         name_tlv = co.name()
         payload_type_tlv = co.payload_type()
         payload_tlv = co.payload()
@@ -46,12 +49,12 @@ class ContentObject_Test(unittest.TestCase):
                                         0, 6, 0, 8, 0, 0, 1, 107, 70, 79, 136, 178,
                                         0, 5, 0, 1, 0,
                                         0, 1, 0, 5, 1, 3, 5, 7, 9])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.ContentObject.parse(tlv)
+        tlv = Tlv.deserialize(wire_format)
+        actual = ContentObject.parse(tlv)
 
-        name = ccnpy.Name.from_uri('ccnx:/apple/pie')
-        payload = ccnpy.Payload(array.array("B", [1, 3, 5, 7, 9]))
+        name = Name.from_uri('ccnx:/apple/pie')
+        payload = Payload(array.array("B", [1, 3, 5, 7, 9]))
         dt = datetime.fromtimestamp(1560252745.906, UTC)
-        expected = ccnpy.ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
+        expected = ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
         self.assertEqual(expected, actual, "Incorrect deserialization")
 

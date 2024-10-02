@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from abc import ABC
-from datetime import datetime
+from datetime import datetime, UTC
 
 import ccnpy
 
 
-class Timestamp(ccnpy.TlvType, ABC):
+class Timestamp(ccnpy.core.TlvType, ABC):
     """
     base class for ExpiryTime and SignatureTime.
 
@@ -32,9 +33,9 @@ class Timestamp(ccnpy.TlvType, ABC):
         """
         :param timestamp: Python datetime timestamp (seconds float)
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         self._timestamp = timestamp
-        self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self.milliseconds())
+        self._tlv = ccnpy.core.Tlv.create_uint64(self.class_type(), self.milliseconds())
         self._wire_format = self._tlv.serialize()
 
     def __eq__(self, other):
@@ -78,9 +79,9 @@ class Timestamp(ccnpy.TlvType, ABC):
 
     def datetime(self):
         try:
-            return datetime.utcfromtimestamp(self._timestamp)
+            return datetime.fromtimestamp(self._timestamp, UTC)
         except ValueError:
-            return datetime.utcfromtimestamp(0)
+            return datetime.fromtimestamp(0, UTC)
 
     @classmethod
     def now(cls):

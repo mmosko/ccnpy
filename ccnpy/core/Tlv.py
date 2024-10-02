@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
 import array
 
 import ccnpy
@@ -96,7 +94,7 @@ class Tlv:
             byte_list = []
             for x in value:
                 if x is not None:
-                    if isinstance(x, ccnpy.TlvType) or isinstance(x, ccnpy.Tlv):
+                    if isinstance(x, ccnpy.core.TlvType) or isinstance(x, ccnpy.core.Tlv):
                         byte_list.extend(x.serialize())
                     else:
                         byte_list.append(x)
@@ -133,7 +131,7 @@ class Tlv:
         # make a copy
         new_value = array.array("B", self._value)
         new_value.extend(extension)
-        new_tlv = ccnpy.Tlv(self.type(), new_value)
+        new_tlv = ccnpy.core.Tlv(self.type(), new_value)
         return new_tlv
 
     def type(self):

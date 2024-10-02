@@ -1,25 +1,24 @@
 #  Copyright 2024 Marc Mosko
-#
+# 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#
+# 
 #      http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, UTC
 
-import ccnpy
+import ccnpy.core
 
 
-class ValidationAlg(ccnpy.TlvType):
+class ValidationAlg(ccnpy.core.TlvType):
     """
     ValidationAlg is an abstract intermediate class between TlvType and the concrete
     validation algorithms.
@@ -33,7 +32,7 @@ class ValidationAlg(ccnpy.TlvType):
     def __init__(self):
         """
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
     @abstractmethod
     def __len__(self):
@@ -44,7 +43,7 @@ class ValidationAlg(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise ValueError("Incorrect TLV type %r" % tlv.type())
 
-        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+        inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
 
         if inner_tlv.type() == ValidationAlg_RsaSha256.class_type():
             return ValidationAlg_RsaSha256.parse(inner_tlv)
@@ -68,8 +67,8 @@ class ValidationAlg_Crc32c(ValidationAlg):
 
     def __init__(self):
         ValidationAlg.__init__(self)
-        self._tlv = ccnpy.Tlv(ValidationAlg.class_type(),
-                              ccnpy.Tlv(self.class_type(), []))
+        self._tlv = ccnpy.core.Tlv(ValidationAlg.class_type(),
+                              ccnpy.core.Tlv(self.class_type(), []))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -109,7 +108,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
     def __init__(self, keyid=None, public_key=None, key_link=None, signature_time=None):
         """
         :param keyid: The keyid to include in the ValidationAlg (HashValue)
-        :param public_key: A ccnpy.crypto.RsaKey with a public key to embed in the ValidationAlg (RsaKey)
+        :param public_key: A ccnpy.core.crypto.RsaKey with a public key to embed in the ValidationAlg (RsaKey)
         :param key_link: A Link to include in the ValidationAlg (Link)
         :param signature_time: A datetime when the signature was created (uses now if None) (SignatureTime)
         """
@@ -122,25 +121,25 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         if keyid is None:
             raise ValueError("Must provide a keyid and/or a public_key")
 
-        tlvs.append(ccnpy.Tlv(self.__T_KEYID, keyid))
+        tlvs.append(ccnpy.core.Tlv(self.__T_KEYID, keyid))
 
         if public_key is not None:
-            tlvs.append(ccnpy.Tlv(self.__T_PUBLICKEY, public_key.der()))
+            tlvs.append(ccnpy.core.Tlv(self.__T_PUBLICKEY, public_key.der()))
 
         if key_link is not None:
-            tlvs.append(ccnpy.Tlv(ccnpy.KeyLink.class_type(), key_link))
+            tlvs.append(ccnpy.core.Tlv(ccnpy.core.KeyLink.class_type(), key_link))
 
         if signature_time is None:
-            signature_time = datetime.utcnow()
+            signature_time = datetime.now(UTC)
 
         if isinstance(signature_time, datetime):
-            signature_time = ccnpy.SignatureTime.from_datetime(signature_time)
-        elif not isinstance(signature_time, ccnpy.SignatureTime):
-            raise TypeError("signature_time must be None (for now), a datetime (UTC), or a ccnpy.SignatureTime")
+            signature_time = ccnpy.core.SignatureTime.from_datetime(signature_time)
+        elif not isinstance(signature_time, ccnpy.core.SignatureTime):
+            raise TypeError("signature_time must be None (for now), a datetime (UTC), or a ccnpy.core.SignatureTime")
 
         tlvs.append(signature_time)
-        self._tlv = ccnpy.Tlv(ccnpy.ValidationAlg.class_type(),
-                              ccnpy.Tlv(self.class_type(), tlvs))
+        self._tlv = ccnpy.core.Tlv(ccnpy.core.ValidationAlg.class_type(),
+                              ccnpy.core.Tlv(self.class_type(), tlvs))
         self._keyid = keyid
         self._public_key = public_key
         self._key_link = key_link
@@ -177,17 +176,17 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         keyid = public_key = key_link = signature_time = None
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             if inner_tlv.type() == cls.__T_KEYID:
-                hash_value_tlv = ccnpy.Tlv.deserialize(inner_tlv.value())
-                keyid = ccnpy.HashValue.parse(hash_value_tlv)
-            elif inner_tlv.type() == ccnpy.SignatureTime.class_type():
-                signature_time = ccnpy.SignatureTime.parse(inner_tlv)
+                hash_value_tlv = ccnpy.core.Tlv.deserialize(inner_tlv.value())
+                keyid = ccnpy.core.HashValue.parse(hash_value_tlv)
+            elif inner_tlv.type() == ccnpy.core.SignatureTime.class_type():
+                signature_time = ccnpy.core.SignatureTime.parse(inner_tlv)
             elif inner_tlv.type() == cls.__T_PUBLICKEY:
                 der = inner_tlv.value()
                 # TODO: convert from DER to Public Key
                 raise RuntimeError("Not implemented")
-            elif inner_tlv.type() == ccnpy.KeyLink.class_type():
+            elif inner_tlv.type() == ccnpy.core.KeyLink.class_type():
                 # TODO: process a LINK type
                 raise RuntimeError("Not implemented")
             offset += len(inner_tlv)

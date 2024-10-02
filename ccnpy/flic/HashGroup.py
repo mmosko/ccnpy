@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-import ccnpy
+import ccnpy.core
 import ccnpy.flic
 
 
-class HashGroup(ccnpy.TlvType):
+class HashGroup(ccnpy.core.TlvType):
     __type = 0x0002
 
     @classmethod
@@ -28,9 +27,9 @@ class HashGroup(ccnpy.TlvType):
         """
 
         :param group_data:
-        :param pointers: A list of ccnpy.HashValue
+        :param pointers: A list of ccnpy.core.HashValue
         """
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         if group_data is not None and not isinstance(group_data, ccnpy.flic.GroupData):
             raise TypeError("group_data must be ccnpy.flic.GroupData")
 
@@ -40,7 +39,7 @@ class HashGroup(ccnpy.TlvType):
         self._group_data = group_data
         self._pointers = pointers
 
-        self._tlv = ccnpy.Tlv(self.class_type(), [self._group_data, self._pointers])
+        self._tlv = ccnpy.core.Tlv(self.class_type(), [self._group_data, self._pointers])
 
     def __len__(self):
         return len(self._tlv)
@@ -57,7 +56,7 @@ class HashGroup(ccnpy.TlvType):
     def pointers(self):
         """
 
-        :return: A list of ccnpy.HashValue
+        :return: A list of ccnpy.core.HashValue
         """
         return self._pointers
 
@@ -74,7 +73,7 @@ class HashGroup(ccnpy.TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
             if inner_tlv.type() == ccnpy.flic.GroupData.class_type():

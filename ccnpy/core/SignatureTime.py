@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -26,26 +25,27 @@
 #  limitations under the License.
 
 
-class SizedPointer:
-    """
-    Represents a pointer along with it's size in a Manifest, used while building a manifest
-    """
+import ccnpy
 
-    def __init__(self, content_object_hash, length):
+
+class SignatureTime(ccnpy.core.Timestamp):
+    __T_SIGTIME = 0x000F
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_SIGTIME
+
+    def __init__(self, timestamp):
         """
-        :param content_object_hash: The name of the content object
-        :param length: the application bytes
+        :param timestamp: Python datetime timestamp (seconds float)
         """
-        self._content_object_hash = content_object_hash
-        self._length = length
+        ccnpy.core.Timestamp.__init__(self, timestamp)
 
-    def content_object_hash(self):
-        return self._content_object_hash
+    @classmethod
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
-    def length(self):
-        return self._length
-
-    def file_name(self):
-        b = self._content_object_hash.value().tobytes()
-        return b.hex()
-
+        msec = tlv.value_as_number()
+        timestamp = msec / 1000.0
+        return cls(timestamp)

@@ -13,27 +13,19 @@
 #  limitations under the License.
 
 
-import ccnpy
+import unittest
+
+import ccnpy.core.HashValue
 
 
-class SignatureTime(ccnpy.Timestamp):
-    __T_SIGTIME = 0x000F
+class test_HashValue(unittest.TestCase):
+    def test_in_dictionary(self):
+        hv1 = ccnpy.HashValue.create_sha256([1, 2, 3])
+        hv2 = ccnpy.HashValue.create_sha256([1, 2, 3])
+        self.assertEqual(hash(hv1), hash(hv2))
 
-    @classmethod
-    def class_type(cls):
-        return cls.__T_SIGTIME
+        d = {hv1: True}
+        self.assertTrue(d[hv1])
 
-    def __init__(self, timestamp):
-        """
-        :param timestamp: Python datetime timestamp (seconds float)
-        """
-        ccnpy.Timestamp.__init__(self, timestamp)
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
-
-        msec = tlv.value_as_number()
-        timestamp = msec / 1000.0
-        return cls(timestamp)
+        d[hv2] = False
+        self.assertFalse(d[hv1])

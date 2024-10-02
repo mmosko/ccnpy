@@ -1,17 +1,16 @@
 #  Copyright 2024 Marc Mosko
-#
+# 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
-#
+# 
 #      http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 
 import array
 
@@ -34,14 +33,14 @@ class Link:
         :param keyid: The KeyId restriction
         :param digest: The ContentObjectHash restriction
         """
-        if name is not None and not isinstance(name, ccnpy.Name):
-            raise TypeError("name must be ccnpy.Name if present")
+        if name is not None and not isinstance(name, ccnpy.core.Name):
+            raise TypeError("name must be ccnpy.core.Name if present")
 
-        if keyid is not None and not isinstance(keyid, ccnpy.HashValue):
-            raise TypeError("keyid must be ccnpy.Hashvalue if present")
+        if keyid is not None and not isinstance(keyid, ccnpy.core.HashValue):
+            raise TypeError("keyid must be ccnpy.core.Hashvalue if present")
 
-        if digest is not None and not isinstance(digest, ccnpy.HashValue):
-            raise TypeError("digest must be ccnpy.Hashvalue if present")
+        if digest is not None and not isinstance(digest, ccnpy.core.HashValue):
+            raise TypeError("digest must be ccnpy.core.Hashvalue if present")
 
         self._name = name
         self._keyid = keyid
@@ -52,10 +51,10 @@ class Link:
             self._wire_format.extend(self._name.serialize())
 
         if self._keyid is not None:
-            self._wire_format.extend(ccnpy.Tlv(self.__T_KEYIDRESTR, self._keyid).serialize())
+            self._wire_format.extend(ccnpy.core.Tlv(self.__T_KEYIDRESTR, self._keyid).serialize())
 
         if self._digest is not None:
-            self._wire_format.extend(ccnpy.Tlv(self.__T_OBJHASHRESTR, self._digest).serialize())
+            self._wire_format.extend(ccnpy.core.Tlv(self.__T_OBJHASHRESTR, self._digest).serialize())
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -78,20 +77,19 @@ class Link:
 
         offset = 0
         while offset < len(buffer):
-            tlv = ccnpy.Tlv.deserialize(buffer[offset:])
+            tlv = ccnpy.core.Tlv.deserialize(buffer[offset:])
             offset += len(tlv)
-            if tlv.type() == ccnpy.Name.class_type():
+            if tlv.type() == ccnpy.core.Name.class_type():
                 assert name is None
-                name = ccnpy.Name.parse(tlv)
+                name = ccnpy.core.Name.parse(tlv)
             elif tlv.type() == cls.__T_KEYIDRESTR:
                 assert keyid is None
-                inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-                keyid = ccnpy.HashValue.parse(inner_tlv)
+                inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
+                keyid = ccnpy.core.HashValue.parse(inner_tlv)
             elif tlv.type() == cls.__T_OBJHASHRESTR:
                 assert digest is None
-                inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-                digest = ccnpy.HashValue.parse(inner_tlv)
+                inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
+                digest = ccnpy.core.HashValue.parse(inner_tlv)
             else:
                 raise ValueError("Unsupported TLV %r" % tlv)
         return cls(name=name, keyid=keyid, digest=digest)
-

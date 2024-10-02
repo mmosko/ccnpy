@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -25,25 +24,34 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import array
-import unittest
-
-import ccnpy
+from abc import ABC, abstractmethod
 
 
-class ExpiryTime_Test(unittest.TestCase):
-    def test_serialize(self):
-        timestamp = 1560227545.906023
-        expiry = ccnpy.ExpiryTime(timestamp)
-        actual = expiry.serialize()
-        expected = array.array("B", [0, 6, 0, 8, 0x00, 0x00, 0x01, 0x6b, 0x44, 0xcf, 0x03, 0x32])
-        self.assertEqual(expected, actual)
+class TlvType(ABC):
+    """
+    superclass for objects that are TLV types
+    """
+    def __init__(self):
+        pass
 
-    def test_deserialize(self):
-        wire_format = array.array("B", [0, 6, 0, 8, 0x00, 0x00, 0x01, 0x6b, 0x44, 0xcf, 0x03, 0x32])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.ExpiryTime.parse(tlv)
+    @abstractmethod
+    def __len__(self):
+        """
+        Returns the TLV encoded length
+        :return:
+        """
+        pass
 
-        timestamp = 1560227545.906
-        expected = ccnpy.ExpiryTime(timestamp)
-        self.assertEqual(expected, actual)
+    @classmethod
+    @abstractmethod
+    def class_type(cls):
+        pass
+
+    @abstractmethod
+    def serialize(self):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def parse(cls, tlv):
+        pass

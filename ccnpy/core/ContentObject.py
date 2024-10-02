@@ -18,7 +18,7 @@ from datetime import datetime
 import ccnpy
 
 
-class ContentObject(ccnpy.TlvType):
+class ContentObject(ccnpy.core.TlvType):
     __T_OBJECT = 0x0002
 
     @classmethod
@@ -29,67 +29,67 @@ class ContentObject(ccnpy.TlvType):
     def create_data(cls, name=None, payload=None, expiry_time=None):
         """
 
-        :param name: ccnpy.Name
-        :param payload: A byte array (array.array("B", ...)) or ccnpy.Payload
+        :param name: ccnpy.core.Name
+        :param payload: A byte array (array.array("B", ...)) or ccnpy.core.Payload
         :param expiry_time: A python datetime
-        :return: A ccnpy.ContentObject
+        :return: A ccnpy.core.ContentObject
         """
         payload_type = None
 
         if payload is not None:
-            payload_type = ccnpy.PayloadType.create_data_type()
-            if not isinstance(payload, ccnpy.Payload):
-                payload = ccnpy.Payload(payload)
+            payload_type = ccnpy.core.PayloadType.create_data_type()
+            if not isinstance(payload, ccnpy.core.Payload):
+                payload = ccnpy.core.Payload(payload)
 
         if expiry_time is not None:
             if not isinstance(expiry_time, datetime):
                 raise TypeError("expiry_time must be datetime")
-            expiry_time = ccnpy.ExpiryTime.from_datetime(expiry_time)
+            expiry_time = ccnpy.core.ExpiryTime.from_datetime(expiry_time)
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
     @classmethod
     def create_manifest(cls, manifest, name=None, expiry_time=None):
         """
 
-        :param name: ccnpy.Name
+        :param name: ccnpy.core.Name
         :param manifest: A serializable object to put in the payload
         :param expiry_time: A python datetime
-        :return: A ccnpy.ContentObject
+        :return: A ccnpy.core.ContentObject
         """
         if manifest is None:
             raise ValueError("manifest must not be None")
 
-        payload_type = ccnpy.PayloadType.create_manifest_type()
-        payload = ccnpy.Payload(manifest.serialize())
+        payload_type = ccnpy.core.PayloadType.create_manifest_type()
+        payload = ccnpy.core.Payload(manifest.serialize())
 
         if expiry_time is not None:
             if not isinstance(expiry_time, datetime):
                 raise TypeError("expiry_time must be datetime")
-            expiry_time = ccnpy.ExpiryTime.from_datetime(expiry_time)
+            expiry_time = ccnpy.core.ExpiryTime.from_datetime(expiry_time)
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
     def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         if name is not None:
-            if not isinstance(name, ccnpy.Name):
-                raise TypeError("Name must be of type ccnpy.Name")
+            if not isinstance(name, ccnpy.core.Name):
+                raise TypeError("Name must be of type ccnpy.core.Name")
 
         if payload is not None:
-            if not isinstance(payload, ccnpy.Payload):
-                raise TypeError("Payload must be of type ccnpy.Payload")
+            if not isinstance(payload, ccnpy.core.Payload):
+                raise TypeError("Payload must be of type ccnpy.core.Payload")
 
         if payload_type is not None:
-            if not isinstance(payload_type, ccnpy.PayloadType):
-                raise TypeError("PayloadType must be of type ccnpy.PayloadType")
+            if not isinstance(payload_type, ccnpy.core.PayloadType):
+                raise TypeError("PayloadType must be of type ccnpy.core.PayloadType")
 
         self._name = name
         self._payload_type = payload_type
         self._payload = payload
         self._expiry_time = expiry_time
-        self._tlv = ccnpy.Tlv(self.class_type(), [self._name,
-                                                  self._expiry_time,
-                                                  self._payload_type,
-                                                  self._payload])
+        self._tlv = ccnpy.core.Tlv(self.class_type(), [self._name,
+                                                       self._expiry_time,
+                                                       self._payload_type,
+                                                       self._payload])
 
     def __repr__(self):
         if self.is_manifest():
@@ -130,21 +130,21 @@ class ContentObject(ccnpy.TlvType):
         name = payload_type = payload = expiry_time = None
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
-            if inner_tlv.type() == ccnpy.Name.class_type():
+            if inner_tlv.type() == ccnpy.core.Name.class_type():
                 assert name is None
-                name = ccnpy.Name.parse(inner_tlv)
-            elif inner_tlv.type() == ccnpy.PayloadType.class_type():
+                name = ccnpy.core.Name.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.core.PayloadType.class_type():
                 assert payload_type is None
-                payload_type = ccnpy.PayloadType.parse(inner_tlv)
-            elif inner_tlv.type() == ccnpy.Payload.class_type():
+                payload_type = ccnpy.core.PayloadType.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.core.Payload.class_type():
                 assert payload is None
-                payload = ccnpy.Payload.parse(inner_tlv)
-            elif inner_tlv.type() == ccnpy.ExpiryTime.class_type():
+                payload = ccnpy.core.Payload.parse(inner_tlv)
+            elif inner_tlv.type() == ccnpy.core.ExpiryTime.class_type():
                 assert expiry_time is None
-                expiry_time = ccnpy.ExpiryTime.parse(inner_tlv)
+                expiry_time = ccnpy.core.ExpiryTime.parse(inner_tlv)
             else:
                 raise ValueError("Unsupported ContentObject TLV %r" % inner_tlv.type())
 

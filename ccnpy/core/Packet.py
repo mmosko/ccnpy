@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-
 import array
 import hashlib
 
@@ -21,44 +19,46 @@ import ccnpy
 
 
 class Packet:
+    __FIXED_HEADER_LEN = 8
+
     @classmethod
     def create_interest(cls, body, hop_limit):
         # TODO: Hard-coding the 8 is not good
-        fh = ccnpy.FixedHeader.create_interest(packet_length=8 + len(body), hop_limit=hop_limit)
+        fh = ccnpy.core.FixedHeader.create_interest(packet_length=cls.__FIXED_HEADER_LEN + len(body), hop_limit=hop_limit)
         return cls(header=fh, body=body)
 
     @classmethod
     def create_content_object(cls, body):
         # TODO: Hard-coding the 8 is not good
-        fh = ccnpy.FixedHeader.create_content_object(packet_length=8 + len(body))
+        fh = ccnpy.core.FixedHeader.create_content_object(packet_length=cls.__FIXED_HEADER_LEN + len(body))
         return cls(header=fh, body=body)
 
     @classmethod
     def create_signed_interest(cls, body, hop_limit, validation_alg, validation_payload):
         # TODO: Hard-coding the 8 is not good
-        packet_length = 8 + len(body) + len(validation_alg) + len(validation_payload)
-        fh = ccnpy.FixedHeader.create_interest(packet_length=packet_length, hop_limit=hop_limit)
+        packet_length = cls.__FIXED_HEADER_LEN + len(body) + len(validation_alg) + len(validation_payload)
+        fh = ccnpy.core.FixedHeader.create_interest(packet_length=packet_length, hop_limit=hop_limit)
         return cls(header=fh, body=body, validation_alg=validation_alg, validation_payload=validation_payload)
 
     @classmethod
     def create_signed_content_object(cls, body, validation_alg, validation_payload):
         # TODO: Hard-coding the 8 is not good
-        packet_length = 8 + len(body) + len(validation_alg) + len(validation_payload)
-        fh = ccnpy.FixedHeader.create_content_object(packet_length=packet_length)
+        packet_length = cls.__FIXED_HEADER_LEN + len(body) + len(validation_alg) + len(validation_payload)
+        fh = ccnpy.core.FixedHeader.create_content_object(packet_length=packet_length)
         return cls(header=fh, body=body, validation_alg=validation_alg, validation_payload=validation_payload)
 
     def __init__(self, header, body, validation_alg=None, validation_payload=None):
-        if not isinstance(header, ccnpy.FixedHeader):
-            raise TypeError("header is not ccnpy.FixedHeader")
+        if not isinstance(header, ccnpy.core.FixedHeader):
+            raise TypeError("header is not ccnpy.core.FixedHeader")
 
-        if not (isinstance(body, ccnpy.Interest) or isinstance(body, ccnpy.ContentObject)):
-            raise TypeError("body is not ccnpy.Interest or ccnpy.ContentObject")
+        if not (isinstance(body, ccnpy.core.Interest) or isinstance(body, ccnpy.core.ContentObject)):
+            raise TypeError("body is not ccnpy.core.Interest or ccnpy.core.ContentObject")
 
-        if validation_alg is not None and not isinstance(validation_alg, ccnpy.ValidationAlg):
-            raise TypeError("validation_alg must be ccnpy.ValidationAlg")
+        if validation_alg is not None and not isinstance(validation_alg, ccnpy.core.ValidationAlg):
+            raise TypeError("validation_alg must be ccnpy.core.ValidationAlg")
 
-        if validation_payload is not None and not isinstance(validation_payload, ccnpy.ValidationPayload):
-            raise TypeError("validation_payload must be ccnpy.ValidationPayload")
+        if validation_payload is not None and not isinstance(validation_payload, ccnpy.core.ValidationPayload):
+            raise TypeError("validation_payload must be ccnpy.core.ValidationPayload")
 
         if (validation_alg is not None and validation_payload is None) or \
             (validation_alg is None and validation_payload is not None):
@@ -93,26 +93,26 @@ class Packet:
         header = body = val_alg = val_payload = None
 
         offset = 0
-        header = ccnpy.FixedHeader.deserialize(buffer)
+        header = ccnpy.core.FixedHeader.deserialize(buffer)
         offset += header.header_length()
 
         while offset < len(buffer):
-            tlv = ccnpy.Tlv.deserialize(buffer[offset:])
+            tlv = ccnpy.core.Tlv.deserialize(buffer[offset:])
             offset += len(tlv)
 
-            if tlv.type() == ccnpy.ContentObject.class_type():
+            if tlv.type() == ccnpy.core.ContentObject.class_type():
                 assert body is None
-                body = ccnpy.ContentObject.parse(tlv)
-            elif tlv.type() == ccnpy.Interest.class_type():
+                body = ccnpy.core.ContentObject.parse(tlv)
+            elif tlv.type() == ccnpy.core.Interest.class_type():
                 assert body is None
-                body = ccnpy.Interest.parse(tlv)
-            elif tlv.type() == ccnpy.ValidationAlg.class_type():
+                body = ccnpy.core.Interest.parse(tlv)
+            elif tlv.type() == ccnpy.core.ValidationAlg.class_type():
                 assert val_alg is None
-                val_alg = ccnpy.ValidationAlg.parse(tlv)
-            elif tlv.type() == ccnpy.ValidationPayload.class_type():
+                val_alg = ccnpy.core.ValidationAlg.parse(tlv)
+            elif tlv.type() == ccnpy.core.ValidationPayload.class_type():
                 assert val_alg is not None
                 assert val_payload is None
-                val_payload = ccnpy.ValidationPayload.parse(tlv)
+                val_payload = ccnpy.core.ValidationPayload.parse(tlv)
             else:
                 raise RuntimeError("Unsupported packet TLV type %r" % tlv.type())
 
@@ -150,5 +150,5 @@ class Packet:
         if self.validation_payload() is not None:
             h.update(self.validation_payload().serialize())
         digest = h.digest()
-        tlv = ccnpy.HashValue.create_sha256(array.array("B", digest))
+        tlv = ccnpy.core.HashValue.create_sha256(array.array("B", digest))
         return tlv

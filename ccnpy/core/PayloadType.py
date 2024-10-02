@@ -11,12 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
 
 import ccnpy
 
 
-class PayloadType(ccnpy.TlvType):
+class PayloadType(ccnpy.core.TlvType):
     __T_PAYLDTYPE = 0x0005
     __T_PAYLOADTYPE_DATA = 0
     __T_PAYLOADTYPE_KEY = 1
@@ -39,9 +51,9 @@ class PayloadType(ccnpy.TlvType):
         return cls.__T_PAYLDTYPE
 
     def __init__(self, payload_type):
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
         self._payload_type = payload_type
-        self._tlv = ccnpy.Tlv.create_uint8(self.class_type(), self._payload_type)
+        self._tlv = ccnpy.core.Tlv.create_uint8(self.class_type(), self._payload_type)
 
     def __len__(self):
         return len(self._tlv)

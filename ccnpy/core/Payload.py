@@ -12,13 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import array
 
 import ccnpy
 
 
-class Payload(ccnpy.TlvType):
+class Payload(ccnpy.core.TlvType):
     __T_PAYLOAD = 0x0001
 
     @classmethod
@@ -26,13 +25,13 @@ class Payload(ccnpy.TlvType):
         return cls.__T_PAYLOAD
 
     def __init__(self, value):
-        ccnpy.TlvType.__init__(self)
+        ccnpy.core.TlvType.__init__(self)
 
         if isinstance(value, list):
             value = array.array("B", value)
 
         self._value = value
-        self._tlv = ccnpy.Tlv(self.class_type(), self._value)
+        self._tlv = ccnpy.core.Tlv(self.class_type(), self._value)
 
     def __len__(self):
         return len(self._tlv)
@@ -43,7 +42,7 @@ class Payload(ccnpy.TlvType):
         return False
 
     def __repr__(self):
-        return "PAYLOAD: %r" % ccnpy.DisplayFormatter.hexlify(self._value)
+        return "PAYLOAD: %r" % ccnpy.core.DisplayFormatter.hexlify(self._value)
 
     def value(self):
         return self._value
