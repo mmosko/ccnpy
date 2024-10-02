@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,25 +13,30 @@
 #  limitations under the License.
 
 
+
 import ccnpy
 
 
 class Interest(ccnpy.TlvType):
+    __T_INTEREST = 0x0001
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_INTEREST
+
     def __init__(self, name=None, key_id_restr=None, con_obj_hash_restr=None):
         """
 
         :param name:
         :param key_id_restr: KeyId Restriction
         :param con_obj_hash_restr: Content Object Hash Restriction
-        :param lifetime: Interest Lifetime (default 4000 msec)
-        :param hoplimit: Interest Hop Limit (default 255)
         """
-        ccnpy.TlvType.__init__(self, ccnpy.TlvType.T_INTEREST)
+        ccnpy.TlvType.__init__(self)
 
         self._name = name
         self._keyidrestr = key_id_restr
         self._conobjhashrestr = con_obj_hash_restr
-        self._tlv = ccnpy.Tlv(self.type_number(), [self._name, self._keyidrestr, self._conobjhashrestr])
+        self._tlv = ccnpy.Tlv(self.class_type(), [self._name, self._keyidrestr, self._conobjhashrestr])
 
     def __len__(self):
         """

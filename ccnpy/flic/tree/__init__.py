@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .SizedPointer import SizedPointer
-from .Traversal import Traversal
+
 from .FileChunks import FileChunks
+from .SizedPointer import SizedPointer
 from .Solution import Solution
-from .TreeParameters import TreeParameters
-from .TreeOptimizer import TreeOptimizer
+from .Traversal import Traversal
 from .TreeBuilder import TreeBuilder
 from .TreeIO import TreeIO
+from .TreeOptimizer import TreeOptimizer
+from .TreeParameters import TreeParameters

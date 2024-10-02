@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import ccnpy
 
 
 class KeyLink(ccnpy.TlvType):
+
     __T_KEYLINK = 0x000E
 
     @classmethod
@@ -32,6 +34,9 @@ class KeyLink(ccnpy.TlvType):
 
     def __repr__(self):
         return "KeyLink: {link: %r}" % self._link
+
+    def __len__(self):
+        return len(self._tlv)
 
     def serialize(self):
         return self._tlv.serialize()

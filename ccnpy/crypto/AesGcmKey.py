@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 
 import array
 import os
@@ -45,7 +46,7 @@ class AesGcmKey:
         if bits not in [128, 192, 256]:
             raise ValueError("bits must be 128, 192, or 256")
 
-        key = AESGCM.generate_key(bit_length=bits)
+        key = AESGCM.generate_key(key_size=bits)
         return cls(key)
 
     @staticmethod

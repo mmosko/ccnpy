@@ -1,7 +1,7 @@
 # Pure Python CCNx 1.0
 
 ccnpy is a pure python implementation of the CCNx 1.0
-protocols (RFC xxxx and RFC yyyy).
+protocols (RFC 8609 and RFC 8569).
 
 The implementation focuses on the client libraries used to consume or produce content and to
 organize it in manifests.  There is no plan to create a python CCNx forwarder.  Currently,

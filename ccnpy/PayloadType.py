@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 
 import ccnpy
 
@@ -37,9 +38,9 @@ class PayloadType(ccnpy.TlvType):
     def class_type(cls):
         return cls.__T_PAYLDTYPE
 
-    def __init__(self, type):
+    def __init__(self, payload_type):
         ccnpy.TlvType.__init__(self)
-        self._payload_type = type
+        self._payload_type = payload_type
         self._tlv = ccnpy.Tlv.create_uint8(self.class_type(), self._payload_type)
 
     def __len__(self):

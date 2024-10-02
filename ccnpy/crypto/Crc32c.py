@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 
 from crc32c import crc32c
 
@@ -53,6 +54,7 @@ class Crc32c_Signer(Signer):
         assert signature_time is None
         return ccnpy.ValidationAlg_Crc32c()
 
+
 class Crc32c_Verifier(Verifier):
     """
     pip install crc32c
@@ -75,7 +77,7 @@ class Crc32c_Verifier(Verifier):
 
         checksum = 0
         for buffer in buffers:
-            checksum = crc32(buffer, checksum)
+            checksum = crc32c(buffer, checksum)
 
         check_payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
         return check_payload == validation_payload

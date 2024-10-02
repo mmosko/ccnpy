@@ -1,4 +1,17 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -52,7 +65,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 
     test_key_file = None
     test_data_file = None
-    file_data = array("B", 5000*[0])
+    file_data = array("B", 5000 * [0])
     test_out_dir = None
 
     class Args:
@@ -77,21 +90,21 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         cls.test_out_dir.cleanup()
 
     def _create_args(self):
-        args=test_manifest_writer.Args()
-        args.filename=self.test_data_file.name
-        args.key_file=self.test_key_file.name
-        args.key_pass=None
-        args.max_size=1500
-        args.name='ccnx:/foo/bar'
-        args.root_flag=False,
-        args.tree_degree=4
-        args.out_dir=self.test_out_dir.name
-        args.locator=None
-        args.root_expiry='2019-10-11T01:02:03+00:00'
-        args.node_expiry=None
-        args.data_expiry='2019-10-11T01:02:03+00:00'
-        args.enc_key=None
-        args.key_num=None
+        args = test_manifest_writer.Args()
+        args.filename = self.test_data_file.name
+        args.key_file = self.test_key_file.name
+        args.key_pass = None
+        args.max_size = 1500
+        args.name = 'ccnx:/foo/bar'
+        args.root_flag = False,
+        args.tree_degree = 4
+        args.out_dir = self.test_out_dir.name
+        args.locator = None
+        args.root_expiry = '2019-10-11T01:02:03+00:00'
+        args.node_expiry = None
+        args.data_expiry = '2019-10-11T01:02:03+00:00'
+        args.enc_key = None
+        args.key_num = None
         return args
 
     def test_manifest(self):
@@ -116,7 +129,8 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
     def test_to_directory(self):
         args = self._create_args()
 
-        mw = ccnpy.apps.ManifestWriter(args=args)
+        mw = ccnpy.apps.ManifestWriter(args=args,
+                                       packet_writer=TreeIO.PacketDirectoryWriter(directory=self.test_out_dir.name))
         root_packet = mw.build()
         print(root_packet)
 
@@ -129,4 +143,3 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         # There are 4 objects: 1 root, 1 leaf manifest, 1 long 0's data, 1 short 0's data
         # The long 0's content object is repeated 3 times, so we've achieved data deduplication
         self.assertEqual(4, buffer.count)
-

@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import array
 import unittest
-from datetime import datetime
+from datetime import datetime, UTC
 
 import ccnpy
 
@@ -23,7 +24,7 @@ class ContentObject_Test(unittest.TestCase):
     def test_serialize(self):
         name = ccnpy.Name.from_uri('ccnx:/apple/pie')
         payload = ccnpy.Payload(array.array("B", [1, 3, 5, 7, 9]))
-        dt = datetime.utcfromtimestamp(1560227545.906)
+        dt = datetime.fromtimestamp(1560252745.906, UTC)
         co = ccnpy.ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
         name_tlv = co.name()
         payload_type_tlv = co.payload_type()
@@ -50,7 +51,7 @@ class ContentObject_Test(unittest.TestCase):
 
         name = ccnpy.Name.from_uri('ccnx:/apple/pie')
         payload = ccnpy.Payload(array.array("B", [1, 3, 5, 7, 9]))
-        dt = datetime.utcfromtimestamp(1560227545.906)
+        dt = datetime.fromtimestamp(1560252745.906, UTC)
         expected = ccnpy.ContentObject.create_data(name=name, payload=payload, expiry_time=dt)
         self.assertEqual(expected, actual, "Incorrect deserialization")
 
