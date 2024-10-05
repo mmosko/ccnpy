@@ -16,18 +16,22 @@
 import array
 import unittest
 
-import ccnpy
-import ccnpy.flic
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.GroupData import GroupData
+from ccnpy.flic.HashGroup import HashGroup
+from ccnpy.flic.Pointers import Pointers
+from ccnpy.flic.SubtreeSize import SubtreeSize
 
 
-class test_HashGroup(unittest.TestCase):
+class HashGroupTest(unittest.TestCase):
     def test_serialize(self):
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
-        p = ccnpy.flic.Pointers([h1, h2, h3])
-        gd = ccnpy.flic.GroupData(subtree_size=ccnpy.flic.SubtreeSize(0x0234))
-        hg = ccnpy.flic.HashGroup(group_data=gd, pointers=p)
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
+        p = Pointers([h1, h2, h3])
+        gd = GroupData(subtree_size=SubtreeSize(0x0234))
+        hg = HashGroup(group_data=gd, pointers=p)
         actual = hg.serialize()
 
         expected = array.array("B", [0, 2, 0, 38,
@@ -42,12 +46,12 @@ class test_HashGroup(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
-        p = ccnpy.flic.Pointers([h1, h2, h3])
-        gd = ccnpy.flic.GroupData(subtree_size=ccnpy.flic.SubtreeSize(0x0234))
-        expected = ccnpy.flic.HashGroup(group_data=gd, pointers=p)
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
+        p = Pointers([h1, h2, h3])
+        gd = GroupData(subtree_size=SubtreeSize(0x0234))
+        expected = HashGroup(group_data=gd, pointers=p)
 
         wire_format = array.array("B", [0, 2, 0, 38,
                                         # Group Data
@@ -58,6 +62,6 @@ class test_HashGroup(unittest.TestCase):
                                         0, 1, 0,  2, 1, 2,
                                         0, 2, 0,  2, 3, 4,
                                         0, 3, 0,  2, 5, 6])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.flic.HashGroup.parse(tlv)
+        tlv = Tlv.deserialize(wire_format)
+        actual = HashGroup.parse(tlv)
         self.assertEqual(expected, actual)

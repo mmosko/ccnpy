@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import abc
 import os
 import socket
 from array import array
@@ -20,7 +19,7 @@ from pathlib import PurePath
 
 from .SizedPointer import SizedPointer
 from ...core.ContentObject import ContentObject
-from ...core.Packet import Packet
+from ...core.Packet import Packet, PacketWriter, PacketReader
 from ...core.Payload import Payload
 
 
@@ -67,15 +66,7 @@ class TreeIO:
             self.count += 1
             self.buffer.extend(data)
 
-    class PacketWriter(abc.ABC):
-        @abc.abstractmethod
-        def put(self, packet: Packet):
-            pass
-
-        def close(self):
-            pass
-
-    class PacketMemoryReader:
+    class PacketMemoryReader(PacketReader):
         """
         An in-memory cache of packets that can be fetch by their content object hash
         """
@@ -85,8 +76,11 @@ class TreeIO:
                 # print("PacketInput: add key %r" % packet.content_object_hash())
                 self.index[packet.content_object_hash()] = packet
 
-        def get(self, hash_value):
+        def get(self, hash_value) -> Packet:
             return self.index[hash_value]
+
+        def close(self):
+            pass
 
     class PacketMemoryWriter(PacketWriter):
         """
@@ -107,7 +101,7 @@ class TreeIO:
         def get(self, hash_value):
             return self.by_hash[hash_value]
 
-    class PacketDirectoryWriter(PacketWriter):
+    class PacketDirectoryWriter(PacketWriter, PacketReader):
         """
         A file-system based write.  Packets are saved to the directory using their
         hash-based named (in UTF-8 hex).
@@ -127,13 +121,16 @@ class TreeIO:
             path = PurePath(self._directory, ptr.file_name())
             packet.save(path)
 
-        def get(self, hash_value):
+        def get(self, hash_value) -> Packet:
             ptr = SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet = Packet.load(path)
             return packet
 
-    class PacketDirectoryReader:
+        def close(self):
+            pass
+
+    class PacketDirectoryReader(PacketReader):
         """
         A file-system based packet reader.  Reads packets based on their hash name from a directory
         """
@@ -147,11 +144,14 @@ class TreeIO:
 
             self._directory = directory
 
-        def get(self, hash_value):
+        def get(self, hash_value) -> Packet:
             ptr = SizedPointer(content_object_hash=hash_value, length=0)
             path = PurePath(self._directory, ptr.file_name())
             packet = Packet.load(path)
             return packet
+
+        def close(self):
+            pass
 
     class PacketNetworkWriter(PacketWriter):
         """

@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Tlv import Tlv
+from ccnpy.core.TlvType import TlvType
 
 
-import ccnpy.core
-
-
-class SubtreeDigest(ccnpy.core.TlvType):
+class SubtreeDigest(TlvType):
     __type = 0x0002
 
     @classmethod
@@ -24,15 +24,15 @@ class SubtreeDigest(ccnpy.core.TlvType):
         return cls.__type
 
     def __init__(self, digest):
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
 
         if digest is None:
             raise ValueError("digest must not be None")
-        if not isinstance(digest, ccnpy.core.HashValue):
+        if not isinstance(digest, HashValue):
             raise TypeError("digest must be ccnpy.HashValue")
 
         self._digest = digest
-        self._tlv = ccnpy.core.Tlv(self.class_type(), self._digest)
+        self._tlv = Tlv(self.class_type(), self._digest)
 
     def __len__(self):
         return len(self._tlv)
@@ -48,8 +48,8 @@ class SubtreeDigest(ccnpy.core.TlvType):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
-        inner_tlv = ccnpy.core.Tlv.deserialize(tlv.value())
-        digest = ccnpy.core.HashValue.parse(inner_tlv)
+        inner_tlv = Tlv.deserialize(tlv.value())
+        digest = HashValue.parse(inner_tlv)
         return cls(digest)
 
     def serialize(self):

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import abc
 import array
 import hashlib
 
@@ -158,3 +158,22 @@ class Packet:
         digest = h.digest()
         tlv = HashValue.create_sha256(array.array("B", digest))
         return tlv
+
+
+class PacketWriter(abc.ABC):
+    @abc.abstractmethod
+    def put(self, packet: Packet):
+        pass
+
+    def close(self):
+        pass
+
+
+class PacketReader(abc.ABC):
+    @abc.abstractmethod
+    def get(self, hash_value) -> Packet:
+        pass
+
+    def close(self):
+        pass
+

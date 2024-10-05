@@ -17,16 +17,17 @@ import io
 import unittest
 from array import array
 
-import ccnpy
-import ccnpy.flic
-from ccnpy.crypto import RsaKey, RsaSha256_Signer
+from ccnpy.core.Name import Name
+from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
+from ccnpy.flic.ManifestTree import ManifestTree
+
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.tree import Traversal
-from ccnpy.flic.tree import TreeIO
+from ccnpy.flic.tree.Traversal import Traversal
+from ccnpy.flic.tree.TreeIO import TreeIO
 
 
 class test_ManifestTree(unittest.TestCase):
-
     # openssl genrsa -out test_key.pem
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
@@ -67,7 +68,6 @@ ewM/87c2S2qMwdocG0XZx90GqEI9Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2Gy
 YwIDAQAB
 -----END PUBLIC KEY-----'''
 
-
     def test_nary_1_2_14(self):
         """
         3-way tree with 1 direct and 2 indirect and 14 file chunks
@@ -79,17 +79,17 @@ YwIDAQAB
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
         data_input = io.BytesIO(self.private_key)
 
-        root_name = ccnpy.Name.from_uri("ccnx:/example.com/manifest")
+        root_name = Name.from_uri("ccnx:/example.com/manifest")
 
         rsa_key = RsaKey(pem_key=self.private_key)
         root_signer = RsaSha256_Signer(key=rsa_key)
 
-        tree = ccnpy.flic.ManifestTree(data_input=data_input,
-                                       packet_output=packet_buffer,
-                                       root_manifest_name=root_name,
-                                       root_manifest_signer=root_signer,
-                                       max_packet_size = 175,
-                                       tree_options = ManifestTreeOptions(debug=False))
+        tree = ManifestTree(data_input=data_input,
+                            packet_output=packet_buffer,
+                            root_manifest_name=root_name,
+                            root_manifest_signer=root_signer,
+                            max_packet_size=175,
+                            tree_options=ManifestTreeOptions(debug=False))
 
         root_manifest = tree.build()
 
@@ -116,17 +116,17 @@ YwIDAQAB
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
         data_input = io.BytesIO(self.private_key)
 
-        root_name = ccnpy.Name.from_uri("ccnx:/example.com/manifest")
+        root_name = Name.from_uri("ccnx:/example.com/manifest")
 
         rsa_key = RsaKey(pem_key=self.private_key)
         root_signer = RsaSha256_Signer(key=rsa_key)
 
-        tree = ccnpy.flic.ManifestTree(data_input=data_input,
-                                       packet_output=packet_buffer,
-                                       root_manifest_name=root_name,
-                                       root_manifest_signer=root_signer,
-                                       max_packet_size = 400,
-                                       tree_options = ManifestTreeOptions(max_tree_degree=3, debug=False))
+        tree = ManifestTree(data_input=data_input,
+                            packet_output=packet_buffer,
+                            root_manifest_name=root_name,
+                            root_manifest_signer=root_signer,
+                            max_packet_size=400,
+                            tree_options=ManifestTreeOptions(max_tree_degree=3, debug=False))
 
         root_manifest = tree.build()
 

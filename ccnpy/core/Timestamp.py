@@ -86,4 +86,4 @@ class Timestamp(TlvType, ABC):
 
     @classmethod
     def now(cls):
-        return cls.from_datetime(datetime.utcnow())
+        return cls.from_datetime(datetime.now(UTC))

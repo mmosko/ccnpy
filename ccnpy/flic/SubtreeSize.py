@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
-import ccnpy.core
 
-
-class SubtreeSize(ccnpy.core.TlvType):
+class SubtreeSize(TlvType):
     __type = 0x0001
 
     @classmethod
@@ -23,9 +23,9 @@ class SubtreeSize(ccnpy.core.TlvType):
         return cls.__type
 
     def __init__(self, size):
-        ccnpy.core.TlvType.__init__(self)
+        TlvType.__init__(self)
         self._size = size
-        self._tlv = ccnpy.core.Tlv.create_uint64(self.class_type(), self._size)
+        self._tlv = Tlv.create_uint64(self.class_type(), self._size)
 
     def __len__(self):
         return len(self._tlv)

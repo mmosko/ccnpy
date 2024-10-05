@@ -17,11 +17,12 @@ import tempfile
 import unittest
 from array import array
 
-import ccnpy.apps
-from ccnpy.flic.tree import TreeIO
+from ccnpy.apps.manifest_writer import ManifestWriter
+from ccnpy.flic.tree.Traversal import Traversal
+from ccnpy.flic.tree.TreeIO import TreeIO
 
 
-class test_manifest_writer(unittest.TestCase):
+class ManifestWriterTest(unittest.TestCase):
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
 NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
@@ -77,7 +78,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         cls.test_out_dir.cleanup()
 
     def _create_args(self):
-        args = test_manifest_writer.Args()
+        args = ManifestWriterTest.Args()
         args.filename = self.test_data_file.name
         args.key_file = self.test_key_file.name
         args.key_pass = None
@@ -99,12 +100,12 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         # Use an in-memory packet buffer
         packet_writer = TreeIO.PacketMemoryWriter()
 
-        mw = ccnpy.apps.ManifestWriter(args=args, packet_writer=packet_writer)
+        mw = ManifestWriter(args=args, packet_writer=packet_writer)
         root_packet = mw.build()
         print(root_packet)
 
-        buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(packet_input=packet_writer, data_buffer=buffer)
+        buffer = TreeIO.DataBuffer()
+        traversal = Traversal(packet_input=packet_writer, data_buffer=buffer)
         traversal.preorder(root_packet)
         self.assertEqual(self.file_data, buffer.buffer)
 
@@ -116,14 +117,14 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
     def test_to_directory(self):
         args = self._create_args()
 
-        mw = ccnpy.apps.ManifestWriter(args=args,
-                                       packet_writer=TreeIO.PacketDirectoryWriter(directory=self.test_out_dir.name))
+        mw = ManifestWriter(args=args,
+                            packet_writer=TreeIO.PacketDirectoryWriter(directory=self.test_out_dir.name))
         root_packet = mw.build()
         print(root_packet)
 
         packet_reader = TreeIO.PacketDirectoryReader(self.test_out_dir.name)
-        buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(packet_input=packet_reader, data_buffer=buffer)
+        buffer = TreeIO.DataBuffer()
+        traversal = Traversal(packet_input=packet_reader, data_buffer=buffer)
         traversal.preorder(root_packet)
         self.assertEqual(self.file_data, buffer.buffer)
 

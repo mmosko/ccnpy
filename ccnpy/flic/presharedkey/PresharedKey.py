@@ -12,7 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from .PresharedKeyCtx import PresharedKeyCtx
+from ..AuthTag import AuthTag
+from ..EncryptedNode import EncryptedNode
+from ..Manifest import Manifest
 from ..Node import Node
+from ...core.Tlv import Tlv
 from ...crypto.AesGcmKey import AesGcmKey
 
 
@@ -97,7 +101,7 @@ class PresharedKey:
             raise TypeError("encrypted_node must be EncryptedNode")
         if security_ctx is None:
             raise ValueError("security context must not be None")
-        if not isinstance(security_ctx, presharedkey.PresharedKeyCtx):
+        if not isinstance(security_ctx, PresharedKeyCtx):
             raise TypeError("security_ctx must be a PresharedKeyCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
@@ -113,7 +117,7 @@ class PresharedKey:
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())
 
-        node_tlv = ccnpy.core.Tlv(Node.class_type(), plaintext)
+        node_tlv = Node.create_tlv(plaintext)
         node = Node.parse(node_tlv)
         return node
 

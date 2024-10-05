@@ -18,18 +18,20 @@ import unittest
 
 import ccnpy
 import ccnpy.flic
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.AuthTag import AuthTag
 
 
-class test_AuthTag(unittest.TestCase):
+class AuthTagTest(unittest.TestCase):
     def test_serialize(self):
-        tag = ccnpy.flic.AuthTag(array.array("B", [1, 2, 3, 4]))
+        tag = AuthTag(array.array("B", [1, 2, 3, 4]))
         expected = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
         actual = tag.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
         wire_format = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.flic.AuthTag.parse(tlv)
-        expected = ccnpy.flic.AuthTag(array.array("B", [1, 2, 3, 4]))
+        tlv = Tlv.deserialize(wire_format)
+        actual = AuthTag.parse(tlv)
+        expected = AuthTag(array.array("B", [1, 2, 3, 4]))
         self.assertEqual(expected, actual)

@@ -17,12 +17,17 @@ import argparse
 import getpass
 from datetime import datetime
 
-import ccnpy.crypto
-
 from ccnpy.core.Name import Name
 from ccnpy.core.Link import Link
-from ccnpy.flic import Locator, LocatorList
-from ccnpy.flic.presharedkey import PresharedKeyEncryptor
+from ccnpy.core.Packet import PacketWriter
+from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
+from ccnpy.flic.Locator import Locator
+from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.ManifestTree import ManifestTree
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
 from ccnpy.flic.tree.TreeIO import TreeIO
 
 
@@ -30,7 +35,7 @@ class ManifestWriter:
     """
     """
 
-    def __init__(self, args, packet_writer: TreeIO.PacketWriter):
+    def __init__(self, args, packet_writer: PacketWriter):
         """
 
         :param args:
@@ -47,24 +52,24 @@ class ManifestWriter:
         self._packet_writer = packet_writer
 
         self._tree_options = self._create_tree_options(args)
-        signing_key = ccnpy.crypto.RsaKey.load_pem_key(args.key_file, args.key_pass)
-        self._signer = ccnpy.crypto.RsaSha256_Signer(signing_key)
+        signing_key = RsaKey.load_pem_key(args.key_file, args.key_pass)
+        self._signer = RsaSha256_Signer(signing_key)
 
     def _create_tree_options(self, args):
         encryptor = None
         if args.enc_key is not None:
             key_bytes = bytearray.fromhex(args.enc_key)
-            key = ccnpy.crypto.AesGcmKey(key_bytes)
-            encryptor=PresharedKeyEncryptor(key=key, key_number=args.key_num)
+            key = AesGcmKey(key_bytes)
+            encryptor = PresharedKeyEncryptor(key=key, key_number=args.key_num)
 
-        tree_options = ccnpy.flic.ManifestTreeOptions(root_expiry_time=self._parse_time(args.root_expiry),
-                                                      manifest_expiry_time=self._parse_time(args.node_expiry),
-                                                      data_expiry_time=self._parse_time(args.data_expiry),
-                                                      manifest_encryptor=encryptor,
-                                                      add_node_subtree_size=True,
-                                                      max_tree_degree=args.tree_degree,
-                                                      root_locators=self._locators,
-                                                      debug=False)
+        tree_options = ManifestTreeOptions(root_expiry_time=self._parse_time(args.root_expiry),
+                                           manifest_expiry_time=self._parse_time(args.node_expiry),
+                                           data_expiry_time=self._parse_time(args.data_expiry),
+                                           manifest_encryptor=encryptor,
+                                           add_node_subtree_size=True,
+                                           max_tree_degree=args.tree_degree,
+                                           root_locators=self._locators,
+                                           debug=False)
         return tree_options
 
     def build(self):
@@ -98,12 +103,12 @@ class ManifestWriter:
         """
         root_manifest_packet = None
         with open(self._filename, 'rb') as data_input:
-            mt = ccnpy.flic.ManifestTree(data_input=data_input,
-                                         packet_output=self._packet_writer,
-                                         root_manifest_name=self._name,
-                                         root_manifest_signer=self._signer,
-                                         max_packet_size=self._max_size,
-                                         tree_options=self._tree_options)
+            mt = ManifestTree(data_input=data_input,
+                              packet_output=self._packet_writer,
+                              root_manifest_name=self._name,
+                              root_manifest_signer=self._signer,
+                              max_packet_size=self._max_size,
+                              tree_options=self._tree_options)
 
             root_manifest_packet = mt.build()
         return root_manifest_packet
@@ -114,17 +119,23 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", dest='name', help="root manifest name URI (e.g. ccnx:/example.com/foo)", required=True)
-    parser.add_argument("-d", dest="tree_degree", type=int, help='manifest tree degree (default is max that fits in a packet)')
-    parser.add_argument('-k', dest="key_file", default=None, help="RSA private key in PEM format to sign the root manifest")
+    parser.add_argument("-d", dest="tree_degree", type=int,
+                        help='manifest tree degree (default is max that fits in a packet)')
+    parser.add_argument('-k', dest="key_file", default=None,
+                        help="RSA private key in PEM format to sign the root manifest")
     parser.add_argument('-p', dest="key_pass", default=None, help="RSA private key password (otherwise will prompt)")
-    parser.add_argument('-s', dest="max_size", type=int, default=max_size, help='maximum content object size (default %r)' % max_size)
+    parser.add_argument('-s', dest="max_size", type=int, default=max_size,
+                        help='maximum content object size (default %r)' % max_size)
     parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%r)" % '.')
     parser.add_argument('-l', dest="locator", help="URI of a locator (root manifest)")
-    parser.add_argument('-T', dest="use_tcp", default=False, action=argparse.BooleanOptionalAction, help="Use TCP to 127.0.0.1:9896")
+    parser.add_argument('-T', dest="use_tcp", default=False, action=argparse.BooleanOptionalAction,
+                        help="Use TCP to 127.0.0.1:9896")
 
-    parser.add_argument('--root-expiry', dest="root_expiry", help="Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest")
+    parser.add_argument('--root-expiry', dest="root_expiry",
+                        help="Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest")
     parser.add_argument('--node-expiry', dest="node_expiry", help="Expiry time (ISO format) to expire node manifests")
-    parser.add_argument('--data-expiry', dest="data_expiry", help="Expiry time (ISO format) to expire data nameless objects")
+    parser.add_argument('--data-expiry', dest="data_expiry",
+                        help="Expiry time (ISO format) to expire data nameless objects")
     parser.add_argument('--enc-key', dest="enc_key", help="AES encryption key (hex string)")
     parser.add_argument('--key-num', dest="key_num", type=int, help="Key number of pre-shared key")
 

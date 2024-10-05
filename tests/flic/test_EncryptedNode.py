@@ -16,11 +16,11 @@
 import array
 import unittest
 
-from ccnpy import Tlv
-from ccnpy.flic import EncryptedNode
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.EncryptedNode import EncryptedNode
 
 
-class test_EncryptedNode(unittest.TestCase):
+class EncryptedNodeTest(unittest.TestCase):
     def test_serialize(self):
         payload = EncryptedNode(array.array("B", [1, 2, 3, 4]))
         expected = array.array("B", [0, EncryptedNode.class_type(), 0, 4, 1, 2, 3, 4])

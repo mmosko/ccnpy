@@ -14,7 +14,15 @@
 
 import array
 
-import ccnpy.core
+from .AuthTag import AuthTag
+from .EncryptedNode import EncryptedNode
+from .Node import Node
+from .SecurityCtx import SecurityCtx
+from ..core.ContentObject import ContentObject
+from ..core.Packet import Packet
+from ..core.Payload import Payload
+from ..core.PayloadType import PayloadType
+from ..core.Tlv import Tlv
 
 
 class Manifest:
@@ -25,8 +33,8 @@ class Manifest:
 
     @classmethod
     def from_content_object(cls, content_object):
-        if not isinstance(content_object, ccnpy.core.ContentObject):
-            raise TypeError("content_object must be ccnpy.core.ContentObject")
+        if not isinstance(content_object, ContentObject):
+            raise TypeError("content_object must be ContentObject")
         if not content_object.payload_type().is_manifest():
             raise ValueError("Payload is not of type Manifest")
 
@@ -36,11 +44,11 @@ class Manifest:
         """
 
         :param security_ctx: Optional context for an encrypted Node
-        :param node: a ccnpy.flic.Node or ccnpy.flic.EncryptedNode
+        :param node: a Node or EncryptedNode
         :param auth_tag: Optional authentication tag for encrypted Node (e.g. AES-GCM MAC)
         """
         if node is None:
-            raise ValueError("Node must be ccnpy.flic.Node or ccnpy.flic.EncryptedNode")
+            raise ValueError("Node must be Node or EncryptedNode")
 
         self._security_ctx = security_ctx
         self._node = node
@@ -72,18 +80,18 @@ class Manifest:
         offset = 0
         security_ctx = node = auth_tag = None
         while offset < len(buffer):
-            tlv = ccnpy.core.Tlv.deserialize(buffer[offset:])
-            if tlv.type() == ccnpy.flic.SecurityCtx.class_type():
+            tlv = Tlv.deserialize(buffer[offset:])
+            if tlv.type() == SecurityCtx.class_type():
                 assert security_ctx is None
-                security_ctx = ccnpy.flic.SecurityCtx.parse(tlv)
-            elif tlv.type() == ccnpy.flic.Node.class_type():
+                security_ctx = SecurityCtx.parse(tlv)
+            elif tlv.type() == Node.class_type():
                 assert node is None
-                node = ccnpy.flic.Node.parse(tlv)
-            elif tlv.type() == ccnpy.flic.EncryptedNode.class_type():
+                node = Node.parse(tlv)
+            elif tlv.type() == EncryptedNode.class_type():
                 assert node is None
-                node = ccnpy.flic.EncryptedNode.parse(tlv)
-            elif tlv.type() == ccnpy.flic.AuthTag.class_type():
-                auth_tag = ccnpy.flic.AuthTag.parse(tlv)
+                node = EncryptedNode.parse(tlv)
+            elif tlv.type() == AuthTag.class_type():
+                auth_tag = AuthTag.parse(tlv)
             else:
                 raise ValueError("Unsupported TLV %r" % tlv)
             offset += len(tlv)
@@ -99,7 +107,7 @@ class Manifest:
     def node(self):
         """
 
-        :return: a ccnpy.flic.Node or ccnpy.flic.EncryptedNode
+        :return: a Node or EncryptedNode
         """
         return self._node
 
@@ -107,17 +115,17 @@ class Manifest:
         return self._auth_tag
 
     def is_encrypted(self):
-        return isinstance(self._node, ccnpy.flic.EncryptedNode)
+        return isinstance(self._node, EncryptedNode)
 
     def content_object(self, name=None, expiry_time=None):
-        co = ccnpy.core.ContentObject(name=name,
-                                      payload_type=ccnpy.core.PayloadType.create_manifest_type(),
-                                      payload=ccnpy.core.Payload(self.serialize()),
-                                      expiry_time=expiry_time)
+        co = ContentObject(name=name,
+                           payload_type=PayloadType.create_manifest_type(),
+                           payload=Payload(self.serialize()),
+                           expiry_time=expiry_time)
         return co
 
     def packet(self, name=None, expiry_time=None):
-        packet = ccnpy.core.Packet.create_content_object(body=self.content_object(name, expiry_time))
+        packet = Packet.create_content_object(body=self.content_object(name, expiry_time))
         return packet
 
     def hash_values(self):
@@ -126,17 +134,17 @@ class Manifest:
 
         :return: A list, may be empty
         """
-        if not isinstance(self._node, ccnpy.flic.Node):
+        if not isinstance(self._node, Node):
             raise TypeError("Manifest Node is not supported type: %r" % self._node)
 
         return self._node.hash_values()
 
     def interest_list(self, locator=None, final=False):
         """
-        Create a list of ccnpy.core.Interest for the contents of this manifest.  The list will
+        Create a list of Interest for the contents of this manifest.  The list will
         be in traversal order.
 
-        :return: A list of ccnpy.core.Interest, which may be empty
+        :return: A list of Interest, which may be empty
         """
         interests = []
         if not final:
