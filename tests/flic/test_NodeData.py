@@ -16,19 +16,25 @@
 import array
 import unittest
 
-import ccnpy
-import ccnpy.flic
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Link import Link
+from ccnpy.core.Name import Name
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.Locator import Locator
+from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.NodeData import NodeData
+from ccnpy.flic.SubtreeSize import SubtreeSize
 
 
-class test_NodeData(unittest.TestCase):
+class NodeDataTest(unittest.TestCase):
     def test_serialize(self):
-        size = ccnpy.flic.SubtreeSize(0x0102)
-        digest = ccnpy.HashValue.create_sha256(array.array("B", [100, 110, 120]))
-        loc1 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/a/b')))
-        loc2 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/c')))
-        locators = ccnpy.flic.LocatorList(final=True, locators=[loc1, loc2])
+        size = SubtreeSize(0x0102)
+        digest = HashValue.create_sha256(array.array("B", [100, 110, 120]))
+        loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
+        loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
+        locators = LocatorList(final=True, locators=[loc1, loc2])
 
-        nd = ccnpy.flic.NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
+        nd = NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
         actual = nd.serialize()
 
         expected = array.array("B", [0, 1, 0, 62,
@@ -45,13 +51,13 @@ class test_NodeData(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse(self):
-        size = ccnpy.flic.SubtreeSize(0x0102)
-        digest = ccnpy.HashValue.create_sha256(array.array("B", [100, 110, 120]))
-        loc1 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/a/b')))
-        loc2 = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri('ccnx:/c')))
-        locators = ccnpy.flic.LocatorList(final=True, locators=[loc1, loc2])
+        size = SubtreeSize(0x0102)
+        digest = HashValue.create_sha256(array.array("B", [100, 110, 120]))
+        loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
+        loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
+        locators = LocatorList(final=True, locators=[loc1, loc2])
 
-        expected = ccnpy.flic.NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
+        expected = NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
 
         wire_format = array.array("B", [0, 1, 0, 62,
                                         0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
@@ -64,7 +70,7 @@ class test_NodeData(unittest.TestCase):
                                         0, 2, 0, 9,
                                         0, 0, 0, 5, 0, 1, 0, 1, 99
                                         ])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.flic.NodeData.parse(tlv)
+        tlv = Tlv.deserialize(wire_format)
+        actual = NodeData.parse(tlv)
 
         self.assertEqual(expected, actual)

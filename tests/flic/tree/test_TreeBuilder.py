@@ -19,16 +19,25 @@ import struct
 import unittest
 from array import array
 
-import ccnpy
-import ccnpy.crypto
-import ccnpy.flic.tree
-from ccnpy.flic.presharedkey import PresharedKeyEncryptor, PresharedKeyDecryptor
+from ccnpy.core.Packet import Packet
+from ccnpy.flic.tree.FileChunks import FileChunks
+from ccnpy.flic.tree.SizedPointer import SizedPointer
+from ccnpy.flic.tree.Solution import Solution
+from ccnpy.flic.tree.TreeIO import TreeIO
+from ccnpy.flic.tree.TreeParameters import TreeParameters
+
+from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
+from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.tree.Traversal import Traversal
+from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 
 
-class test_TreeBuilder(unittest.TestCase):
+class TreeBuilderTest(unittest.TestCase):
     @staticmethod
     def _contentobject_from_packet(packet):
-        assert isinstance(packet, ccnpy.Packet)
+        assert isinstance(packet, Packet)
         return packet.body()
 
     @staticmethod
@@ -42,12 +51,12 @@ class test_TreeBuilder(unittest.TestCase):
 
     @staticmethod
     def _create_file_chunks(packet_buffer, data, length=1000, chunk_size=1):
-        chunks = ccnpy.flic.tree.FileChunks()
-        packets = ccnpy.flic.tree.TreeIO.chunk_data_to_packets(data, chunk_size)
+        chunks = FileChunks()
+        packets = TreeIO.chunk_data_to_packets(data, chunk_size)
         for packet in packets:
             packet_buffer.put(packet)
             hv = packet.content_object_hash()
-            manifest_pointer = ccnpy.flic.tree.SizedPointer(hv, length)
+            manifest_pointer = SizedPointer(hv, length)
             chunks.append(manifest_pointer)
 
         return chunks
@@ -59,28 +68,28 @@ class test_TreeBuilder(unittest.TestCase):
 
         :return:
         """
-        packet_buffer = ccnpy.flic.tree.TreeIO.PacketMemoryWriter()
+        packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 15)))
         data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
 
-        solution = ccnpy.flic.tree.Solution(total_direct_nodes=len(data),
-                                            num_pointers=2,
-                                            direct_per_node=0,
-                                            indirect_per_node=2,
-                                            num_internal_nodes=None,
-                                            waste=None)
+        solution = Solution(total_direct_nodes=len(data),
+                            num_pointers=2,
+                            direct_per_node=0,
+                            indirect_per_node=2,
+                            num_internal_nodes=None,
+                            waste=None)
 
-        params = ccnpy.flic.tree.TreeParameters(data, 1500, solution)
+        params = TreeParameters(data, 1500, solution)
 
-        factory = ccnpy.flic.ManifestFactory()
+        factory = ManifestFactory()
 
-        tb = ccnpy.flic.tree.TreeBuilder(file_chunks=data,
-                                         tree_parameters=params,
-                                         manifest_factory=factory,
-                                         packet_output=packet_buffer)
+        tb = TreeBuilder(file_chunks=data,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer)
         root = tb.build()
-        data_buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
         traversal.preorder(root)
         self.assertEqual(expected, data_buffer.buffer)
 
@@ -96,28 +105,28 @@ class test_TreeBuilder(unittest.TestCase):
 
         :return:
         """
-        packet_buffer = ccnpy.flic.tree.TreeIO.PacketMemoryWriter()
+        packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 16)))
         data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
 
-        solution = ccnpy.flic.tree.Solution(total_direct_nodes=len(data),
-                                            num_pointers=3,
-                                            direct_per_node=1,
-                                            indirect_per_node=2,
-                                            num_internal_nodes=None,
-                                            waste=None)
+        solution = Solution(total_direct_nodes=len(data),
+                            num_pointers=3,
+                            direct_per_node=1,
+                            indirect_per_node=2,
+                            num_internal_nodes=None,
+                            waste=None)
 
-        params = ccnpy.flic.tree.TreeParameters(data, 1500, solution)
+        params = TreeParameters(data, 1500, solution)
 
-        factory = ccnpy.flic.ManifestFactory()
+        factory = ManifestFactory()
 
-        tb = ccnpy.flic.tree.TreeBuilder(file_chunks=data,
-                                         tree_parameters=params,
-                                         manifest_factory=factory,
-                                         packet_output=packet_buffer)
+        tb = TreeBuilder(file_chunks=data,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer)
         root = tb.build()
-        data_buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
         #traversal.debug = True
         traversal.preorder(root)
         self.assertEqual(expected, data_buffer.buffer)
@@ -144,41 +153,40 @@ class test_TreeBuilder(unittest.TestCase):
             ```
         :return:
         """
-        packet_buffer = ccnpy.flic.tree.TreeIO.PacketMemoryWriter()
+        packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 61)))
         data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
 
-        solution = ccnpy.flic.tree.Solution(total_direct_nodes=len(data),
-                                            num_pointers=7,
-                                            direct_per_node=4,
-                                            indirect_per_node=3,
-                                            num_internal_nodes=None,
-                                            waste=None)
+        solution = Solution(total_direct_nodes=len(data),
+                            num_pointers=7,
+                            direct_per_node=4,
+                            indirect_per_node=3,
+                            num_internal_nodes=None,
+                            waste=None)
 
-        params = ccnpy.flic.tree.TreeParameters(data, 1500, solution)
+        params = TreeParameters(data, 1500, solution)
 
-        factory = ccnpy.flic.ManifestFactory()
+        factory = ManifestFactory()
 
-        tb = ccnpy.flic.tree.TreeBuilder(file_chunks=data,
-                                         tree_parameters=params,
-                                         manifest_factory=factory,
-                                         packet_output=packet_buffer)
+        tb = TreeBuilder(file_chunks=data,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer)
         root = tb.build()
-        data_buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
         traversal.preorder(root)
         self.assertEqual(expected, data_buffer.buffer)
 
         # 10 manifest nodes and 61 data nodes
         self.assertEqual(71, traversal.count())
 
-
     def test_large_optimized(self):
         """
         A larger example using an optimized tree to minimize the tree waste
         :return:
         """
-        packet_buffer = ccnpy.flic.tree.TreeIO.PacketMemoryWriter()
+        packet_buffer = TreeIO.PacketMemoryWriter()
 
         # Creates an array of 2-byte words
         expected = array("B", functools.reduce(operator.iconcat,
@@ -188,24 +196,24 @@ class test_TreeBuilder(unittest.TestCase):
 
         data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected, chunk_size=2)
 
-        solution = ccnpy.flic.tree.Solution(total_direct_nodes=len(data),
-                                            num_pointers=41,
-                                            direct_per_node=37,
-                                            indirect_per_node=4,
-                                            num_internal_nodes=None,
-                                            waste=None)
+        solution = Solution(total_direct_nodes=len(data),
+                            num_pointers=41,
+                            direct_per_node=37,
+                            indirect_per_node=4,
+                            num_internal_nodes=None,
+                            waste=None)
 
-        params = ccnpy.flic.tree.TreeParameters(data, 1500, solution)
+        params = TreeParameters(data, 1500, solution)
 
-        factory = ccnpy.flic.ManifestFactory()
+        factory = ManifestFactory()
 
-        tb = ccnpy.flic.tree.TreeBuilder(file_chunks=data,
-                                         tree_parameters=params,
-                                         manifest_factory=factory,
-                                         packet_output=packet_buffer)
+        tb = TreeBuilder(file_chunks=data,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer)
         root = tb.build()
-        data_buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
         traversal.preorder(root)
         self.assertEqual(expected, data_buffer.buffer)
 
@@ -219,32 +227,32 @@ class test_TreeBuilder(unittest.TestCase):
 
         :return:
         """
-        packet_buffer = ccnpy.flic.tree.TreeIO.PacketMemoryWriter()
+        packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 15)))
         data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
 
-        solution = ccnpy.flic.tree.Solution(total_direct_nodes=len(data),
-                                            num_pointers=2,
-                                            direct_per_node=0,
-                                            indirect_per_node=2,
-                                            num_internal_nodes=None,
-                                            waste=None)
+        solution = Solution(total_direct_nodes=len(data),
+                            num_pointers=2,
+                            direct_per_node=0,
+                            indirect_per_node=2,
+                            num_internal_nodes=None,
+                            waste=None)
 
-        params = ccnpy.flic.tree.TreeParameters(data, 1500, solution)
+        params = TreeParameters(data, 1500, solution)
 
-        key = ccnpy.crypto.AesGcmKey.generate(bits=256)
+        key = AesGcmKey.generate(bits=256)
         encryptor = PresharedKeyEncryptor(key=key, key_number=1234)
         decryptor = PresharedKeyDecryptor(key=key, key_number=1234)
 
-        factory = ccnpy.flic.ManifestFactory(encryptor=encryptor)
+        factory = ManifestFactory(encryptor=encryptor)
 
-        tb = ccnpy.flic.tree.TreeBuilder(file_chunks=data,
-                                         tree_parameters=params,
-                                         manifest_factory=factory,
-                                         packet_output=packet_buffer)
+        tb = TreeBuilder(file_chunks=data,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer)
         root = tb.build()
-        data_buffer = ccnpy.flic.tree.TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=data_buffer, packet_input=packet_buffer, decryptor=decryptor)
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer, decryptor=decryptor)
         traversal.preorder(root)
         self.assertEqual(expected, data_buffer.buffer)
 

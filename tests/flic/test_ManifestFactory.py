@@ -16,17 +16,26 @@
 import unittest
 from array import array
 
-import ccnpy
-import ccnpy.crypto
-import ccnpy.flic
-from ccnpy.flic.presharedkey import PresharedKeyEncryptor, PresharedKeyDecryptor
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Link import Link
+from ccnpy.core.Name import Name
+from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.flic.HashGroup import HashGroup
+from ccnpy.flic.Locator import Locator
+from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.Node import Node
+from ccnpy.flic.Pointers import Pointers
+from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
+from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
 
 
-class test_ManiestFactory(unittest.TestCase):
+class ManiestFactoryTest(unittest.TestCase):
     def test_unencrypted_nopts_pointers(self):
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        factory = ccnpy.flic.ManifestFactory()
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        factory = ManifestFactory()
         manifest = factory.build(ptr)
         actual = manifest.serialize()
 
@@ -38,10 +47,10 @@ class test_ManiestFactory(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_nopts_hashgroup(self):
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        hg = ccnpy.flic.HashGroup(pointers=ptr)
-        factory = ccnpy.flic.ManifestFactory()
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        hg = HashGroup(pointers=ptr)
+        factory = ManifestFactory()
         manifest = factory.build(hg)
         actual = manifest.serialize()
 
@@ -53,11 +62,11 @@ class test_ManiestFactory(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_nopts_node(self):
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        hg = ccnpy.flic.HashGroup(pointers=ptr)
-        node = ccnpy.flic.Node(hash_groups=[hg])
-        factory = ccnpy.flic.ManifestFactory()
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        hg = HashGroup(pointers=ptr)
+        node = Node(hash_groups=[hg])
+        factory = ManifestFactory()
         manifest = factory.build(node)
         actual = manifest.serialize()
 
@@ -69,10 +78,10 @@ class test_ManiestFactory(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_opts_pointers(self):
-        tree_options = ccnpy.flic.ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        factory = ccnpy.flic.ManifestFactory(tree_options=tree_options)
+        tree_options = ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        factory = ManifestFactory(tree_options=tree_options)
         manifest = factory.build(ptr, node_subtree_size=20, group_subtree_size=16)
         actual = manifest.serialize()
 
@@ -90,11 +99,11 @@ class test_ManiestFactory(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_opts_hashgroup(self):
-        tree_options = ccnpy.flic.ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        hg = ccnpy.flic.HashGroup(pointers=ptr)
-        factory = ccnpy.flic.ManifestFactory(tree_options=tree_options)
+        tree_options = ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        hg = HashGroup(pointers=ptr)
+        factory = ManifestFactory(tree_options=tree_options)
         manifest = factory.build(hg, node_subtree_size=20, group_subtree_size=16)
         actual = manifest.serialize()
 
@@ -114,14 +123,14 @@ class test_ManiestFactory(unittest.TestCase):
         pass
 
     def test_encrypted_nopts_node(self):
-        key = ccnpy.crypto.AesGcmKey(array("B", 16*[1]).tobytes())
+        key = AesGcmKey(array("B", 16*[1]).tobytes())
         encryptor = PresharedKeyEncryptor(key, 99)
 
-        hv = ccnpy.HashValue.create_sha256(array("B", [1, 2]))
-        ptr = ccnpy.flic.Pointers([hv])
-        hg = ccnpy.flic.HashGroup(pointers=ptr)
-        node = ccnpy.flic.Node(hash_groups=[hg])
-        factory = ccnpy.flic.ManifestFactory(encryptor=encryptor)
+        hv = HashValue.create_sha256(array("B", [1, 2]))
+        ptr = Pointers([hv])
+        hg = HashGroup(pointers=ptr)
+        node = Node(hash_groups=[hg])
+        factory = ManifestFactory(encryptor=encryptor)
         manifest = factory.build(node)
 
         self.assertTrue(manifest.is_encrypted())
@@ -132,11 +141,11 @@ class test_ManiestFactory(unittest.TestCase):
         self.assertEqual(node, actual_manifest.node())
 
     def test_node_locators(self):
-        hv = ccnpy.HashValue.create_sha256([1, 2])
-        ptr = ccnpy.flic.Pointers([hv])
-        locator = ccnpy.flic.Locator(ccnpy.Link(name=ccnpy.Name.from_uri("ccnx:/example/pie")))
-        locator_list = ccnpy.flic.LocatorList(locators=[locator])
-        factory = ccnpy.flic.ManifestFactory()
+        hv = HashValue.create_sha256([1, 2])
+        ptr = Pointers([hv])
+        locator = Locator(Link(name=Name.from_uri("ccnx:/example/pie")))
+        locator_list = LocatorList(locators=[locator])
+        factory = ManifestFactory()
         manifest = factory.build(source=ptr, node_locators=locator_list)
         actual = manifest.serialize()
 

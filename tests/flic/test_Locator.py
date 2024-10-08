@@ -16,17 +16,20 @@
 import array
 import unittest
 
-import ccnpy
-import ccnpy.flic
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Link import Link
+from ccnpy.core.Name import Name
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.Locator import Locator
 
 
-class test_Locator(unittest.TestCase):
+class LocatorTest(unittest.TestCase):
     def test_serialize(self):
-        name=ccnpy.Name.from_uri('ccnx:/a/b')
-        keyid=ccnpy.HashValue(1, array.array("B", b'ab'))
-        digest=ccnpy.HashValue(2, array.array("B", b'ABCD'))
-        link = ccnpy.Link(name=name, keyid=keyid, digest=digest)
-        locator = ccnpy.flic.Locator(link)
+        name=Name.from_uri('ccnx:/a/b')
+        keyid=HashValue(1, array.array("B", b'ab'))
+        digest=HashValue(2, array.array("B", b'ABCD'))
+        link = Link(name=name, keyid=keyid, digest=digest)
+        locator = Locator(link)
         actual = locator.serialize()
         expected = array.array("B", [0, 2, 0, 36,
                                      0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
@@ -39,12 +42,12 @@ class test_Locator(unittest.TestCase):
                                         0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                         0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
                                         0, 3, 0, 8, 0, 2, 0, 4, 65, 66, 67, 68])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        locator = ccnpy.flic.Locator.parse(tlv)
+        tlv = Tlv.deserialize(wire_format)
+        locator = Locator.parse(tlv)
 
-        name=ccnpy.Name.from_uri('ccnx:/a/b')
-        keyid=ccnpy.HashValue(1, array.array("B", b'ab'))
-        digest=ccnpy.HashValue(2, array.array("B", b'ABCD'))
-        link = ccnpy.Link(name=name, keyid=keyid, digest=digest)
-        expected = ccnpy.flic.Locator(link)
+        name=Name.from_uri('ccnx:/a/b')
+        keyid=HashValue(1, array.array("B", b'ab'))
+        digest=HashValue(2, array.array("B", b'ABCD'))
+        link = Link(name=name, keyid=keyid, digest=digest)
+        expected = Locator(link)
         self.assertEqual(expected, locator)

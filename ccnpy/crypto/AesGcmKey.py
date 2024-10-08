@@ -46,7 +46,7 @@ class AesGcmKey:
         if bits not in [128, 192, 256]:
             raise ValueError("bits must be 128, 192, or 256")
 
-        key = AESGCM.generate_key(key_size=bits)
+        key = AESGCM.generate_key(bit_length=bits)
         return cls(key)
 
     @staticmethod

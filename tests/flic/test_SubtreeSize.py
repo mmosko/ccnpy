@@ -16,13 +16,13 @@
 import array
 import unittest
 
-import ccnpy
-import ccnpy.flic
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.SubtreeSize import SubtreeSize
 
 
-class SubtreeSize_Test(unittest.TestCase):
+class SubtreeSizeTest(unittest.TestCase):
     def test_serialize(self):
-        ss = ccnpy.flic.SubtreeSize(0x010203)
+        ss = SubtreeSize(0x010203)
         actual = ss.serialize()
 
         expected = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
@@ -30,7 +30,7 @@ class SubtreeSize_Test(unittest.TestCase):
 
     def test_deserialize(self):
         wire_format = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.flic.SubtreeSize.parse(tlv)
-        expected = ccnpy.flic.SubtreeSize(0x010203)
+        tlv = Tlv.deserialize(wire_format)
+        actual = SubtreeSize.parse(tlv)
+        expected = SubtreeSize(0x010203)
         self.assertEqual(expected, actual)

@@ -16,23 +16,28 @@
 import array
 import unittest
 
-import ccnpy
-from ccnpy.flic import Node
+from ccnpy.core.HashValue import HashValue
+from ccnpy.flic.GroupData import GroupData
+from ccnpy.flic.HashGroup import HashGroup
+from ccnpy.flic.Node import Node
+from ccnpy.flic.NodeData import NodeData
+from ccnpy.flic.Pointers import Pointers
+from ccnpy.flic.SubtreeSize import SubtreeSize
 
 
-class test_Node(unittest.TestCase):
+class NodeTest(unittest.TestCase):
     def test_serialize(self):
-        nd = ccnpy.flic.NodeData(subtree_size=ccnpy.flic.SubtreeSize(1000))
+        nd = NodeData(subtree_size=SubtreeSize(1000))
 
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
-        p1 = ccnpy.flic.Pointers([h1, h2])
-        p2 = ccnpy.flic.Pointers([h3])
-        gd = ccnpy.flic.GroupData(subtree_size=ccnpy.flic.SubtreeSize(0x0234))
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
+        p1 = Pointers([h1, h2])
+        p2 = Pointers([h3])
+        gd = GroupData(subtree_size=SubtreeSize(0x0234))
 
-        hg1 = ccnpy.flic.HashGroup(group_data=gd, pointers=p1)
-        hg2 = ccnpy.flic.HashGroup(pointers=p2)
+        hg1 = HashGroup(group_data=gd, pointers=p1)
+        hg2 = HashGroup(pointers=p2)
 
         node = Node(node_data=nd, hash_groups=[hg1, hg2])
         actual = node.serialize()
@@ -59,17 +64,17 @@ class test_Node(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_hash_values(self):
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
-        p1 = ccnpy.flic.Pointers([h1, h2])
-        p2 = ccnpy.flic.Pointers([h3])
-        gd = ccnpy.flic.GroupData(subtree_size=ccnpy.flic.SubtreeSize(0x0234))
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
+        p1 = Pointers([h1, h2])
+        p2 = Pointers([h3])
+        gd = GroupData(subtree_size=SubtreeSize(0x0234))
 
-        hg1 = ccnpy.flic.HashGroup(group_data=gd, pointers=p1)
-        hg2 = ccnpy.flic.HashGroup(pointers=p2)
+        hg1 = HashGroup(group_data=gd, pointers=p1)
+        hg2 = HashGroup(pointers=p2)
 
-        node = ccnpy.flic.Node(hash_groups=[hg1, hg2])
+        node = Node(hash_groups=[hg1, hg2])
         expected = [h1, h2, h3]
         actual = node.hash_values()
         self.assertEqual(expected, actual)

@@ -16,19 +16,23 @@
 import unittest
 from array import array
 
-import ccnpy
-import ccnpy.crypto
-import ccnpy.flic
-import ccnpy.flic.presharedkey
-import ccnpy.flic.tree
-from ccnpy.flic.tree import TreeIO
+from ccnpy.core.ContentObject import ContentObject
+from ccnpy.core.Packet import Packet
+from ccnpy.core.Payload import Payload
+from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.Pointers import Pointers
+from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
+from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.tree.Traversal import Traversal
+from ccnpy.flic.tree.TreeIO import TreeIO
 
 
-class test_Traversal(unittest.TestCase):
+class TraversalTest(unittest.TestCase):
     @staticmethod
     def _create_data_packet(application_data):
-        payload = ccnpy.Payload(application_data)
-        packet = ccnpy.Packet.create_content_object(ccnpy.ContentObject.create_data(payload=payload))
+        payload = Payload(application_data)
+        packet = Packet.create_content_object(ContentObject.create_data(payload=payload))
         return packet
 
     @classmethod
@@ -36,7 +40,7 @@ class test_Traversal(unittest.TestCase):
         pointers = []
         for packet in packets:
             pointers.append(packet.content_object_hash())
-        manifest = ccnpy.flic.ManifestFactory(encryptor=encryptor).build(ccnpy.flic.Pointers(pointers))
+        manifest = ManifestFactory(encryptor=encryptor).build(Pointers(pointers))
         return manifest
 
     def test_data_node(self):
@@ -48,7 +52,7 @@ class test_Traversal(unittest.TestCase):
         packet = self._create_data_packet(expected)
 
         buffer = TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=buffer, packet_input=None)
+        traversal = Traversal(data_buffer=buffer, packet_input=None)
         traversal.preorder(packet)
         self.assertEqual(expected, buffer.buffer)
 
@@ -60,27 +64,26 @@ class test_Traversal(unittest.TestCase):
         expected = array("B", [1, 2, 3, 4, 5, 6, 7])
         data_packets = TreeIO.chunk_data_to_packets(expected, 2)
         manifest = self._create_manifest_from_packets(data_packets)
-        root = ccnpy.Packet.create_content_object(manifest.content_object())
+        root = Packet.create_content_object(manifest.content_object())
 
         packet_input = TreeIO.PacketMemoryReader(data_packets)
         buffer = TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=buffer, packet_input=packet_input)
+        traversal = Traversal(data_buffer=buffer, packet_input=packet_input)
         traversal.preorder(root)
         self.assertEqual(expected, buffer.buffer)
 
     def test_encrypted_manifest(self):
-        key = ccnpy.crypto.AesGcmKey.generate(bits=128)
-        encryptor = ccnpy.flic.presharedkey.PresharedKeyEncryptor(key=key, key_number=77)
-        decryptor = ccnpy.flic.presharedkey.PresharedKeyDecryptor(key=key, key_number=77)
+        key = AesGcmKey.generate(bits=128)
+        encryptor = PresharedKeyEncryptor(key=key, key_number=77)
+        decryptor = PresharedKeyDecryptor(key=key, key_number=77)
 
         expected = array("B", [1, 2, 3, 4, 5, 6, 7])
         data_packets = TreeIO.chunk_data_to_packets(expected, 2)
         manifest = self._create_manifest_from_packets(packets=data_packets, encryptor=encryptor)
-        root = ccnpy.Packet.create_content_object(manifest.content_object())
+        root = Packet.create_content_object(manifest.content_object())
 
         packet_input = TreeIO.PacketMemoryReader(data_packets)
         buffer = TreeIO.DataBuffer()
-        traversal = ccnpy.flic.tree.Traversal(data_buffer=buffer, packet_input=packet_input, decryptor=decryptor)
+        traversal = Traversal(data_buffer=buffer, packet_input=packet_input, decryptor=decryptor)
         traversal.preorder(root)
         self.assertEqual(expected, buffer.buffer)
-

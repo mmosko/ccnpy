@@ -16,17 +16,18 @@
 import array
 import unittest
 
-import ccnpy
-import ccnpy.flic
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.Pointers import Pointers
 
 
-class test_Pointers(unittest.TestCase):
+class PointersTest(unittest.TestCase):
     def test_serialize(self):
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
 
-        p = ccnpy.flic.Pointers([h1, h2, h3])
+        p = Pointers([h1, h2, h3])
         actual = p.serialize()
 
         expected = array.array("B", [0, 2, 0, 18,
@@ -36,15 +37,15 @@ class test_Pointers(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_parse(self):
-        h1 = ccnpy.HashValue(1, array.array('B', [1, 2]))
-        h2 = ccnpy.HashValue(2, array.array('B', [3, 4]))
-        h3 = ccnpy.HashValue(3, array.array('B', [5, 6]))
-        expected = ccnpy.flic.Pointers([h1, h2, h3])
+        h1 = HashValue(1, array.array('B', [1, 2]))
+        h2 = HashValue(2, array.array('B', [3, 4]))
+        h3 = HashValue(3, array.array('B', [5, 6]))
+        expected = Pointers([h1, h2, h3])
 
         wire_format = array.array("B", [0, 2, 0, 18,
                                         0, 1, 0,  2, 1, 2,
                                         0, 2, 0,  2, 3, 4,
                                         0, 3, 0,  2, 5, 6])
-        tlv = ccnpy.Tlv.deserialize(wire_format)
-        actual = ccnpy.flic.Pointers.parse(tlv)
+        tlv = Tlv.deserialize(wire_format)
+        actual = Pointers.parse(tlv)
         self.assertEqual(expected, actual)
