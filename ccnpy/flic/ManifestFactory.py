@@ -13,14 +13,14 @@
 #  limitations under the License.
 from .GroupData import GroupData
 from .HashGroup import HashGroup
-from .LocatorList import LocatorList
+from .Locators import Locators
 from .Manifest import Manifest
 from .ManifestEncryptor import ManifestEncryptor
 from .ManifestTreeOptions import ManifestTreeOptions
 from .Node import Node
 from .NodeData import NodeData
 from .Pointers import Pointers
-from .SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 
 
 class ManifestFactory:
@@ -88,7 +88,7 @@ class ManifestFactory:
         """
         manifest = None
 
-        if node_locators is not None and not isinstance(node_locators, LocatorList):
+        if node_locators is not None and not isinstance(node_locators, Locators):
             raise TypeError("node_locators must be LocatorList")
 
         # If the tree options do not allow adding a type of metadata, we None it out here

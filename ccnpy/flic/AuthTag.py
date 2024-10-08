@@ -20,6 +20,9 @@ from ..core.Payload import Payload
 class AuthTag(Payload):
     """
     AuthTag works just like ccnpy.core.Payload -- it stores a byte array.
+
+    The AuthTag is the (normally) 16 byte authentication tag used by AES GCM or CCM to authenticate
+    a message.
     """
     __T_AUTHTAG = 0x0003
 

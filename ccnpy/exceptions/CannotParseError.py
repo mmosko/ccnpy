@@ -12,24 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ..core.DisplayFormatter import DisplayFormatter
-from ..core.Payload import Payload
 
-
-class EncryptedNode(Payload):
+class CannotParseError(RuntimeError):
     """
-    EncryptedNode works just like ccnpy.Payload -- it stores a byte array.
-
-    An EncryptedNode represents an encrypted manifest: `SecurityCtx EncryptedNode AuthTag`.
+    Used when a `.parse()` method is called, but the TLV does not match the parsing class.
     """
-    __T_ENC_NODE = 0x0004
-
-    @classmethod
-    def class_type(cls):
-        return cls.__T_ENC_NODE
-
-    def __init__(self, value):
-        Payload.__init__(self, value)
-
-    def __repr__(self):
-        return "EncNode: %r" % DisplayFormatter.hexlify(self._value)
+    pass

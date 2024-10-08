@@ -22,7 +22,7 @@ from ccnpy.flic.HashGroup import HashGroup
 from ccnpy.flic.Node import Node
 from ccnpy.flic.NodeData import NodeData
 from ccnpy.flic.Pointers import Pointers
-from ccnpy.flic.SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 
 
 class NodeTest(unittest.TestCase):

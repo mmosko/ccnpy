@@ -11,20 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional, List
+
 from .HashGroup import HashGroup
 from .NodeData import NodeData
+from ..exceptions.CannotParseError import CannotParseError
+from ..exceptions.ParseError import ParseError
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
 
 
 class Node(TlvType):
+    """
+    The Node is the main data structure inside a Manifest.  It contains one or more HashGroups, which point to
+    other objects.
+
+    ```
+    Node = TYPE LENGTH [NodeData] 1*HashGroup
+    ```
+    """
     __type = 0x0002
 
     @classmethod
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, node_data=None, hash_groups=None):
+    def __init__(self, node_data: Optional[NodeData] = None, hash_groups: List[HashGroup] = None):
         """
 
         :param node_data: (optional) ccnpy.flic.NodeData
@@ -57,10 +69,13 @@ class Node(TlvType):
         hash_values_len = len(self.hash_values())
         return "Node: {%r, %r, %r}" % (self._node_data, hash_values_len, self._hash_groups)
 
-    def node_data(self):
+    def has_node_data(self) -> bool:
+        return self._node_data is not None
+
+    def node_data(self) -> Optional[NodeData]:
         return self._node_data
 
-    def hash_groups(self):
+    def hash_groups(self) -> List[HashGroup]:
         return self._hash_groups
 
     def serialize(self):
@@ -103,7 +118,7 @@ class Node(TlvType):
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
         node_data = None
         hash_groups = []
@@ -122,7 +137,7 @@ class Node(TlvType):
                 hash_groups.append(hash_group)
 
             else:
-                raise RuntimeError("Unsupported packet TLV type %r" % inner_tlv)
+                raise ParseError("Unsupported inner TLV type %r" % inner_tlv)
 
         return cls(node_data=node_data, hash_groups=hash_groups)
 

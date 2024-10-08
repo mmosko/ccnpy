@@ -11,22 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .LocatorList import LocatorList
-from .SubtreeSize import SubtreeSize
+from typing import Optional, List
+
+from .Locators import Locators
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
+from .annotations.SubtreeDigest import SubtreeDigest
+from .annotations.Vendor import Vendor
 from ..core.HashValue import HashValue
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
+from ..exceptions.CannotParseError import CannotParseError
+from ..exceptions.ParseError import ParseError
 
 
 class NodeData(TlvType):
+    """
+    Represents metadata about a Manifest node.
+
+        NodeData = TYPE LENGTH [SubtreeSize] [SubtreeDigest] [Locators] 0*Vendor 0*NcDef
+
+    """
     __type = 0x0001
-    __subtree_digest_type = 0x0002
 
     @classmethod
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, subtree_size=None, subtree_digest=None, locators=None):
+    def __init__(self,
+                 subtree_size: Optional[SubtreeSize] = None,
+                 subtree_digest: Optional[SubtreeDigest] = None,
+                 locators: Optional[Locators] = None,
+                 vendors: Optional[List[Vendor]] = None):
         """
 
         :param subtree_size:
@@ -41,25 +56,32 @@ class NodeData(TlvType):
         if subtree_size is not None and not isinstance(subtree_size, SubtreeSize):
             raise TypeError("subtree_size, if present, must be SubtreeSize")
 
-        if subtree_digest is not None and not isinstance(subtree_digest, HashValue):
-            raise TypeError("subtree_digest, if present, must be ccnpy.HashValue")
+        if subtree_digest is not None and not isinstance(subtree_digest, SubtreeDigest):
+            raise TypeError("subtree_digest, if present, must be SubtreeDigest")
 
-        if locators is not None and not isinstance(locators, LocatorList):
+        if locators is not None and not isinstance(locators, Locators):
             raise TypeError("locators, if present, must be LocatorList")
+
+        if vendors is not None and len(vendors) == 0:
+            vendors = None
 
         self._subtree_size = subtree_size
         self._subtree_digest = subtree_digest
         self._locators = locators
+        self._vendors = vendors
 
         tlvs = []
         if self._subtree_size is not None:
             tlvs.append(subtree_size)
 
         if self._subtree_digest is not None:
-            tlvs.append(Tlv(NodeData.__subtree_digest_type, self._subtree_digest))
+            tlvs.append(self._subtree_digest)
 
         if self._locators is not None:
             tlvs.append(self._locators)
+
+        if self._vendors is not None and len(self._vendors) > 0:
+            tlvs.extend(self._vendors)
 
         self._tlv = Tlv(self.class_type(), tlvs)
 
@@ -81,15 +103,19 @@ class NodeData(TlvType):
     def locators(self):
         return self._locators
 
+    def vendor_tags(self):
+        return self._vendors
+
     def serialize(self):
         return self._tlv.serialize()
 
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
         subtree_size = subtree_digest = locators = None
+        vendors = []
 
         offset = 0
         while offset < tlv.length():
@@ -99,13 +125,15 @@ class NodeData(TlvType):
             if inner_tlv.type() == SubtreeSize.class_type():
                 assert subtree_size is None
                 subtree_size = SubtreeSize.parse(inner_tlv)
-            elif inner_tlv.type() == cls.__subtree_digest_type:
+            elif inner_tlv.type() == SubtreeDigest.class_type():
                 assert subtree_digest is None
-                subtree_digest = HashValue.deserialize(inner_tlv.value())
-            elif inner_tlv.type() == LocatorList.class_type():
+                subtree_digest = SubtreeDigest.parse(inner_tlv)
+            elif inner_tlv.type() == Locators.class_type():
                 assert locators is None
-                locators = LocatorList.parse(inner_tlv)
+                locators = Locators.parse(inner_tlv)
+            elif inner_tlv.type() == Vendor.class_type():
+                vendors.append(Vendor.parse(inner_tlv))
             else:
-                raise RuntimeError("Unsupported NodeData TLV type %r" % inner_tlv)
+                raise ParseError("Unsupported NodeData TLV type %r" % inner_tlv)
 
-        return cls(subtree_size=subtree_size, subtree_digest=subtree_digest, locators=locators)
+        return cls(subtree_size=subtree_size, subtree_digest=subtree_digest, locators=locators, vendors=vendors)

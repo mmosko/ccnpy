@@ -22,8 +22,8 @@ from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.GroupData import GroupData
 from ccnpy.flic.Locator import Locator
-from ccnpy.flic.LocatorList import LocatorList
-from ccnpy.flic.SubtreeSize import SubtreeSize
+from ccnpy.flic.Locators import Locators
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 
 
 class GroupDataTest(unittest.TestCase):
@@ -32,17 +32,16 @@ class GroupDataTest(unittest.TestCase):
         digest = HashValue.create_sha256(array.array("B", [100, 110, 120]))
         loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
         loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        locators = LocatorList(final=True, locators=[loc1, loc2])
+        locators = Locators(locators=[loc1, loc2])
 
         gd = GroupData(subtree_size=size, subtree_digest=digest, locators=locators)
         actual = gd.serialize()
 
-        expected = array.array("B", [0, 1, 0, 62,
+        expected = array.array("B", [0, 1, 0, 58,
                                      0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
                                      0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
                                      # LocatorList
-                                     0, 3, 0, 35,
-                                     0, 1, 0, 0,
+                                     0, 3, 0, 31,
                                      0, 2, 0, 14,
                                      0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                      0, 2, 0, 9,
@@ -55,7 +54,7 @@ class GroupDataTest(unittest.TestCase):
         digest = HashValue.create_sha256(array.array("B", [100, 110, 120]))
         loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
         loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        locators = LocatorList(final=True, locators=[loc1, loc2])
+        locators = Locators(locators=[loc1, loc2])
 
         expected = GroupData(subtree_size=size, subtree_digest=digest, locators=locators)
 
@@ -63,8 +62,7 @@ class GroupDataTest(unittest.TestCase):
                                         0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
                                         0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
                                         # LocatorList
-                                        0, 3, 0, 35,
-                                        0, 1, 0, 0,
+                                        0, 3, 0, 31,
                                         0, 2, 0, 14,
                                         0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                         0, 2, 0, 9,

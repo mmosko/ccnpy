@@ -20,44 +20,16 @@ from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.Locator import Locator
-from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.Locators import Locators
 
 
 class LocatorsTest(unittest.TestCase):
-    def test_serialize_nonfinal(self):
-        loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
-        loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        locators = LocatorList(final=False, locators=[loc1, loc2])
-        actual = locators.serialize()
-        expected = array.array("B", [0, 3, 0, 31,
-                                     0, 2, 0, 14,
-                                     0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
-                                     0, 2, 0,  9,
-                                     0, 0, 0,  5, 0, 1, 0, 1, 99
-                                     ])
-        self.assertEqual(expected, actual)
-
-    def test_parse_nonfinal(self):
-        loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
-        loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        expected = LocatorList(final=False, locators=[loc1, loc2])
-        wire_format = array.array("B", [0, 3, 0, 31,
-                                        0, 2, 0, 14,
-                                        0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
-                                        0, 2, 0,  9,
-                                        0, 0, 0,  5, 0, 1, 0, 1, 99
-                                        ])
-        tlv = Tlv.deserialize(wire_format)
-        actual = LocatorList.parse(tlv)
-        self.assertEqual(expected, actual)
-
     def test_serialize_final(self):
         loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
         loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        locators = LocatorList(final=True, locators=[loc1, loc2])
+        locators = Locators(locators=[loc1, loc2])
         actual = locators.serialize()
-        expected = array.array("B", [0, 3, 0, 35,
-                                     0, 1, 0,  0,
+        expected = array.array("B", [0, 3, 0, 31,
                                      0, 2, 0, 14,
                                      0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                      0, 2, 0,  9,
@@ -68,14 +40,13 @@ class LocatorsTest(unittest.TestCase):
     def test_parse_final(self):
         loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
         loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
-        expected = LocatorList(final=True, locators=[loc1, loc2])
-        wire_format = array.array("B", [0, 3, 0, 35,
-                                        0, 1, 0,  0,
+        expected = Locators(locators=[loc1, loc2])
+        wire_format = array.array("B", [0, 3, 0, 31,
                                         0, 2, 0, 14,
                                         0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                         0, 2, 0,  9,
                                         0, 0, 0,  5, 0, 1, 0, 1, 99
                                         ])
         tlv = Tlv.deserialize(wire_format)
-        actual = LocatorList.parse(tlv)
+        actual = Locators.parse(tlv)
         self.assertEqual(expected, actual)

@@ -24,7 +24,7 @@ from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
 from ccnpy.flic.Locator import Locator
-from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.Locators import Locators
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
@@ -47,7 +47,7 @@ class ManifestWriter:
         self._locators = None
         if args.locator is not None:
             locator = Locator(link=Link(name=Name.from_uri(args.locator)))
-            self._locators = LocatorList([locator])
+            self._locators = Locators([locator])
 
         self._packet_writer = packet_writer
 

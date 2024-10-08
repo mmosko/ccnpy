@@ -11,45 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import List
+
 from .Locator import Locator
+from ..core.Link import Link
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
+from ..exceptions.CannotParseError import CannotParseError
 
 
-class LocatorList(TlvType):
+class Locators(TlvType):
     """
     Represents a list of Locators (links).
+
+        Locators = TYPE LENGTH 1*Link
     """
     __type = 0x0003
-    __final_type = 0x0001
-    __locator_type = 0x0002
 
     @classmethod
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, final=False, locators=None):
+    def __init__(self, locators: List[Locator]):
         """
 
         :param final:
-        :param locators: a list of ccnpy.core.core.flic.Locator
+        :param locators: a list of Links
         """
         TlvType.__init__(self)
 
-        if final is None:
-            final = False
+        if len(locators) == 0:
+            raise RuntimeError("Locators must have at least 1 link")
 
-        self._final = final
         self._locators = locators
-
-        tlvs = []
-        if final:
-            tlvs.append(Tlv(self.__final_type, []))
-
-        if self._locators is not None:
-            tlvs.extend(locators)
-
-        self._tlv = Tlv(self.class_type(), tlvs)
+        self._tlv = Tlv(self.class_type(), self._locators)
 
     def __len__(self):
         return len(self._tlv)
@@ -60,10 +55,7 @@ class LocatorList(TlvType):
         return False
 
     def __repr__(self):
-        return "LocatorList: {final: %r, locs: %r}" % (self._final, self._locators)
-
-    def final(self):
-        return self._final
+        return f"Locators: {self._locators}"
 
     def locators(self):
         return self._locators
@@ -76,21 +68,16 @@ class LocatorList(TlvType):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv)
 
-        final = None
         locators = []
         offset = 0
         while offset < tlv.length():
             inner_tlv = Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
-            if inner_tlv.type() == cls.__final_type:
-                assert final is None
-                if inner_tlv.length() > 0:
-                    raise ValueError("Final TLV should have 0 length")
-                final = True
-            elif inner_tlv.type() == Locator.class_type():
-                locator = Locator.parse(inner_tlv)
-                locators.append(locator)
-            else:
-                raise ValueError("Unsupported TLV %r" % inner_tlv)
 
-        return cls(final=final, locators=locators)
+            try:
+                link = Locator.parse(inner_tlv)
+                locators.append(link)
+            except CannotParseError:
+                raise
+
+        return cls(locators=locators)

@@ -16,21 +16,23 @@
 import array
 import unittest
 
+from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeDigest import SubtreeDigest
 
 
-class SubtreeSizeTest(unittest.TestCase):
+class SubtreeDigestTest(unittest.TestCase):
     def test_serialize(self):
-        ss = SubtreeSize(0x010203)
-        actual = ss.serialize()
+        hv = HashValue(55, array.array("B", [1, 2, 3]))
+        sd = SubtreeDigest(hv)
+        actual = sd.serialize()
 
-        expected = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
+        expected = array.array("B", [0, 2, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
+        wire_format = array.array("B", [0, 2, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
-        actual = SubtreeSize.parse(tlv)
-        expected = SubtreeSize(0x010203)
-        self.assertEqual(expected, actual)
+        sd = SubtreeDigest.parse(tlv)
+        expected = SubtreeDigest(HashValue(55, array.array("B", [1, 2, 3])))
+        self.assertEqual(expected, sd)

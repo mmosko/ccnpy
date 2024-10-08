@@ -26,7 +26,7 @@ from ccnpy.flic.Node import Node
 from ccnpy.flic.NodeData import NodeData
 from ccnpy.flic.Pointers import Pointers
 from ccnpy.flic.SecurityCtx import SecurityCtx
-from ccnpy.flic.SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 from ccnpy.flic.aeadctx.AeadImpl import AeadImpl
 from ccnpy.flic.aeadctx.AeadCtx import AeadCtx
 

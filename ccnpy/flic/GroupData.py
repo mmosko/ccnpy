@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .LocatorList import LocatorList
-from .SubtreeSize import SubtreeSize
+from .Locators import Locators
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 from ..core.HashValue import HashValue
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
@@ -48,7 +48,7 @@ class GroupData(TlvType):
         if leaf_size is not None:
             raise RuntimeError("Not Implemented")
 
-        if locators is not None and not isinstance(locators, LocatorList):
+        if locators is not None and not isinstance(locators, Locators):
             raise TypeError("locators, if present, must be ccnpy.core.flic.LocatorList")
 
         self._subtree_size = subtree_size
@@ -106,9 +106,9 @@ class GroupData(TlvType):
             elif inner_tlv.type() == cls.__subtree_digest_type:
                 assert subtree_digest is None
                 subtree_digest = HashValue.deserialize(inner_tlv.value())
-            elif inner_tlv.type() == LocatorList.class_type():
+            elif inner_tlv.type() == Locators.class_type():
                 assert locators is None
-                locators = LocatorList.parse(inner_tlv)
+                locators = Locators.parse(inner_tlv)
             else:
                 raise RuntimeError("Unsupported GroupData TLV type %r" % inner_tlv)
 

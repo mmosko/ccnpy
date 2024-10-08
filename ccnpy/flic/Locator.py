@@ -15,9 +15,13 @@
 from ..core.Link import Link
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
+from ..exceptions.CannotParseError import CannotParseError
 
 
 class Locator(TlvType):
+    """
+    A `Link` is not a TLV.  The Locator type encapsulates a Link inside a TLV.
+    """
     __type = 0x0002
 
     @classmethod
@@ -52,7 +56,7 @@ class Locator(TlvType):
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise TypeError("tlv type %r must be %r" % (tlv.type(), cls.class_type()))
+            raise CannotParseError("tlv type %r must be %r" % (tlv.type(), cls.class_type()))
 
         link = Link.deserialize(tlv.value())
         return cls(link)

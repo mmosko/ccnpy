@@ -11,9 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.core.HashValue import HashValue
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+from ...core.HashValue import HashValue
+from ...core.Tlv import Tlv
+from ...core.TlvType import TlvType
+from ...exceptions.CannotParseError import CannotParseError
 
 
 class SubtreeDigest(TlvType):
@@ -23,7 +36,7 @@ class SubtreeDigest(TlvType):
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, digest):
+    def __init__(self, digest: HashValue):
         TlvType.__init__(self)
 
         if digest is None:
@@ -46,7 +59,7 @@ class SubtreeDigest(TlvType):
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
         inner_tlv = Tlv.deserialize(tlv.value())
         digest = HashValue.parse(inner_tlv)

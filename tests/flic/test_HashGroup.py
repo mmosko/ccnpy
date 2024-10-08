@@ -21,7 +21,7 @@ from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.GroupData import GroupData
 from ccnpy.flic.HashGroup import HashGroup
 from ccnpy.flic.Pointers import Pointers
-from ccnpy.flic.SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 
 
 class HashGroupTest(unittest.TestCase):

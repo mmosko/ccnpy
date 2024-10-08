@@ -20,6 +20,10 @@ from .Tlv import Tlv
 
 
 class Link:
+    """
+    A `Link` is not a TLV.  It is a wire-format tuple (name, keyid, digest).  When a Link is used somewhere,
+    it must be enclosed in a TLV.
+    """
     __T_KEYIDRESTR = 0x0002
     __T_OBJHASHRESTR = 0x0003
 

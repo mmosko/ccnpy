@@ -17,7 +17,7 @@ import math
 from .GroupData import GroupData
 from .HashGroup import HashGroup
 from .Pointers import Pointers
-from .SubtreeSize import SubtreeSize
+from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 
 
 class HashGroupBuilder:

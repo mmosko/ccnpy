@@ -22,7 +22,7 @@ from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.flic.HashGroup import HashGroup
 from ccnpy.flic.Locator import Locator
-from ccnpy.flic.LocatorList import LocatorList
+from ccnpy.flic.Locators import Locators
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.Node import Node
@@ -144,7 +144,7 @@ class ManiestFactoryTest(unittest.TestCase):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         locator = Locator(Link(name=Name.from_uri("ccnx:/example/pie")))
-        locator_list = LocatorList(locators=[locator])
+        locator_list = Locators(locators=[locator])
         factory = ManifestFactory()
         manifest = factory.build(source=ptr, node_locators=locator_list)
         actual = manifest.serialize()
