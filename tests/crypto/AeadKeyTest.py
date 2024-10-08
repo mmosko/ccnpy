@@ -16,23 +16,36 @@
 import array
 import unittest
 
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
 
 
-class AesGcmKeyTest(unittest.TestCase):
+class AeadKeyTest(unittest.TestCase):
     # openssl rand 16 | xxd - -include
     key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
-    def test_encrypt_decrypt(self):
+    def test_gcm_encrypt_decrypt(self):
         buffer = array.array("B", b'somewhere over the rainbow')
         aad = array.array("B", b'way up high')
 
-        key = AesGcmKey(self.key)
+        key = AeadGcm(self.key)
         iv = key.nonce()
-        (c, a) = key.encrypt(nonce=iv, plaintext=buffer, associated_data=aad)
+        (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
         # print("nonce      = %r" % iv)
         # print("ciphertext = %r" % c)
         # print("authtag    = %r" % a)
-        plaintext = key.decrypt(nonce=iv, ciphertext=c, associated_data=aad, auth_tag=a)
+        plaintext = key.decrypt(iv=iv, ciphertext=c, associated_data=aad, auth_tag=a)
+        self.assertEqual(buffer, plaintext)
+
+    def test_ccm_encrypt_decrypt(self):
+        buffer = array.array("B", b'somewhere over the rainbow')
+        aad = array.array("B", b'way up high')
+
+        key = AeadCcm(self.key)
+        iv = key.nonce()
+        (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
+        # print("nonce      = %r" % iv)
+        # print("ciphertext = %r" % c)
+        # print("authtag    = %r" % a)
+        plaintext = key.decrypt(iv=iv, ciphertext=c, associated_data=aad, auth_tag=a)
         self.assertEqual(buffer, plaintext)

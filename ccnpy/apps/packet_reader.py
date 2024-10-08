@@ -19,7 +19,7 @@ import ccnpy.core
 import ccnpy.crypto
 import ccnpy.flic
 import ccnpy.flic.tree
-from ccnpy.flic.presharedkey import PresharedKeyDecryptor
+from ccnpy.flic.aeadctx import AeadDecryptor
 
 
 class PacketReader:

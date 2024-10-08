@@ -20,7 +20,7 @@ from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.Name import Name
 from ccnpy.core.Packet import Packet
 from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c
-from ccnpy.crypto.Crc32c import Crc32c_Signer
+from ccnpy.crypto.Crc32c import Crc32cSigner
 
 
 class PacketTest(unittest.TestCase):
@@ -45,7 +45,7 @@ class PacketTest(unittest.TestCase):
 
         body = ContentObject.create_data(name=Name.from_uri('ccnx:/apple'), payload=[1, 2, 3, 4])
 
-        signer = Crc32c_Signer()
+        signer = Crc32cSigner()
         validation_alg = ValidationAlg_Crc32c()
         validation_payload = signer.sign(body.serialize(), validation_alg.serialize())
 
@@ -89,7 +89,7 @@ class PacketTest(unittest.TestCase):
 
         body = ContentObject.create_data(name=Name.from_uri('ccnx:/apple'), payload=[1, 2, 3, 4])
 
-        signer = Crc32c_Signer()
+        signer = Crc32cSigner()
         validation_alg = ValidationAlg_Crc32c()
         validation_payload = signer.sign(body.serialize(), validation_alg.serialize())
 
@@ -100,7 +100,7 @@ class PacketTest(unittest.TestCase):
     def test_save_load(self):
         body = ContentObject.create_data(name=Name.from_uri('ccnx:/apple'), payload=[1, 2, 3, 4])
 
-        signer = Crc32c_Signer()
+        signer = Crc32cSigner()
         validation_alg = ValidationAlg_Crc32c()
         validation_payload = signer.sign(body.serialize(), validation_alg.serialize())
 

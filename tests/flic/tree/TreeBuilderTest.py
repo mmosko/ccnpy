@@ -26,10 +26,10 @@ from ccnpy.flic.tree.Solution import Solution
 from ccnpy.flic.tree.TreeIO import TreeIO
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadCcm
 from ccnpy.flic.ManifestFactory import ManifestFactory
-from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
-from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 
@@ -240,9 +240,9 @@ class TreeBuilderTest(unittest.TestCase):
 
         params = TreeParameters(data, 1500, solution)
 
-        key = AesGcmKey.generate(bits=256)
-        encryptor = PresharedKeyEncryptor(key=key, key_number=1234)
-        decryptor = PresharedKeyDecryptor(key=key, key_number=1234)
+        key = AeadCcm.generate(bits=256)
+        encryptor = AeadEncryptor(key=key, key_number=1234)
+        decryptor = AeadDecryptor(key=key, key_number=1234)
 
         factory = ManifestFactory(encryptor=encryptor)
 

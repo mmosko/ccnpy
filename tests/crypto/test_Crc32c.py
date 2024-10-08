@@ -17,7 +17,7 @@ import unittest
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.ValidationPayload import ValidationPayload
-from ccnpy.crypto.Crc32c import Crc32c_Signer, Crc32c_Verifier
+from ccnpy.crypto.Crc32c import Crc32cSigner, Crc32cVerifier
 
 
 class Crc32c_SignerTest(unittest.TestCase):
@@ -27,7 +27,7 @@ class Crc32c_SignerTest(unittest.TestCase):
                    (b'The quick brown fox jumps over the lazy dog', 0x22620404),
                    (b'abcdefg', 0xE627F441)]
 
-        signer = Crc32c_Signer()
+        signer = Crc32cSigner()
         for (buffer, checksum) in vectors:
             actual = signer.sign(buffer)
             expected = ValidationPayload(Tlv.uint32_to_array(checksum))
@@ -39,7 +39,7 @@ class Crc32c_SignerTest(unittest.TestCase):
                    (b'abcdefg', 0xE627F441, True),
                    (b'abcdefg', 0xE627F400, False)]
 
-        verifier = Crc32c_Verifier()
+        verifier = Crc32cVerifier()
         for (buffer, checksum, expected) in vectors:
             validation_payload = ValidationPayload(Tlv.uint32_to_array(checksum))
             actual = verifier.verify(buffer, validation_payload=validation_payload)
@@ -50,11 +50,11 @@ class Crc32c_SignerTest(unittest.TestCase):
         b2 = b'jumps over the lazy dog'
         truth = 0x22620404
 
-        signer = Crc32c_Signer()
+        signer = Crc32cSigner()
         actual = signer.sign(b1, b2)
         expected = ValidationPayload(Tlv.uint32_to_array(truth))
         self.assertEqual(expected, actual, "two buffers failed")
 
-        verifier = Crc32c_Verifier()
+        verifier = Crc32cVerifier()
         result = verifier.verify(b1, b2, validation_payload=expected)
         self.assertTrue(result)

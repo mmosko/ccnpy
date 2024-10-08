@@ -28,11 +28,11 @@ from ..core.Tlv import Tlv
 class Manifest:
     """
     A Manifest is a ContentObject with PayloadType of Manifest.  The Payload
-    is the set of TLVs (SecurityCtx? (EncryptedNode / Node)).
+    is the set of TLVs (SecurityCtx? (EncryptedNode / Node) [AuthTag]).
     """
 
     @classmethod
-    def from_content_object(cls, content_object):
+    def from_content_object(cls, content_object: ContentObject):
         if not isinstance(content_object, ContentObject):
             raise TypeError("content_object must be ContentObject")
         if not content_object.payload_type().is_manifest():

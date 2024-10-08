@@ -16,10 +16,10 @@
 import unittest
 
 from ccnpy.core.HashValue import HashValue
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.Pointers import Pointers
-from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 
@@ -39,8 +39,8 @@ class TreeParametersTest(unittest.TestCase):
         self.assertEqual(40, params.num_pointers_per_node())
 
     def test_encrypted_maxsize(self):
-        key = AesGcmKey.generate(128)
-        encryptor = PresharedKeyEncryptor(key=key, key_number=22)
+        key = AeadGcm.generate(128)
+        encryptor = AeadEncryptor(key=key, key_number=22)
         hv = HashValue.create_sha256(32 * [0])
         factory = ManifestFactory(encryptor=encryptor)
         chunks = Pointers(hash_values=1000 * [hv])

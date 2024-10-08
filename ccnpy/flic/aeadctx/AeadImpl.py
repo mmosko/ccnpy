@@ -11,34 +11,50 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .PresharedKeyCtx import PresharedKeyCtx
+
+from .AeadCtx import AeadCtx
 from ..AuthTag import AuthTag
 from ..EncryptedNode import EncryptedNode
 from ..Manifest import Manifest
 from ..Node import Node
-from ...core.Tlv import Tlv
-from ...crypto.AesGcmKey import AesGcmKey
+from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 
 
-class PresharedKey:
+class AeadImpl:
     """
-    The PresharedKey algorithm.
+    The AEAD algorithm.
 
-    Typically, you will use `PresharedKey.create_manifest(...)` to create a Manifest TLV out of
+    Typically, you will use `AeadImpl.create_manifest(...)` to create a Manifest TLV out of
     a Node.
     """
 
-    def __init__(self, key, key_number):
+    def __init__(self, key: AeadKey, key_number: int):
         """
 
         :param key: A AesGcmKey
         :param key_number: An integer used to reference the key
         """
-        if not isinstance(key, AesGcmKey):
+        if not isinstance(key, AeadKey):
             raise TypeError("key must be AesGcmKey")
 
         self._key = key
         self._key_number = key_number
+
+    def _create_gcm_ctx(self, iv):
+        if len(self._key) == 128:
+            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, iv=iv)
+        elif len(self._key) == 256:
+            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, iv=iv)
+        else:
+            raise ValueError("Unsupported key length %r" % len(self._key))
+
+    def _create_ccm_ctx(self, iv):
+        if len(self._key) == 128:
+            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, iv=iv)
+        elif len(self._key) == 256:
+            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, iv=iv)
+        else:
+            raise ValueError("Unsupported key length %r" % len(self._key))
 
     def encrypt(self, node):
         """
@@ -53,14 +69,14 @@ class PresharedKey:
         iv = self._key.nonce()
 
         security_ctx = None
-        if len(self._key) == 128:
-            security_ctx = PresharedKeyCtx.create_aes_gcm_128(key_number=self._key_number, iv=iv)
-        elif len(self._key) == 256:
-            security_ctx = PresharedKeyCtx.create_aes_gcm_256(key_number=self._key_number, iv=iv)
+        if isinstance(self._key, AeadGcm):
+            security_ctx = self._create_gcm_ctx(iv)
+        elif isinstance(self._key, AeadCcm):
+            security_ctx = self._create_ccm_ctx(iv)
         else:
-            raise ValueError("Unsupported key length %r" % len(self._key))
+            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
 
-        ciphertext, a = self._key.encrypt(nonce=iv,
+        ciphertext, a = self._key.encrypt(iv=iv,
                                           plaintext=plaintext,
                                           associated_data=security_ctx.serialize())
 
@@ -101,7 +117,7 @@ class PresharedKey:
             raise TypeError("encrypted_node must be EncryptedNode")
         if security_ctx is None:
             raise ValueError("security context must not be None")
-        if not isinstance(security_ctx, PresharedKeyCtx):
+        if not isinstance(security_ctx, AeadCtx):
             raise TypeError("security_ctx must be a PresharedKeyCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
@@ -112,7 +128,7 @@ class PresharedKey:
             raise ValueError("security_ctx.key_number %r != our key_number %r" %
                              (security_ctx.key_number(), self._key_number))
 
-        plaintext = self._key.decrypt(nonce=security_ctx.iv(),
+        plaintext = self._key.decrypt(iv=security_ctx.iv(),
                                       ciphertext=encrypted_node.value(),
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())
@@ -145,7 +161,7 @@ class PresharedKey:
             raise TypeError("manifest did not contain an encrypted node")
         if security_ctx is None:
             raise ValueError("security context must not be None")
-        if not isinstance(security_ctx, PresharedKeyCtx):
+        if not isinstance(security_ctx, AeadCtx):
             raise TypeError("security_ctx must be a PresharedKeyCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")

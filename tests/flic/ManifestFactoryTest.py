@@ -19,7 +19,7 @@ from array import array
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.flic.HashGroup import HashGroup
 from ccnpy.flic.Locator import Locator
 from ccnpy.flic.LocatorList import LocatorList
@@ -27,8 +27,8 @@ from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.Node import Node
 from ccnpy.flic.Pointers import Pointers
-from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
-from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 
 
 class ManiestFactoryTest(unittest.TestCase):
@@ -123,8 +123,8 @@ class ManiestFactoryTest(unittest.TestCase):
         pass
 
     def test_encrypted_nopts_node(self):
-        key = AesGcmKey(array("B", 16*[1]).tobytes())
-        encryptor = PresharedKeyEncryptor(key, 99)
+        key = AeadGcm(array("B", 16 * [1]).tobytes())
+        encryptor = AeadEncryptor(key, 99)
 
         hv = HashValue.create_sha256(array("B", [1, 2]))
         ptr = Pointers([hv])
@@ -135,7 +135,7 @@ class ManiestFactoryTest(unittest.TestCase):
 
         self.assertTrue(manifest.is_encrypted())
 
-        decryptor = PresharedKeyDecryptor(key, 99)
+        decryptor = AeadDecryptor(key, 99)
         actual_manifest = decryptor.decrypt_manifest(manifest)
 
         self.assertEqual(node, actual_manifest.node())

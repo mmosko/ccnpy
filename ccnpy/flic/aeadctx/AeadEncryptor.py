@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .PresharedKey import PresharedKey
+from .AeadImpl import AeadImpl
 from ..ManifestEncryptor import ManifestEncryptor
 
 
-class PresharedKeyEncryptor(ManifestEncryptor):
+class AeadEncryptor(ManifestEncryptor):
     def __init__(self, key, key_number):
-        self._psk = PresharedKey(key, key_number)
+        self._psk = AeadImpl(key, key_number)
 
     def encrypt(self, node):
         return self._psk.encrypt(node)

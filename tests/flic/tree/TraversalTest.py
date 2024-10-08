@@ -19,11 +19,11 @@ from array import array
 from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.Packet import Packet
 from ccnpy.core.Payload import Payload
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.Pointers import Pointers
-from ccnpy.flic.presharedkey.PresharedKeyDecryptor import PresharedKeyDecryptor
-from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 
@@ -73,9 +73,9 @@ class TraversalTest(unittest.TestCase):
         self.assertEqual(expected, buffer.buffer)
 
     def test_encrypted_manifest(self):
-        key = AesGcmKey.generate(bits=128)
-        encryptor = PresharedKeyEncryptor(key=key, key_number=77)
-        decryptor = PresharedKeyDecryptor(key=key, key_number=77)
+        key = AeadGcm.generate(bits=128)
+        encryptor = AeadEncryptor(key=key, key_number=77)
+        decryptor = AeadDecryptor(key=key, key_number=77)
 
         expected = array("B", [1, 2, 3, 4, 5, 6, 7])
         data_packets = TreeIO.chunk_data_to_packets(expected, 2)

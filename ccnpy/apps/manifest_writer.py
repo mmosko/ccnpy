@@ -20,14 +20,14 @@ from datetime import datetime
 from ccnpy.core.Name import Name
 from ccnpy.core.Link import Link
 from ccnpy.core.Packet import PacketWriter
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
 from ccnpy.flic.Locator import Locator
 from ccnpy.flic.LocatorList import LocatorList
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.presharedkey.PresharedKeyEncryptor import PresharedKeyEncryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.TreeIO import TreeIO
 
 
@@ -59,8 +59,8 @@ class ManifestWriter:
         encryptor = None
         if args.enc_key is not None:
             key_bytes = bytearray.fromhex(args.enc_key)
-            key = AesGcmKey(key_bytes)
-            encryptor = PresharedKeyEncryptor(key=key, key_number=args.key_num)
+            key = AeadGcm(key_bytes)
+            encryptor = AeadEncryptor(key=key, key_number=args.key_num)
 
         tree_options = ManifestTreeOptions(root_expiry_time=self._parse_time(args.root_expiry),
                                            manifest_expiry_time=self._parse_time(args.node_expiry),

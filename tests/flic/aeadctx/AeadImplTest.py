@@ -18,7 +18,7 @@ import unittest
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
-from ccnpy.crypto.AesGcmKey import AesGcmKey
+from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
 from ccnpy.flic.GroupData import GroupData
 from ccnpy.flic.HashGroup import HashGroup
 from ccnpy.flic.Manifest import Manifest
@@ -27,16 +27,16 @@ from ccnpy.flic.NodeData import NodeData
 from ccnpy.flic.Pointers import Pointers
 from ccnpy.flic.SecurityCtx import SecurityCtx
 from ccnpy.flic.SubtreeSize import SubtreeSize
-from ccnpy.flic.presharedkey.PresharedKey import PresharedKey
-from ccnpy.flic.presharedkey.PresharedKeyCtx import PresharedKeyCtx
+from ccnpy.flic.aeadctx.AeadImpl import AeadImpl
+from ccnpy.flic.aeadctx.AeadCtx import AeadCtx
 
 
-class PresharedKeyTest(unittest.TestCase):
+class AeadImplTest(unittest.TestCase):
     key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
-    def test_presharedkeyctx_serialize(self):
-        psk_ctx = PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
+    def test_aeadctx_serialize(self):
+        psk_ctx = AeadCtx.create_aes_gcm_128(55, array.array("B", [77, 88]))
         actual = psk_ctx.serialize()
 
         expected = array.array("B", [ # SecurityCtx
@@ -52,7 +52,7 @@ class PresharedKeyTest(unittest.TestCase):
                                      ])
         self.assertEqual(expected, actual)
 
-    def test_presharedkeyctx_deserialize(self):
+    def test_aeadctx_deserialize(self):
         wire_format = array.array("B", [0, 1, 0, 20,
                                         0, 1, 0, 16,
                                         0, 1, 0, 1, 55,
@@ -61,7 +61,7 @@ class PresharedKeyTest(unittest.TestCase):
                                         ])
         tlv = Tlv.deserialize(wire_format)
         psk_ctx = SecurityCtx.parse(tlv)
-        expected = PresharedKeyCtx.create_aes_gcm_128(55, array.array("B", [77,88]))
+        expected = AeadCtx.create_aes_gcm_128(55, array.array("B", [77, 88]))
         self.assertEqual(expected, psk_ctx)
 
     def test_encrypt_decrypt_node(self):
@@ -79,8 +79,8 @@ class PresharedKeyTest(unittest.TestCase):
 
         node = Node(node_data=nd, hash_groups=[hg1, hg2])
 
-        aes_key = AesGcmKey(self.key)
-        psk = PresharedKey(key=aes_key, key_number=55)
+        aes_key = AeadGcm(self.key)
+        psk = AeadImpl(key=aes_key, key_number=55)
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
 
         plaintext = psk.decrypt_node(security_ctx=security_ctx,
@@ -104,8 +104,8 @@ class PresharedKeyTest(unittest.TestCase):
 
         node = Node(node_data=nd, hash_groups=[hg1, hg2])
 
-        aes_key = AesGcmKey(self.key)
-        psk = PresharedKey(key=aes_key, key_number=55)
+        aes_key = AeadCcm(self.key)
+        psk = AeadImpl(key=aes_key, key_number=55)
         encrypted_manifest = psk.create_encrypted_manifest(node)
 
         decrypted_manifest = psk.decrypt_manifest(encrypted_manifest)

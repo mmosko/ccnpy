@@ -17,40 +17,68 @@ from ...core.DisplayFormatter import DisplayFormatter
 from ...core.Tlv import Tlv
 
 
-class PresharedKeyCtx(SecurityCtx):
+class AeadCtx(SecurityCtx):
     """
-    The security context for a PresharedKey encryption.  This is analogous to a ValidationAlg implementation,
-    such as ccnpy.ValidationAlg_RsaSha256.  This class is used by the `PresharedKey` class and typically
+    The security context for a authenticated encryption, authenticated data algorithms.
+
+    This is analogous to a ValidationAlg implementation,
+    such as ccnpy.ValidationAlg_RsaSha256.  This class is used by the `AEAD` class and typically
     the user does not need to touch it.
 
-    Typically, you will use `PresharedKeyCtx.create_aes_gcm_256(...)` or `PresharedKeyData.parse(...)`.
+    Typically, you will use `AEADCtx.create_aes_gcm_256(...)` or `AEADCtx.parse(...)`.
+
+    This class uses the raw IV and does not make any assuptions about how it is generated.  See
+    NIST 800-38d for recommendations on constructing the IV and appropriate bit lengths.
+
+    ```
+    AEADCtx = TYPE LENGTH AEADData
+    AEADData = KeyNum AEADNonce Mode
+    KeyNum = TYPE LENGTH INTEGER
+    AEADIV = TYPE LENGTH 1*OCTET
+    AEADMode = TYPE LENGTH (AEAD_AES_128_GCM / AEAD_AES_256_GCM /
+    AEAD_AES_128_CCM / AEAD_AES_128_CCM)
+    ```
     """
-    __T_PRESHARED = 0x0001
+    __T_AEAD = 0x0001
     __T_KEYNUM = 0x0001
     __T_IV = 0x0002
     __T_MODE = 0x0003
 
-    __MODE_AES_GCM_128 = 1
-    __MODE_AES_GCM_256 = 2
-    __allowed_modes = [__MODE_AES_GCM_128, __MODE_AES_GCM_256]
+    __AEAD_AES_128_GCM = 1
+    __AEAD_AES_256_GCM = 2
+    __AEAD_AES_128_CCM = 3
+    __AEAD_AES_256_CCM = 4
+    __allowed_modes = [__AEAD_AES_128_GCM, __AEAD_AES_256_GCM, __AEAD_AES_128_CCM, __AEAD_AES_256_CCM]
 
     @classmethod
     def class_type(cls):
-        return cls.__T_PRESHARED
+        return cls.__T_AEAD
 
     @classmethod
     def create_aes_gcm_128(cls, key_number, iv):
-        return cls(key_number, iv, cls.__MODE_AES_GCM_128)
+        return cls(key_number, iv, cls.__AEAD_AES_128_GCM)
 
     @classmethod
     def create_aes_gcm_256(cls, key_number, iv):
-        return cls(key_number, iv, cls.__MODE_AES_GCM_256)
+        return cls(key_number, iv, cls.__AEAD_AES_256_GCM)
+
+    @classmethod
+    def create_aes_ccm_128(cls, key_number, iv):
+        return cls(key_number, iv, cls.__AEAD_AES_128_CCM)
+
+    @classmethod
+    def create_aes_ccm_256(cls, key_number, iv):
+        return cls(key_number, iv, cls.__AEAD_AES_256_CCM)
 
     def __mode_string(self):
-        if self._mode == self.__MODE_AES_GCM_128:
+        if self._mode == self.__AEAD_AES_128_GCM:
             return "AES-GCM-128"
-        if self._mode == self.__MODE_AES_GCM_256:
+        if self._mode == self.__AEAD_AES_256_GCM:
             return "AES-GCM-256"
+        if self._mode == self.__AEAD_AES_128_CCM:
+            return "AES-CCM-128"
+        if self._mode == self.__AEAD_AES_256_CCM:
+            return "AES-CCM-256"
         raise ValueError("Unsupported mode %r" % self._mode)
 
     def __init__(self, key_number, iv, mode):
@@ -80,8 +108,8 @@ class PresharedKeyCtx(SecurityCtx):
 
     def __repr__(self):
         return "PSK: {kn: %r, iv: %r, mode: %r}" % (self._key_number,
-                                                    DisplayFormatter.hexlify(self._iv),
-                                                    self.__mode_string())
+                                                       DisplayFormatter.hexlify(self.nonce),
+                                                       self.__mode_string())
 
     @classmethod
     def parse(cls, tlv):
@@ -113,10 +141,16 @@ class PresharedKeyCtx(SecurityCtx):
         return self._tlv.serialize()
 
     def is_aes_gcm_128(self):
-        return self._mode == self.__MODE_AES_GCM_128
+        return self._mode == self.__AEAD_AES_128_GCM
 
     def is_aes_gcm_256(self):
-        return self._mode == self.__MODE_AES_GCM_256
+        return self._mode == self.__AEAD_AES_256_GCM
+
+    def is_aes_ccm_128(self):
+        return self._mode == self.__AEAD_AES_128_CCM
+
+    def is_aes_ccm_256(self):
+        return self._mode == self.__AEAD_AES_256_CCM
 
     def iv(self):
         return self._iv

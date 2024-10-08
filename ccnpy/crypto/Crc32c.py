@@ -22,7 +22,7 @@ from ..core.ValidationPayload import ValidationPayload
 from ..crypto.Signer import Signer
 
 
-class Crc32c_Signer(Signer):
+class Crc32cSigner(Signer):
     """
     pip install crc32c
     """
@@ -58,7 +58,7 @@ class Crc32c_Signer(Signer):
         return ValidationAlg_Crc32c()
 
 
-class Crc32c_Verifier(Verifier):
+class Crc32cVerifier(Verifier):
     """
     pip install crc32c
     """
