@@ -100,6 +100,8 @@ class Tlv:
                         byte_list.append(x)
 
             return array.array("B", byte_list)
+        if value is None:
+            return array.array("B", [])
         else:
             return value
 

@@ -39,8 +39,11 @@ class Link:
         :param keyid: The KeyId restriction
         :param digest: The ContentObjectHash restriction
         """
-        if name is not None and not isinstance(name, Name):
-            raise TypeError("name must be Name if present")
+        if name is not None:
+            if isinstance(name, str):
+                name = Name.from_uri(name)
+            if not isinstance(name, Name):
+                raise TypeError("name must be Name if present")
 
         if keyid is not None and not isinstance(keyid, HashValue):
             raise TypeError("keyid must be Hashvalue if present")

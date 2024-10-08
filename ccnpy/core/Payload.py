@@ -17,6 +17,7 @@ import array
 from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ccnpy.exceptions.CannotParseError import CannotParseError
 
 
 class Payload(TlvType):
@@ -55,6 +56,6 @@ class Payload(TlvType):
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
         return cls(tlv.value())
