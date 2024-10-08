@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from ccnpy.core.HashValue import HashValue
+from ccnpy.core.Tlv import Tlv
+from ccnpy.core.TlvType import TlvType
 
-import ccnpy
 
-
-class SubtreeDigest(ccnpy.TlvType):
+class SubtreeDigest(TlvType):
     __type = 0x0002
 
     @classmethod
@@ -23,15 +24,15 @@ class SubtreeDigest(ccnpy.TlvType):
         return cls.__type
 
     def __init__(self, digest):
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
 
         if digest is None:
             raise ValueError("digest must not be None")
-        if not isinstance(digest, ccnpy.HashValue):
+        if not isinstance(digest, HashValue):
             raise TypeError("digest must be ccnpy.HashValue")
 
         self._digest = digest
-        self._tlv = ccnpy.Tlv(self.class_type(), self._digest)
+        self._tlv = Tlv(self.class_type(), self._digest)
 
     def __len__(self):
         return len(self._tlv)
@@ -47,8 +48,8 @@ class SubtreeDigest(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r" % tlv.type())
 
-        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
-        digest = ccnpy.HashValue.parse(inner_tlv)
+        inner_tlv = Tlv.deserialize(tlv.value())
+        digest = HashValue.parse(inner_tlv)
         return cls(digest)
 
     def serialize(self):

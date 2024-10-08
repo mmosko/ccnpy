@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 
 from abc import abstractmethod
 
-import ccnpy
-import ccnpy.flic
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
 
-class SecurityCtx(ccnpy.TlvType):
+class SecurityCtx(TlvType):
     """
     Analogous to the ccnpy.ValidationAlg container.  It is an abstract intermediate class between
     TlvType and the concrete algorithms.
@@ -30,7 +30,7 @@ class SecurityCtx(ccnpy.TlvType):
         return cls.__type
 
     def __init__(self):
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
 
     @abstractmethod
     def __len__(self):
@@ -40,12 +40,12 @@ class SecurityCtx(ccnpy.TlvType):
     def parse(cls, tlv):
         # Due to circular reference between SecurityCtx and it's children, need
         # to defer the loading of the children
-        from ccnpy.flic.presharedkey import PresharedKeyCtx
+        from .presharedkey.PresharedKeyCtx import PresharedKeyCtx
 
         if tlv.type() != cls.class_type():
             raise ValueError("Incorrect TLV type %r" % tlv)
 
-        inner_tlv = ccnpy.Tlv.deserialize(tlv.value())
+        inner_tlv = Tlv.deserialize(tlv.value())
         if inner_tlv.type() == PresharedKeyCtx.class_type():
             return PresharedKeyCtx.parse(inner_tlv)
 

@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import ccnpy
+from ..core.Link import Link
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
 
-class Locator(ccnpy.TlvType):
+class Locator(TlvType):
     __type = 0x0002
 
     @classmethod
@@ -25,15 +27,15 @@ class Locator(ccnpy.TlvType):
     def __init__(self, link):
         """
 
-        :param links: A ccnpy.Link
+        :param links: A ccnpy.core.Link
         """
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
 
-        if not isinstance(link, ccnpy.Link):
-            raise TypeError("link must be ccnpy.Link")
+        if not isinstance(link, Link):
+            raise TypeError("link must be ccnpy.core.Link")
 
         self._link = link
-        self._tlv = ccnpy.Tlv(self.class_type(), link.serialize())
+        self._tlv = Tlv(self.class_type(), link.serialize())
 
     def __len__(self):
         return len(self._tlv)
@@ -52,6 +54,5 @@ class Locator(ccnpy.TlvType):
         if tlv.type() != cls.class_type():
             raise TypeError("tlv type %r must be %r" % (tlv.type(), cls.class_type()))
 
-        link = ccnpy.Link.deserialize(tlv.value())
+        link = Link.deserialize(tlv.value())
         return cls(link)
-

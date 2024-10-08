@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,8 +14,10 @@
 
 import math
 
-import ccnpy
-import ccnpy.flic
+from .GroupData import GroupData
+from .HashGroup import HashGroup
+from .Pointers import Pointers
+from .SubtreeSize import SubtreeSize
 
 
 class HashGroupBuilder:
@@ -99,7 +101,7 @@ class HashGroupBuilder:
 
         :return: ccnpy.flic.Pointers object
         """
-        return ccnpy.flic.Pointers(hash_values=self._pointers)
+        return Pointers(hash_values=self._pointers)
 
     def direct_count(self):
         return self._direct_count
@@ -131,8 +133,8 @@ class HashGroupBuilder:
         if include_leaf_size or include_subtree_size:
             subtree_size = subtree_digest = None
             if include_subtree_size:
-                subtree_size = ccnpy.flic.SubtreeSize(self.indirect_size())
-            gd = ccnpy.flic.GroupData(subtree_size=subtree_size, subtree_digest=subtree_digest)
+                subtree_size = SubtreeSize(self.indirect_size())
+            gd = GroupData(subtree_size=subtree_size, subtree_digest=subtree_digest)
 
-        hg = ccnpy.flic.HashGroup(group_data=gd, pointers=self.pointers())
+        hg = HashGroup(group_data=gd, pointers=self.pointers())
         return hg

@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 from datetime import datetime
 
-import ccnpy
-from ccnpy.crypto import Signer, Verifier, RsaKey
+from .RsaKey import RsaKey
+from .Signer import Signer
+from .Verifier import Verifier
+from ..core.SignatureTime import SignatureTime
+from ..core.ValidationAlg import ValidationAlg_RsaSha256
+from ..core.ValidationPayload import ValidationPayload
 
 
 class RsaSha256_Signer(Signer):
@@ -35,7 +38,7 @@ class RsaSha256_Signer(Signer):
 
     def sign(self, *buffers):
         signature = self._key.sign(*buffers)
-        payload = ccnpy.ValidationPayload(signature)
+        payload = ValidationPayload(signature)
         return payload
 
     def keyid(self):
@@ -55,18 +58,19 @@ class RsaSha256_Signer(Signer):
         :return: A ValidationAlg appropriate to the signer
         """
         if signature_time is None:
-            signature_time = ccnpy.SignatureTime.now()
+            signature_time = SignatureTime.now()
         elif isinstance(signature_time, datetime):
-            signature_time = ccnpy.SignatureTime.from_datetime(signature_time)
+            signature_time = SignatureTime.from_datetime(signature_time)
 
         public_key = None
         if include_public_key:
-            public_key = ccnpy.crypto.RsaKey(self._key.public_key_pem())
+            public_key = RsaKey(self._key.public_key_pem())
 
-        return ccnpy.ValidationAlg_RsaSha256(keyid=self.keyid(),
-                                             public_key=public_key,
-                                             key_link=key_link,
-                                             signature_time=signature_time)
+        return ValidationAlg_RsaSha256(keyid=self.keyid(),
+                                       public_key=public_key,
+                                       key_link=key_link,
+                                       signature_time=signature_time)
+
 
 class RsaSha256_Verifier(Verifier):
     def __init__(self, key):

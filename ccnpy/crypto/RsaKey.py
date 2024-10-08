@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import array
 import hashlib
 
@@ -23,7 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import utils
 
-import ccnpy
+from ..core.HashValue import HashValue
 
 
 class RsaKey:
@@ -47,6 +48,8 @@ class RsaKey:
         if pem_key.startswith(b'-----BEGIN ENCRYPTED PRIVATE KEY-----\n'):
             self.__initialize_private_key(pem_key, password)
         elif pem_key.startswith(b'-----BEGIN RSA PRIVATE KEY-----\n'):
+            self.__initialize_private_key(pem_key, password)
+        elif pem_key.startswith(b'-----BEGIN PRIVATE KEY-----\n'):
             self.__initialize_private_key(pem_key, password)
         elif pem_key.startswith(b'-----BEGIN PUBLIC KEY-----\n'):
             self.__initialize_public_key(pem_key)
@@ -227,5 +230,5 @@ class RsaKey:
         h = hashlib.sha256()
         h.update(der)
         digest = h.digest()
-        tlv = ccnpy.HashValue.create_sha256(digest)
+        tlv = HashValue.create_sha256(digest)
         return tlv

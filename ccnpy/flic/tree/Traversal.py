@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import ccnpy
-import ccnpy.flic
+from ..Manifest import Manifest
+from ..ManifestDecryptor import ManifestDecryptor
+from ...core.ContentObject import ContentObject
+from ...core.Packet import Packet
 
 
 class Traversal:
@@ -23,7 +24,7 @@ class Traversal:
         :param packet_input: AAn object with a 'get(hash_value)' method.
         :param data_buffer: The output buffer of the application data.  It must have an `append(array)` method.
         """
-        if decryptor is not None and not issubclass(decryptor.__class__, ccnpy.flic.ManifestDecryptor):
+        if decryptor is not None and not issubclass(decryptor.__class__, ManifestDecryptor):
             raise TypeError("decryptor, if present, must subclass ccnpy.flic.ManifestDecryptor")
 
         self._decryptor = decryptor
@@ -46,12 +47,12 @@ class Traversal:
         :param packet: A ccnpy.Packet.
         :return:
         """
-        if not isinstance(packet, ccnpy.Packet):
+        if not isinstance(packet, Packet):
             raise TypeError("node must be ccnpy.Packet")
 
         self._count += 1
         body = packet.body()
-        if not isinstance(body, ccnpy.ContentObject):
+        if not isinstance(body, ContentObject):
             raise TypeError("body of the packet must be ccnpy.ContentObject")
 
         if body.payload_type().is_manifest():
@@ -89,7 +90,7 @@ class Traversal:
             self.preorder(packet)
 
     def _manifest_from_content_object(self, content_object):
-        manifest = ccnpy.flic.Manifest.from_content_object(content_object)
+        manifest = Manifest.from_content_object(content_object)
         if manifest.is_encrypted():
             if self._decryptor is None:
                 raise RuntimeError("Manifest is encrypted, but decryptor is None")
@@ -97,4 +98,3 @@ class Traversal:
             manifest = self._decryptor.decrypt_manifest(manifest)
 
         return manifest
-

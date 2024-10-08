@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from .Locator import Locator
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
-import ccnpy
-import ccnpy.flic
 
-
-class LocatorList(ccnpy.TlvType):
+class LocatorList(TlvType):
     """
     Represents a list of Locators (links).
     """
@@ -32,9 +32,9 @@ class LocatorList(ccnpy.TlvType):
         """
 
         :param final:
-        :param locators: a list of ccnpy.flic.Locator
+        :param locators: a list of ccnpy.core.core.flic.Locator
         """
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
 
         if final is None:
             final = False
@@ -44,12 +44,12 @@ class LocatorList(ccnpy.TlvType):
 
         tlvs = []
         if final:
-            tlvs.append(ccnpy.Tlv(self.__final_type, []))
+            tlvs.append(Tlv(self.__final_type, []))
 
         if self._locators is not None:
             tlvs.extend(locators)
 
-        self._tlv = ccnpy.Tlv(self.class_type(), tlvs)
+        self._tlv = Tlv(self.class_type(), tlvs)
 
     def __len__(self):
         return len(self._tlv)
@@ -80,15 +80,15 @@ class LocatorList(ccnpy.TlvType):
         locators = []
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
             if inner_tlv.type() == cls.__final_type:
                 assert final is None
                 if inner_tlv.length() > 0:
                     raise ValueError("Final TLV should have 0 length")
                 final = True
-            elif inner_tlv.type() == ccnpy.flic.Locator.class_type():
-                locator = ccnpy.flic.Locator.parse(inner_tlv)
+            elif inner_tlv.type() == Locator.class_type():
+                locator = Locator.parse(inner_tlv)
                 locators.append(locator)
             else:
                 raise ValueError("Unsupported TLV %r" % inner_tlv)

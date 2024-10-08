@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from .HashGroup import HashGroup
+from .NodeData import NodeData
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
-import ccnpy
-import ccnpy.flic
 
-
-class Node(ccnpy.TlvType):
+class Node(TlvType):
     __type = 0x0002
 
     @classmethod
@@ -29,8 +30,8 @@ class Node(ccnpy.TlvType):
         :param node_data: (optional) ccnpy.flic.NodeData
         :param hash_groups: a list of HashGroups
         """
-        ccnpy.TlvType.__init__(self)
-        if node_data is not None and not isinstance(node_data, ccnpy.flic.NodeData):
+        TlvType.__init__(self)
+        if node_data is not None and not isinstance(node_data, NodeData):
             raise TypeError("node_data must be ccnpy.flic.NodeData")
 
         if hash_groups is None:
@@ -42,7 +43,7 @@ class Node(ccnpy.TlvType):
         self._node_data = node_data
         self._hash_groups = hash_groups
 
-        self._tlv = ccnpy.Tlv(self.class_type(), [self._node_data, *self._hash_groups])
+        self._tlv = Tlv(self.class_type(), [self._node_data, *self._hash_groups])
 
     def __len__(self):
         return len(self._tlv)
@@ -109,18 +110,22 @@ class Node(ccnpy.TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = ccnpy.Tlv.deserialize(tlv.value()[offset:])
+            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
 
-            if inner_tlv.type() == ccnpy.flic.NodeData.class_type():
+            if inner_tlv.type() == NodeData.class_type():
                 assert node_data is None
-                node_data = ccnpy.flic.NodeData.parse(inner_tlv)
+                node_data = NodeData.parse(inner_tlv)
 
-            elif inner_tlv.type() == ccnpy.flic.HashGroup.class_type():
-                hash_group = ccnpy.flic.HashGroup.parse(inner_tlv)
+            elif inner_tlv.type() == HashGroup.class_type():
+                hash_group = HashGroup.parse(inner_tlv)
                 hash_groups.append(hash_group)
 
             else:
                 raise RuntimeError("Unsupported packet TLV type %r" % inner_tlv)
 
         return cls(node_data=node_data, hash_groups=hash_groups)
+
+    @classmethod
+    def create_tlv(cls, value):
+        return Tlv(cls.class_type(), value)

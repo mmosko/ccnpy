@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,10 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from crc32c import crc32
 
-import ccnpy
-from ccnpy.crypto import Signer, Verifier
+from crc32c import crc32c
+
+from .Verifier import Verifier
+from ..core.Tlv import Tlv
+from ..core.ValidationAlg import ValidationAlg_Crc32c
+from ..core.ValidationPayload import ValidationPayload
+from ..crypto.Signer import Signer
 
 
 class Crc32c_Signer(Signer):
@@ -32,8 +36,8 @@ class Crc32c_Signer(Signer):
     def sign(self, *buffers):
         checksum = 0
         for buffer in buffers:
-            checksum = crc32(buffer, checksum)
-        payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
+            checksum = crc32c(buffer, checksum)
+        payload = ValidationPayload(Tlv.uint32_to_array(checksum))
         return payload
 
     def keyid(self):
@@ -51,7 +55,8 @@ class Crc32c_Signer(Signer):
         assert not include_public_key
         assert key_link is None
         assert signature_time is None
-        return ccnpy.ValidationAlg_Crc32c()
+        return ValidationAlg_Crc32c()
+
 
 class Crc32c_Verifier(Verifier):
     """
@@ -75,7 +80,7 @@ class Crc32c_Verifier(Verifier):
 
         checksum = 0
         for buffer in buffers:
-            checksum = crc32(buffer, checksum)
+            checksum = crc32c(buffer, checksum)
 
-        check_payload = ccnpy.ValidationPayload(ccnpy.Tlv.uint32_to_array(checksum))
+        check_payload = ValidationPayload(Tlv.uint32_to_array(checksum))
         return check_payload == validation_payload

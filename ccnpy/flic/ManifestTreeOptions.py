@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 
 class ManifestTreeOptions:
     def __init__(self,
@@ -47,4 +46,3 @@ class ManifestTreeOptions:
         self.add_node_subtree_size = add_node_subtree_size
         self.max_tree_degree = max_tree_degree
         self.debug = debug
-

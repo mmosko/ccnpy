@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,9 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import ccnpy.flic.tree
-from ccnpy.flic import ManifestTreeOptions
+from .FileChunks import FileChunks
+from .TreeParameters import TreeParameters
+from ..HashGroupBuilder import HashGroupBuilder
+from ..ManifestFactory import ManifestFactory
+from ..ManifestTreeOptions import ManifestTreeOptions
+from ..Node import Node
+from ..NodeData import NodeData
 
 
 class TreeBuilder:
@@ -123,19 +127,13 @@ class TreeBuilder:
                 segment.tail -= 1
     """
 
-    # class Node:
-    #     def __init__(self, children):
-    #         self.children = children
-    #
-    #     def __repr__(self):
-    #         return "{Node %r}" % self.children
-
     class ReturnValue:
         """
         A wrapper for the return tuple used in TreeBuilder.  When a manifest wraps a node, it is likely
         encrypted, so we cannot easily access the node data.  This structure makes the components more
         easily accessible while building the tree.
         """
+
         def __init__(self, packet, manifest, node):
             self.packet = packet
             self.manifest = manifest
@@ -157,7 +155,7 @@ class TreeBuilder:
             self._assert_invariants()
 
         def __repr__(self):
-            return "{Segment %r, %r}" % (self._head, self._tail, )
+            return "{Segment %r, %r}" % (self._head, self._tail,)
 
         def _assert_invariants(self):
             if self._tail < 0:
@@ -203,13 +201,13 @@ class TreeBuilder:
         :param packet_output: A class that has a `put(packet)` method
         :param expiry_time: Optional expiry time to apply to all Manifest Content Objects.
         """
-        if not isinstance(tree_parameters, ccnpy.flic.tree.TreeParameters):
+        if not isinstance(tree_parameters, TreeParameters):
             raise TypeError("tree_parameters must be ccnpy.flic.tree.TreeParameters")
 
-        if not isinstance(file_chunks, ccnpy.flic.tree.FileChunks):
+        if not isinstance(file_chunks, FileChunks):
             raise TypeError("file_chunks must be ccnpy.flic.tree.FileChunks")
 
-        if not isinstance(manifest_factory, ccnpy.flic.ManifestFactory):
+        if not isinstance(manifest_factory, ManifestFactory):
             raise TypeError("manifest_factory must be ccnpy.flic.ManifestFactory")
 
         if tree_options is None:
@@ -269,7 +267,7 @@ class TreeBuilder:
     def _build_leaf_packet(self, head, tail):
         assert tail > head
         count = tail - head
-        builder = ccnpy.flic.HashGroupBuilder(max_direct=count, max_indirect=0)
+        builder = HashGroupBuilder(max_direct=count, max_indirect=0)
         for i in range(head, tail):
             ptr = self._file_chunks[i]
             builder.append_direct(hash_value=ptr.content_object_hash(), leaf_size=ptr.length())
@@ -279,11 +277,11 @@ class TreeBuilder:
 
         if self._tree_options.add_node_subtree_size:
             node_size = builder.direct_size()
-            node_data = ccnpy.flic.NodeData(subtree_size=node_size)
+            node_data = NodeData(subtree_size=node_size)
         else:
             node_data = None
 
-        node = ccnpy.flic.Node(node_data=node_data, hash_groups=[hg])
+        node = Node(node_data=node_data, hash_groups=[hg])
         manifest = self._factory.build(node)
         packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
@@ -304,7 +302,7 @@ class TreeBuilder:
 
     def _interior_add_right_most_child(self, builder, right_most_child):
         if right_most_child is not None:
-            if not isinstance(right_most_child, ccnpy.flic.tree.TreeBuilder.ReturnValue):
+            if not isinstance(right_most_child, TreeBuilder.ReturnValue):
                 raise TypeError("right_most_child must be ccnpy.flic.tree.TreeBuilder.ReturnValue")
 
             subtree_size = right_most_child.node.node_data().subtree_size()
@@ -320,7 +318,7 @@ class TreeBuilder:
         while not builder.is_indirect_full() and not segment.empty():
             child = self._bottom_up_preorder(segment, level - 1)
             builder.prepend_indirect(hash_value=child.packet.content_object_hash(),
-                                    subtree_size=child.node.node_data().subtree_size().size())
+                                     subtree_size=child.node.node_data().subtree_size().size())
 
         # Pull back our reservation and put those pointers in our direct children
         segment.decrement_head(reserve_count)
@@ -337,19 +335,19 @@ class TreeBuilder:
 
         if self._tree_options.add_node_subtree_size:
             node_size = builder.direct_size() + builder.indirect_size()
-            node_data = ccnpy.flic.NodeData(subtree_size=node_size)
+            node_data = NodeData(subtree_size=node_size)
         else:
             node_data = None
 
-        node = ccnpy.flic.Node(node_data=node_data, hash_groups=[hg])
+        node = Node(node_data=node_data, hash_groups=[hg])
         manifest = self._factory.build(node)
         packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
         return return_value
 
     def _interior_manifest(self, segment, level, right_most_child=None):
-        builder = ccnpy.flic.HashGroupBuilder(max_direct=self._params.internal_direct_per_node(),
-                                              max_indirect=self._params.internal_indirect_per_node())
+        builder = HashGroupBuilder(max_direct=self._params.internal_direct_per_node(),
+                                   max_indirect=self._params.internal_indirect_per_node())
 
         self._interior_add_right_most_child(builder, right_most_child)
         self._interior_add_indirect(builder, segment, level)

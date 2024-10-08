@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,21 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
-import ccnpy
 
-
-class SubtreeSize(ccnpy.TlvType):
+class SubtreeSize(TlvType):
     __type = 0x0001
 
-    @staticmethod
-    def class_type():
-        return SubtreeSize.__type
+    @classmethod
+    def class_type(cls):
+        return cls.__type
 
     def __init__(self, size):
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
         self._size = size
-        self._tlv = ccnpy.Tlv.create_uint64(self.class_type(), self._size)
+        self._tlv = Tlv.create_uint64(self.class_type(), self._size)
 
     def __len__(self):
         return len(self._tlv)

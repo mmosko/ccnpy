@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,16 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from .PresharedKey import PresharedKey
+from ..ManifestEncryptor import ManifestEncryptor
 
 
-import ccnpy.flic
-from ccnpy.flic.presharedkey import PresharedKey
-
-
-class PresharedKeyEncryptor(ccnpy.flic.ManifestEncryptor):
+class PresharedKeyEncryptor(ManifestEncryptor):
     def __init__(self, key, key_number):
         self._psk = PresharedKey(key, key_number)
 
     def encrypt(self, node):
         return self._psk.encrypt(node)
-

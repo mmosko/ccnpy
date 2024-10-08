@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from ..core.HashValue import HashValue
+from ..core.Tlv import Tlv
+from ..core.TlvType import TlvType
 
-import ccnpy
 
-
-class Pointers(ccnpy.TlvType):
+class Pointers(TlvType):
     """
     Encloses an array of ccnpy.HashValues.
 
@@ -40,12 +41,12 @@ class Pointers(ccnpy.TlvType):
         return cls.__type
 
     def __init__(self, hash_values):
-        ccnpy.TlvType.__init__(self)
+        TlvType.__init__(self)
         if hash_values is None or not isinstance(hash_values, list):
             raise TypeError("hash_values must be a non-empty list of ccnpy.HashValue")
 
         self._hash_values = hash_values
-        self._tlv = ccnpy.Tlv(self.class_type(), self._hash_values)
+        self._tlv = Tlv(self.class_type(), self._hash_values)
 
     def __len__(self):
         return len(self._hash_values)
@@ -79,7 +80,7 @@ class Pointers(ccnpy.TlvType):
         hash_values = []
         offset = 0
         while offset < tlv.length():
-            hv = ccnpy.HashValue.deserialize(tlv.value()[offset:])
+            hv = HashValue.deserialize(tlv.value()[offset:])
             offset += len(hv)
             hash_values.append(hv)
         return cls(hash_values)

@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 import argparse
 from pathlib import PurePath
 
-import ccnpy
+import ccnpy.core
 import ccnpy.crypto
 import ccnpy.flic
 import ccnpy.flic.tree
@@ -43,14 +43,14 @@ class PacketReader:
 
     def _output(self, value):
         if self._prettify:
-            print(ccnpy.DisplayFormatter.prettify(value))
+            print(ccnpy.core.DisplayFormatter.prettify(value))
         else:
             print(value)
 
     def read(self):
         """
         """
-        packet = ccnpy.Packet.load(self._path)
+        packet = ccnpy.core.Packet.load(self._path)
         self._output(packet)
 
         if packet.body().is_manifest():

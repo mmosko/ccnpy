@@ -1,4 +1,4 @@
-#  Copyright 2019 Marc Mosko
+#  Copyright 2024 Marc Mosko
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,10 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import math
 
 
 class Solution:
+    """
+    Determines tree structure based on certain input parameters.
+
+    Solution is used by `TreeOptimizer`.
+    """
     def __init__(self, total_direct_nodes, num_pointers, direct_per_node, indirect_per_node, num_internal_nodes, waste):
         self._total_direct_nodes = total_direct_nodes
         self._num_pointers = num_pointers
