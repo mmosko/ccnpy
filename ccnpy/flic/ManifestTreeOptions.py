@@ -17,7 +17,9 @@ from typing import Optional
 
 from .Locators import Locators
 from .ManifestEncryptor import ManifestEncryptor
+from .name_constructor.SchemaType import SchemaType
 from ..core.ExpiryTime import ExpiryTime
+from ..crypto.Signer import Signer
 
 
 @dataclass
@@ -26,7 +28,10 @@ class ManifestTreeOptions:
     Options that guide how to build the manifest tree.
 
     Attributes:
-        root_locators: A ccnpy.LocatorList to put in the signed root manifest or None
+        name: The root manifest name.
+        schema_type: The type of name constructor to use.
+        signer: The root manifest signer.
+
         root_expiry_time: The ContentObject expiry time for the root manifest
         manifest_expiry_time: The ContentObject expiry time for non-root manifests
         data_expiry_time: The ContentObject expiry time for the data content objects
@@ -39,7 +44,15 @@ class ManifestTreeOptions:
         debug: Print debugging messages
     """
 
-    root_locators: Optional[Locators] = None
+    name: str
+    schema_type: SchemaType
+    signer: Signer
+    manifest_prefix: Optional[str] = None
+    data_prefix: Optional[str] = None
+
+    manifest_locators: Optional[Locators] = None
+    data_locators: Optional[Locators] = None
+
     root_expiry_time: Optional[ExpiryTime] = None
     manifest_expiry_time: Optional[ExpiryTime] = None
     data_expiry_time: Optional[ExpiryTime] = None
@@ -53,4 +66,5 @@ class ManifestTreeOptions:
     add_group_leaf_digest: bool = False
 
     max_tree_degree: Optional[int] = None
+    max_packet_size: int = 1500
     debug: bool = False

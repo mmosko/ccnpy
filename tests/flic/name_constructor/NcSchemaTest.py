@@ -22,6 +22,7 @@ from ccnpy.flic.Locator import Locator
 from ccnpy.flic.Locators import Locators
 from ccnpy.flic.name_constructor.NcSchema import InterestDerivedSchema, DataDerivedSchema, PrefixSchema, \
     SegmentedSchema, HashSchema
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 
 
 class NcSchemaTest(unittest.TestCase):
@@ -64,3 +65,10 @@ class NcSchemaTest(unittest.TestCase):
         self.assertEqual(expected, wire_format)
         decoded = HashSchema.parse(Tlv.deserialize(wire_format))
         self.assertEqual(s, decoded)
+
+    def test_schema_type_parse(self):
+        self.assertEqual(SchemaType.HASHED, SchemaType.parse('Hashed'))
+        self.assertEqual(SchemaType.PREFIX, SchemaType.parse('Prefix'))
+        self.assertEqual(SchemaType.SEGMENTED, SchemaType.parse('Segmented'))
+        with self.assertRaises(ValueError):
+            SchemaType.parse('foo')

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from abc import ABC
 from typing import Optional
 
@@ -31,6 +32,7 @@ class NcSchema(TlvType, ABC):
 
     @classmethod
     def parse(cls, tlv):
+        # To avoid include loops
         subclasses = [InterestDerivedSchema, DataDerivedSchema, PrefixSchema, SegmentedSchema, HashSchema]
 
         for c in subclasses:
@@ -179,6 +181,10 @@ class SegmentedSchema(LocatorSchema):
 
 
 class HashSchema(LocatorSchema):
+    """
+    In the Hashed schema, the data packets are all nameless objects.
+    """
+
     __T_HASH_SCHEMA = 0x0005
 
     @classmethod

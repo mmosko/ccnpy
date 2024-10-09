@@ -15,12 +15,11 @@ from .GroupData import GroupData
 from .HashGroup import HashGroup
 from .Locators import Locators
 from .Manifest import Manifest
-from .ManifestEncryptor import ManifestEncryptor
 from .ManifestTreeOptions import ManifestTreeOptions
 from .Node import Node
 from .NodeData import NodeData
 from .Pointers import Pointers
-from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
+from .annotations.SubtreeSize import SubtreeSize
 
 
 class ManifestFactory:
@@ -29,28 +28,18 @@ class ManifestFactory:
     `HashGroup` or `Node`.  The factory can also apply a `ManifestEncryptor` and generate
     encrypted manifests.
     """
-    def __init__(self, encryptor=None, tree_options=None):
+    def __init__(self, tree_options: ManifestTreeOptions):
         """
         When passing tree options, note that they will only be applied if you construct the manifest at a
         lower level of abstraction than an option applies to.  For example, if you pass a `Node`,
         we cannot add anything.  If you use a HashGroup, we can add a NodeData.  If you pass a Pointers,
         we can add GroupData and NodeData.
 
-        TODO: manifest_encryptor is not a field in tree_options, so should change the signature of this method.
-
-        :param encryptor: (optional) Used to encrypt the manifest
         :param tree_options: (optional) If present, options guide how manifest is built, otherwise use defaults from
                             ManifestTreeOptions.
         """
-        if encryptor is not None and not issubclass(encryptor.__class__, ManifestEncryptor):
-            raise TypeError("Encryptor, if present, must be subclass of ManifestEncryptor")
-
-        self._encryptor = encryptor
-
-        if tree_options is None:
-            self._tree_options = ManifestTreeOptions()
-        else:
-            self._tree_options = tree_options
+        self._encryptor = tree_options.manifest_encryptor
+        self._tree_options = tree_options
 
     def build_packet(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None, group_leaf_size=None):
         """

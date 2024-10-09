@@ -49,24 +49,25 @@ a second locator.  For example, the nameless object manifests could be stored
 under `ccnx:/foo` and the data stored under `ccnx:/bar`.
 
 ```bash
-manifest_writer HashSchema --root-name RN [--manifest-locator ML] [--data-locator DL] ...
+manifest_writer --schema HashSchema --name RN [--manifest-locator ML] [--data-locator DL] ...
 ```
 
-If the `manifest-locator` `ML` is not given, the `RN` is used as the manifest locator.  If `DL`
-is not given, then we use `ML`, if given, otherwise `RN`.
+Nameless objects require a locator.  The default is to use `RN` as the locator for all
+nameless objects.  If `ML` is given, then `ML` is used as the manifest locator instead of `RN`.  If `DL` is
+given, then `DL` is used for the data locator instead of `RN`.
 
-If the manifest locator is different from the data locator, then we must use two hash groups.  Otherwise,
-direct and indirect pointers may be mixed in a single hash group.
+Specifying `ML` or `DL` causes manifest and data to use separate hash groups.
 
 ### Single Prefix Schema
 
 In this mode, there is a single CCNx name used for all manifests and data.  They are differentiated
-only by the ContentObjectHash.
+only by the ContentObjectHash.  The `name` is the common prefix.
 
-No locators are used, unless `--manifest-locator` or `--data-locator` is used.
+No locators are used, unless `--manifest-locator` or `--data-locator` is given.  If `ML` is different
+from `DL`, then two has groups must be used.
 
 ```bash
-manifest_writer PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...
+manifest_writer --schema PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...
 ```
 
 ### Segmented Schema
@@ -78,7 +79,7 @@ of chunks.  The root manifest has a unique name.
 No locators are used, unless `--manifest-locator` or `--data-locator` is used.
 
 ```bash
-manifest_writer SegmentedSchema --root-name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
+manifest_writer --schema SegmentedSchema --name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
 ```
 
 ## Encryption

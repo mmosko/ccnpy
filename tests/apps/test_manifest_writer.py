@@ -79,6 +79,9 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 
     def _create_args(self):
         args = ManifestWriterTest.Args()
+        args.schema = 'Hashed'
+        args.manifest_prefix = None
+        args.data_prefix = None
         args.filename = self.test_data_file.name
         args.key_file = self.test_key_file.name
         args.key_pass = None
@@ -87,7 +90,8 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         args.root_flag = False,
         args.tree_degree = 4
         args.out_dir = self.test_out_dir.name
-        args.locator = None
+        args.manifest_locator = None
+        args.data_locator = None
         args.root_expiry = '2019-10-11T01:02:03+00:00'
         args.node_expiry = None
         args.data_expiry = '2019-10-11T01:02:03+00:00'

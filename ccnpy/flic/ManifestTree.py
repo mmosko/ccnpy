@@ -12,16 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import BinaryIO
+
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
 from .Pointers import Pointers
+from .name_constructor.SchemaImplFactory import SchemaImplFactory
 from .tree.FileChunks import FileChunks
 from .tree.SizedPointer import SizedPointer
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
 from ..core.ContentObject import ContentObject
 from ..core.Packet import Packet, PacketWriter
-from ..core.Payload import Payload
 
 
 class ManifestTree:
@@ -29,26 +31,16 @@ class ManifestTree:
     Builds a manifest tree.
     """
 
-    def __init__(self, data_input, packet_output: PacketWriter, root_manifest_name, root_manifest_signer,
-                 max_packet_size=1500, tree_options=None):
+    def __init__(self, data_input: BinaryIO, packet_output: PacketWriter, tree_options: ManifestTreeOptions):
         """
-        TODO: Need a better way to represent all the options and a way to communicate them to TreeBuilder.
+        The `tree_options` must specify the name and schema.
 
         :param data_input: Something we can call read() on that returns byte arrays, e.g. open(filename, 'rb')
         :param packet_output: Something we can call put(ccnpy.Packet) on to output packets (see .tree.TreeIO)
-        :param root_manifest_name: the ccnpy.Name of the root manifest
-        :param root_manifest_signer: The ccnpy.crypto.Signer with which to sign the root manifest
-        :param max_packet_size: The maximum bytes for a nameless manifest or data content object
         :param tree_options: (optional) ManifestTree.TreeOptions.  If none, uses the default values.
         """
-        if tree_options is None:
-            tree_options = ManifestTreeOptions()
-
         self._data_input = data_input
         self._packet_output = packet_output
-        self._root_manifest_name = root_manifest_name
-        self._root_manifest_signer = root_manifest_signer
-        self._max_packet_size = max_packet_size
         self._tree_options = tree_options
         self._file_chunks = FileChunks()
 
@@ -58,10 +50,11 @@ class ManifestTree:
 
         :return: The root_manifest packet, which is the named and signed manifest
         """
-        total_file_bytes = self._chunk_input()
 
-        manifest_factory = ManifestFactory(encryptor=self._tree_options.manifest_encryptor,
-                                           tree_options=self._tree_options)
+        impl = SchemaImplFactory.create(tree_options=self._tree_options)
+        file_metadata = impl.chunk_data(self._data_input, self._packet_output)
+
+        manifest_factory = ManifestFactory(tree_options=self._tree_options)
 
         optimized_params = self._calculate_optimal_tree(manifest_factory)
 
@@ -114,46 +107,6 @@ class ManifestTree:
                                                                 max_tree_degree=self._tree_options.max_tree_degree,
                                                                 manifest_factory=manifest_factory)
         return optimized_params
-
-    def _calculate_nameless_data_payload_size(self):
-        """
-        Create a nameless object with empty payload and see how much space we have left.
-        :return: payload size of a nameless data object
-        """
-        nameless = ContentObject.create_data(name=None,
-                                             expiry_time=self._tree_options.data_expiry_time,
-                                             payload=Payload([]))
-        packet = Packet.create_content_object(body=nameless)
-        if len(packet) >= self._max_packet_size:
-            raise ValueError("An empty nameless ContentObject is %r bytes, but max_size is only %r" %
-                             (len(packet), self._max_packet_size))
-
-        payload_size = self._max_packet_size - len(packet)
-        return payload_size
-
-    def _chunk_input(self):
-        total_file_bytes = 0
-        payload_size = self._calculate_nameless_data_payload_size()
-
-        payload_value = self._data_input.read(payload_size)
-        while len(payload_value) > 0:
-            total_file_bytes += len(payload_value)
-            packet = self._create_nameless_data_packet(payload_value)
-            self._cache_file_chunk(packet, len(payload_value))
-            self._packet_output.put(packet)
-            # read next payload and loop
-            payload_value = self._data_input.read(payload_size)
-
-        return total_file_bytes
-
-    def _create_nameless_data_packet(self, payload_value):
-        payload_tlv = Payload(payload_value)
-        nameless = ContentObject.create_data(name=None,
-                                             payload=payload_tlv,
-                                             expiry_time=self._tree_options.data_expiry_time)
-        packet = Packet.create_content_object(nameless)
-        assert len(packet) <= self._max_packet_size
-        return packet
 
     def _cache_file_chunk(self, packet, payload_length):
         co_hash = packet.content_object_hash()

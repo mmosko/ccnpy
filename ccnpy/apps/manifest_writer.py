@@ -16,9 +16,10 @@
 import argparse
 import getpass
 from datetime import datetime
+from typing import Optional
 
-from ccnpy.core.Name import Name
 from ccnpy.core.Link import Link
+from ccnpy.core.Name import Name
 from ccnpy.core.Packet import PacketWriter
 from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.crypto.RsaKey import RsaKey
@@ -28,6 +29,7 @@ from ccnpy.flic.Locators import Locators
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tree.TreeIO import TreeIO
 
 
@@ -41,19 +43,21 @@ class ManifestWriter:
         :param args:
         :param packet_writer: In testing, we pass our own packet writer, otherwise create one for the directory
         """
-        self._name = Name.from_uri(args.name)
-        self._max_size = args.max_size
         self._filename = args.filename
-        self._locators = None
-        if args.locator is not None:
-            locator = Locator(link=Link(name=Name.from_uri(args.locator)))
-            self._locators = Locators([locator])
-
         self._packet_writer = packet_writer
-
         self._tree_options = self._create_tree_options(args)
-        signing_key = RsaKey.load_pem_key(args.key_file, args.key_pass)
-        self._signer = RsaSha256_Signer(signing_key)
+
+    @staticmethod
+    def _create_locator(uri: str) -> Optional[Locators]:
+        if uri is not None:
+            return Locators([Locator(link=Link(name=Name.from_uri(uri)))])
+        return None
+
+    @staticmethod
+    def _create_name(uri: str) -> Optional[Name]:
+        if uri is not None:
+            return Name.from_uri(uri)
+        return None
 
     def _create_tree_options(self, args):
         encryptor = None
@@ -62,13 +66,27 @@ class ManifestWriter:
             key = AeadGcm(key_bytes)
             encryptor = AeadEncryptor(key=key, key_number=args.key_num)
 
-        tree_options = ManifestTreeOptions(root_expiry_time=self._parse_time(args.root_expiry),
+        signing_key = RsaKey.load_pem_key(args.key_file, args.key_pass)
+
+        tree_options = ManifestTreeOptions(name=Name.from_uri(args.name),
+                                           schema_type=SchemaType.parse(args.schema),
+                                           signer=RsaSha256_Signer(signing_key),
+                                           manifest_prefix=self._create_name(args.manifest_prefix),
+                                           data_prefix=self._create_name(args.data_prefix),
+
+                                           manifest_locators=self._create_locator(args.manifest_locator),
+                                           data_locators=self._create_locator(args.data_locator),
+
+                                           root_expiry_time=self._parse_time(args.root_expiry),
                                            manifest_expiry_time=self._parse_time(args.node_expiry),
                                            data_expiry_time=self._parse_time(args.data_expiry),
+
                                            manifest_encryptor=encryptor,
+
                                            add_node_subtree_size=True,
+
+                                           max_packet_size=args.max_size,
                                            max_tree_degree=args.tree_degree,
-                                           root_locators=self._locators,
                                            debug=False)
         return tree_options
 
@@ -82,7 +100,8 @@ class ManifestWriter:
         print("Root manifest hash: %r" % packet.content_object_hash())
         return packet
 
-    def _parse_time(self, value):
+    @staticmethod
+    def _parse_time(value):
         """
         Parses an ISO time to a datetime
 
@@ -105,9 +124,6 @@ class ManifestWriter:
         with open(self._filename, 'rb') as data_input:
             mt = ManifestTree(data_input=data_input,
                               packet_output=self._packet_writer,
-                              root_manifest_name=self._name,
-                              root_manifest_signer=self._signer,
-                              max_packet_size=self._max_size,
                               tree_options=self._tree_options)
 
             root_manifest_packet = mt.build()
@@ -118,6 +134,15 @@ def run():
     max_size = 1500
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--schema', dest='schema', choices=['Hashed', 'Prefix', 'Segmented'], default='Hashed',
+                        help='Name constructor schema (default Hashed)')
+    parser.add_argument('--name', dest="name", help='CCNx URI for root manifest', required=True)
+    parser.add_argument('--manifest-locator', dest="manifest_locator", default=None,
+                        help='CCNx URI for manifest locator')
+    parser.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
+    parser.add_argument('--manifest-prefix', dest="manifest_prefix", help='CCNx URI for manifests (Segmented only)')
+    parser.add_argument('--data-prefix', dest="data_prefix", help='CCNx URI for data (Segmented only)')
+
     parser.add_argument("-d", dest="tree_degree", type=int,
                         help='manifest tree degree (default is max that fits in a packet)')
 
@@ -140,28 +165,10 @@ def run():
 
     parser.add_argument('--root-expiry', dest="root_expiry",
                         help="Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest")
-    parser.add_argument('--node-expiry', dest="node_expiry", help="Expiry time (ISO format) to expire node manifests")
+    parser.add_argument('--node-expiry', dest="node_expiry",
+                        help="Expiry time (ISO format) to expire node manifests")
     parser.add_argument('--data-expiry', dest="data_expiry",
                         help="Expiry time (ISO format) to expire data nameless objects")
-
-    subparsers = parser.add_subparsers(title='Schema Modes', dest='schema_mode', help='subcommand help')
-
-    parser_hashed = subparsers.add_parser('HashSchema', help='Hash Schema nameless object mode')
-    parser_hashed.add_argument('--root-name', dest="root_name", help='CCNx URI for root manifest', required=True)
-    parser_hashed.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
-    parser_hashed.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
-
-    parser_prefix = subparsers.add_parser('PrefixSchema', help='Single Prefix schema')
-    parser_prefix.add_argument('--name', dest="root_name", help='CCNx URI for all objects', required=True)
-    parser_prefix.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
-    parser_prefix.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
-
-    parser_segmented = subparsers.add_parser('SegmentedSchema', help='Segmented schema')
-    parser_segmented.add_argument('--root-name', dest="root_name", help='CCNx URI for root manifest', required=True)
-    parser_segmented.add_argument('--manifest-name', dest="manifest_name", help='CCNx URI for manifests', required=True)
-    parser_segmented.add_argument('--data-name', dest="data_name", help='CCNx URI for data', required=True)
-    parser_segmented.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
-    parser_segmented.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
 
     parser.add_argument('filename', help='The filename to split into the manifest')
 
@@ -182,6 +189,12 @@ def run():
         packet_writer = TreeIO.PacketNetworkWriter("127.0.0.1", 9896)
     else:
         packet_writer = TreeIO.PacketDirectoryWriter(directory=args.out_dir)
+
+    if args.schema == 'Segmented':
+        if args.manifest_name is None or args.data_name is None:
+            raise ValueError('For SegmentedSchema, must provide --manifest-name and --data-name.')
+    elif args.manifest_name is not None or args.data_name is not None:
+        raise ValueError('--manifest-name and --data-name only apply to SegmentedSchema.')
 
     try:
         writer = ManifestWriter(args=args, packet_writer=packet_writer)

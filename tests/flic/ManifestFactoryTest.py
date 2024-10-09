@@ -29,13 +29,18 @@ from ccnpy.flic.Node import Node
 from ccnpy.flic.Pointers import Pointers
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 
 
 class ManiestFactoryTest(unittest.TestCase):
+    @staticmethod
+    def _create_options(**kwargs):
+        return ManifestTreeOptions(name='ccnx:/a', schema_type=SchemaType.HASHED, signer=None, **kwargs)
+
     def test_unencrypted_nopts_pointers(self):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
-        factory = ManifestFactory()
+        factory = ManifestFactory(self._create_options())
         manifest = factory.build(ptr)
         actual = manifest.serialize()
 
@@ -50,7 +55,7 @@ class ManiestFactoryTest(unittest.TestCase):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
-        factory = ManifestFactory()
+        factory = ManifestFactory(self._create_options())
         manifest = factory.build(hg)
         actual = manifest.serialize()
 
@@ -66,7 +71,7 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
         node = Node(hash_groups=[hg])
-        factory = ManifestFactory()
+        factory = ManifestFactory(self._create_options())
         manifest = factory.build(node)
         actual = manifest.serialize()
 
@@ -78,7 +83,7 @@ class ManiestFactoryTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_opts_pointers(self):
-        tree_options = ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
+        tree_options = self._create_options(add_group_subtree_size=True, add_node_subtree_size=True)
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         factory = ManifestFactory(tree_options=tree_options)
@@ -99,7 +104,7 @@ class ManiestFactoryTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_unencrypted_opts_hashgroup(self):
-        tree_options = ManifestTreeOptions(add_group_subtree_size=True, add_node_subtree_size=True)
+        tree_options = self._create_options(add_group_subtree_size=True, add_node_subtree_size=True)
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
@@ -130,7 +135,8 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
         node = Node(hash_groups=[hg])
-        factory = ManifestFactory(encryptor=encryptor)
+        tree_options = self._create_options(manifest_encryptor=encryptor)
+        factory = ManifestFactory(tree_options)
         manifest = factory.build(node)
 
         self.assertTrue(manifest.is_encrypted())
@@ -145,7 +151,7 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         locator = Locator(Link(name=Name.from_uri("ccnx:/example/pie")))
         locator_list = Locators(locators=[locator])
-        factory = ManifestFactory()
+        factory = ManifestFactory(self._create_options())
         manifest = factory.build(source=ptr, node_locators=locator_list)
         actual = manifest.serialize()
 
