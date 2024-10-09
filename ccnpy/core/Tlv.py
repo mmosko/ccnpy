@@ -36,6 +36,18 @@ class Tlv:
         :param value: A uint8
         :return:
         """
+        assert 0 <= value <= 255
+        return cls(tlv_type, Tlv.number_to_array(value))
+
+    @classmethod
+    def create_varint(cls, tlv_type, value):
+        """
+        Variable length integer.
+
+        :param tlv_type:
+        :param value: Up to an 8-byte number
+        :return:
+        """
         return cls(tlv_type, Tlv.number_to_array(value))
 
     def __init__(self, tlv_type, value):

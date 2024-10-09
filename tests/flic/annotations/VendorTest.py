@@ -17,7 +17,6 @@ import array
 import unittest
 
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
 from ccnpy.flic.annotations.Vendor import Vendor
 
 

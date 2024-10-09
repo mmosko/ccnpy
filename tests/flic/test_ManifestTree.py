@@ -21,7 +21,6 @@ from ccnpy.core.Name import Name
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
 from ccnpy.flic.ManifestTree import ManifestTree
-
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO

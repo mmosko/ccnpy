@@ -18,8 +18,13 @@ from ...core.TlvType import TlvType
 from ...exceptions.CannotParseError import CannotParseError
 
 
-class SubtreeDigest(TlvType):
-    __type = 0x0002
+class LeafDigest(TlvType):
+    """
+    Digest of all application data immediately under the Group
+
+        LeafDigest = TYPE LENGTH HashValue
+    """
+    __type = 0x0012
 
     @classmethod
     def class_type(cls):
@@ -40,7 +45,7 @@ class SubtreeDigest(TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "SubtreeDigest(%r)" % self._digest
+        return "LeafDigest(%r)" % self._digest
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

@@ -17,19 +17,20 @@ import array
 import unittest
 
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.AuthTag import AuthTag
+from ccnpy.flic.annotations.LeafSize import LeafSize
 
 
-class AuthTagTest(unittest.TestCase):
+class LeafSizeTest(unittest.TestCase):
     def test_serialize(self):
-        tag = AuthTag(array.array("B", [1, 2, 3, 4]))
-        expected = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
-        actual = tag.serialize()
+        ss = LeafSize(0x010203)
+        actual = ss.serialize()
+
+        expected = array.array("B", [0, 17, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
+        wire_format = array.array("B", [0, 17, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
-        actual = AuthTag.parse(tlv)
-        expected = AuthTag(array.array("B", [1, 2, 3, 4]))
+        actual = LeafSize.parse(tlv)
+        expected = LeafSize(0x010203)
         self.assertEqual(expected, actual)

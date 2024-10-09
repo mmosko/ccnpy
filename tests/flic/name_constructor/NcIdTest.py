@@ -17,7 +17,6 @@ import array
 import unittest
 
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.AuthTag import AuthTag
 from ccnpy.flic.name_constructor.NcId import NcId
 
 

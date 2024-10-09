@@ -26,7 +26,6 @@
 
 
 import unittest
-import json
 
 
 class DisplayFormatterTest(unittest.TestCase):

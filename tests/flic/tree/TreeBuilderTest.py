@@ -20,18 +20,17 @@ import unittest
 from array import array
 
 from ccnpy.core.Packet import Packet
-from ccnpy.flic.tree.FileChunks import FileChunks
-from ccnpy.flic.tree.SizedPointer import SizedPointer
-from ccnpy.flic.tree.Solution import Solution
-from ccnpy.flic.tree.TreeIO import TreeIO
-from ccnpy.flic.tree.TreeParameters import TreeParameters
-
 from ccnpy.crypto.AeadKey import AeadCcm
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.tree.FileChunks import FileChunks
+from ccnpy.flic.tree.SizedPointer import SizedPointer
+from ccnpy.flic.tree.Solution import Solution
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
+from ccnpy.flic.tree.TreeIO import TreeIO
+from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 
 class TreeBuilderTest(unittest.TestCase):

@@ -16,20 +16,23 @@
 import array
 import unittest
 
+from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.AuthTag import AuthTag
+from ccnpy.flic.annotations.LeafDigest import LeafDigest
 
 
-class AuthTagTest(unittest.TestCase):
+class LeafDigestTest(unittest.TestCase):
     def test_serialize(self):
-        tag = AuthTag(array.array("B", [1, 2, 3, 4]))
-        expected = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
-        actual = tag.serialize()
+        hv = HashValue(55, array.array("B", [1, 2, 3]))
+        sd = LeafDigest(hv)
+        actual = sd.serialize()
+
+        expected = array.array("B", [0, 18, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])
+        wire_format = array.array("B", [0, 18, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
-        actual = AuthTag.parse(tlv)
-        expected = AuthTag(array.array("B", [1, 2, 3, 4]))
-        self.assertEqual(expected, actual)
+        sd = LeafDigest.parse(tlv)
+        expected = LeafDigest(HashValue(55, array.array("B", [1, 2, 3])))
+        self.assertEqual(expected, sd)
