@@ -114,20 +114,27 @@ class ManifestWriter:
         return root_manifest_packet
 
 
-if __name__ == "__main__":
+def run():
     max_size = 1500
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", dest='name', help="root manifest name URI (e.g. ccnx:/example.com/foo)", required=True)
     parser.add_argument("-d", dest="tree_degree", type=int,
                         help='manifest tree degree (default is max that fits in a packet)')
+
     parser.add_argument('-k', dest="key_file", default=None,
                         help="RSA private key in PEM format to sign the root manifest")
-    parser.add_argument('-p', dest="key_pass", default=None, help="RSA private key password (otherwise will prompt)")
+    parser.add_argument('-p', dest="key_pass", default=None,
+                        help="RSA private key password (otherwise will prompt)")
+
+    parser.add_argument('--enc-key', dest="enc_key", default=None, help="AES encryption key (hex string)")
+    parser.add_argument('--key-num', dest="key_num", type=int, default=None,
+                        help="Key number of pre-shared key (defaults to key hash)")
+
     parser.add_argument('-s', dest="max_size", type=int, default=max_size,
                         help='maximum content object size (default %r)' % max_size)
+
     parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%r)" % '.')
-    parser.add_argument('-l', dest="locator", help="URI of a locator (root manifest)")
+
     parser.add_argument('-T', dest="use_tcp", default=False, action=argparse.BooleanOptionalAction,
                         help="Use TCP to 127.0.0.1:9896")
 
@@ -136,8 +143,25 @@ if __name__ == "__main__":
     parser.add_argument('--node-expiry', dest="node_expiry", help="Expiry time (ISO format) to expire node manifests")
     parser.add_argument('--data-expiry', dest="data_expiry",
                         help="Expiry time (ISO format) to expire data nameless objects")
-    parser.add_argument('--enc-key', dest="enc_key", help="AES encryption key (hex string)")
-    parser.add_argument('--key-num', dest="key_num", type=int, help="Key number of pre-shared key")
+
+    subparsers = parser.add_subparsers(title='Schema Modes', dest='schema_mode', help='subcommand help')
+
+    parser_hashed = subparsers.add_parser('HashSchema', help='Hash Schema nameless object mode')
+    parser_hashed.add_argument('--root-name', dest="root_name", help='CCNx URI for root manifest', required=True)
+    parser_hashed.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
+    parser_hashed.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
+
+    parser_prefix = subparsers.add_parser('PrefixSchema', help='Single Prefix schema')
+    parser_prefix.add_argument('--name', dest="root_name", help='CCNx URI for all objects', required=True)
+    parser_prefix.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
+    parser_prefix.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
+
+    parser_segmented = subparsers.add_parser('SegmentedSchema', help='Segmented schema')
+    parser_segmented.add_argument('--root-name', dest="root_name", help='CCNx URI for root manifest', required=True)
+    parser_segmented.add_argument('--manifest-name', dest="manifest_name", help='CCNx URI for manifests', required=True)
+    parser_segmented.add_argument('--data-name', dest="data_name", help='CCNx URI for data', required=True)
+    parser_segmented.add_argument('--manifest-locator', dest="manifest_locator", default=None, help='CCNx URI for manifest locator')
+    parser_segmented.add_argument('--data-locator', dest="data_locator", default=None, help='CCNx URI for data locator')
 
     parser.add_argument('filename', help='The filename to split into the manifest')
 
@@ -150,6 +174,10 @@ if __name__ == "__main__":
     if len(args.key_pass) == 0:
         args.key_pass = None
 
+    if args.enc_key is not None and args.key_num is None:
+        # TODO: use something like the left 8 bytes of a sha256
+        args.key_num = hash(args.enc_key)
+
     if args.use_tcp:
         packet_writer = TreeIO.PacketNetworkWriter("127.0.0.1", 9896)
     else:
@@ -161,3 +189,7 @@ if __name__ == "__main__":
     finally:
         if packet_writer is not None:
             packet_writer.close()
+
+
+if __name__ == "__main__":
+    run()

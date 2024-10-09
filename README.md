@@ -81,6 +81,15 @@ No locators are used, unless `--manifest-locator` or `--data-locator` is used.
 manifest_writer SegmentedSchema --root-name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
 ```
 
+## Encryption
+
+A manifest tree and its data are unencrypted unless otherwise specified.  The FLIC specification has an AES encrypted
+mode.  The AES keys can either be referenced in a security context or can be encrypted under RSA-OAEP and wrapped
+inside the manifest.
+
+The `manifest_writer` utility does not support separate manifest and data encryption.  If the user specifies
+encryption on the command line, manifests and data are encrypted under the given AES key.
+
 ## Examples
 
 TBD: These need to be re-factored based on the 3 usages above.
