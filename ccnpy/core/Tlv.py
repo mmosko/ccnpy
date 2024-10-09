@@ -98,6 +98,9 @@ class Tlv:
         length = cls.array_to_number(buffer[2:4])
         value = buffer[4:length + 4]
 
+        if length != len(value):
+            raise ValueError(f'TLV length {length} does not match the value length {len(value)}')
+
         return cls(tlv_type, value)
 
     @staticmethod
