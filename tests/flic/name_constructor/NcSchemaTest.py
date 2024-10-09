@@ -20,7 +20,8 @@ from ccnpy.core.Link import Link
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.Locator import Locator
 from ccnpy.flic.Locators import Locators
-from ccnpy.flic.name_constructor.NcSchema import InterestDerivedSchema, DataDerivedSchema, PrefixSchema, SegmentedSchema
+from ccnpy.flic.name_constructor.NcSchema import InterestDerivedSchema, DataDerivedSchema, PrefixSchema, \
+    SegmentedSchema, HashSchema
 
 
 class NcSchemaTest(unittest.TestCase):
@@ -54,4 +55,12 @@ class NcSchemaTest(unittest.TestCase):
         wire_format = s.serialize()
         self.assertEqual(expected, wire_format)
         decoded = SegmentedSchema.parse(Tlv.deserialize(wire_format))
+        self.assertEqual(s, decoded)
+
+    def test_hash_schema_no_flags(self):
+        s = HashSchema(Locators([Locator(Link('ccnx:/a'))]))
+        expected = array.array("B", [0, 5, 0, 17, 0, 3, 0, 13, 0, 2, 0, 9, 0, 0, 0, 5, 0, 1, 0, 1, 97])
+        wire_format = s.serialize()
+        self.assertEqual(expected, wire_format)
+        decoded = HashSchema.parse(Tlv.deserialize(wire_format))
         self.assertEqual(s, decoded)

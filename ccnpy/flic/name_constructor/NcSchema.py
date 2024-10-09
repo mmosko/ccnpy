@@ -31,7 +31,7 @@ class NcSchema(TlvType, ABC):
 
     @classmethod
     def parse(cls, tlv):
-        subclasses = [InterestDerivedSchema, DataDerivedSchema, PrefixSchema, SegmentedSchema]
+        subclasses = [InterestDerivedSchema, DataDerivedSchema, PrefixSchema, SegmentedSchema, HashSchema]
 
         for c in subclasses:
             try:
@@ -170,6 +170,20 @@ class SegmentedSchema(LocatorSchema):
     @classmethod
     def class_type(cls):
         return cls.__T_SEGMENTED_SCHEMA
+
+    def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
+        LocatorSchema.__init__(self, locators=locators, flags=flags)
+
+    def __repr__(self):
+        return f"SS: {self._flags}, {self._locators}"
+
+
+class HashSchema(LocatorSchema):
+    __T_HASH_SCHEMA = 0x0005
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_HASH_SCHEMA
 
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
         LocatorSchema.__init__(self, locators=locators, flags=flags)

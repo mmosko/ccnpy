@@ -28,13 +28,62 @@ Table Of Contents:
 
 ## Programming Interfaces
 
-* ccnpy: This package has the main CCNx objects.
+* ccnpy.core: This package has the main CCNx objects.
 * ccnpy.flic: The FLIC objects for manifests
 * ccnpy.flic.tree: Tree building and related classes.
 * ccnpy.flic.presharedkey: The preshared key encryptor/decryptor for manifests
 * ccnpy.crypto: Crypto algorithms for AES and RSA.  Used by encryptor/decryptor and ccnpy signers and verifiers.
 
+## Three CCNx Modes
+
+As per the FLIC specification, Sec 3.9.1, there are three main ways that CCNx
+can use FLIC: Hash Schema, Single Prefix schema, and Segmented Schema.  We do not repeat
+all the text from the specification, but only give an overview of the usage.
+
+### Hash Schema
+
+In this mode, there is one CCNx name associated with the root manifest and
+a CCNx locator used to fetch the nameless objects (top manifest, internal manifests, and
+data objects).  The manifests may use one locator and the data objects could use
+a second locator.  For example, the nameless object manifests could be stored
+under `ccnx:/foo` and the data stored under `ccnx:/bar`.
+
+```bash
+manifest_writer HashSchema --root-name RN [--manifest-locator ML] [--data-locator DL] ...
+```
+
+If the `manifest-locator` `ML` is not given, the `RN` is used as the manifest locator.  If `DL`
+is not given, then we use `ML`, if given, otherwise `RN`.
+
+If the manifest locator is different from the data locator, then we must use two hash groups.  Otherwise,
+direct and indirect pointers may be mixed in a single hash group.
+
+### Single Prefix Schema
+
+In this mode, there is a single CCNx name used for all manifests and data.  They are differentiated
+only by the ContentObjectHash.
+
+No locators are used, unless `--manifest-locator` or `--data-locator` is used.
+
+```bash
+manifest_writer PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...
+```
+
+### Segmented Schema
+
+In this mode, one name is used for the manifest tree and another name is used for the data tree.
+Every name has a ChunkNumber.  Each GroupData has a StartSegmentId in it to help with the numbering
+of chunks.  The root manifest has a unique name.
+
+No locators are used, unless `--manifest-locator` or `--data-locator` is used.
+
+```bash
+manifest_writer SegmentedSchema --root-name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
+```
+
 ## Examples
+
+TBD: These need to be re-factored based on the 3 usages above.
 
 In this example, we will use `ccnpy.apps.manifest_writer` to split a file into namesless content objects
 and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below

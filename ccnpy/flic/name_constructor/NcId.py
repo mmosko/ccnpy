@@ -17,7 +17,7 @@ from ...exceptions.CannotParseError import CannotParseError
 
 
 class NcId(TlvType):
-    __T_NCID = 0x0005
+    __T_NCID = 0x0010
 
     @classmethod
     def class_type(cls):

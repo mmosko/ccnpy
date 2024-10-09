@@ -12,37 +12,45 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from dataclasses import dataclass
+from typing import Optional
+
+from .Locators import Locators
+from .ManifestEncryptor import ManifestEncryptor
+from ..core.ExpiryTime import ExpiryTime
+
+
+@dataclass
 class ManifestTreeOptions:
-    def __init__(self,
-                 root_locators=None,
-                 root_expiry_time=None,
-                 manifest_expiry_time=None,
-                 data_expiry_time=None,
-                 manifest_encryptor=None,
-                 add_group_subtree_size=False,
-                 add_group_leaf_size=False,
-                 add_node_subtree_size=True,
-                 max_tree_degree=None,
-                 debug=False):
-        """
-        :param root_locators: A ccnpy.LocatorList to put in the signed root manifest or None
-        :param root_expiry_time: The ContentObject expiry time for the root manifest
-        :param manifest_expiry_time: The ContentObject expiry time for non-root nameless manifests
-        :param data_expiry_time: The ContentObject expiry time for the data content objects
-        :param manifest_encryptor: (optional) The ccnpy.flic.ManifestEncryptor to encrypt manifests
-        :param add_group_subtree_size: If True, add a GroupData with SubtreeSize to each manifest
-        :param add_group_leaf_size: If True, add a GroupData with LeafSize to each manifest
-        :param add_node_subtree_size: If True, add a NodeData with SubtreeSize to each manifest
-        :param max_tree_degree: The maximum tree degree, limited by the packet size.  None for unlimited.
-        :param debug: Print debugging messages
-        """
-        self.root_locators = root_locators
-        self.root_expiry_time = root_expiry_time
-        self.manifest_expiry_time = manifest_expiry_time
-        self.data_expiry_time = data_expiry_time
-        self.manifest_encryptor = manifest_encryptor
-        self.add_group_subtree_size = add_group_subtree_size
-        self.add_group_leaf_size = add_group_leaf_size
-        self.add_node_subtree_size = add_node_subtree_size
-        self.max_tree_degree = max_tree_degree
-        self.debug = debug
+    """
+    Options that guide how to build the manifest tree.
+
+    Attributes:
+        root_locators: A ccnpy.LocatorList to put in the signed root manifest or None
+        root_expiry_time: The ContentObject expiry time for the root manifest
+        manifest_expiry_time: The ContentObject expiry time for non-root manifests
+        data_expiry_time: The ContentObject expiry time for the data content objects
+        manifest_encryptor: The ccnpy.flic.ManifestEncryptor to encrypt manifests
+
+        add_group_subtree_size: If True, add a GroupData with SubtreeSize to each manifest
+        add_group_leaf_size: If True, add a GroupData with LeafSize to each manifest
+        add_node_subtree_size: If True, add a NodeData with SubtreeSize to each manifest
+        max_tree_degree: The maximum tree degree, limited by the packet size.  None for unlimited.
+        debug: Print debugging messages
+    """
+
+    root_locators: Optional[Locators] = None
+    root_expiry_time: Optional[ExpiryTime] = None
+    manifest_expiry_time: Optional[ExpiryTime] = None
+    data_expiry_time: Optional[ExpiryTime] = None
+    manifest_encryptor: Optional[ManifestEncryptor] = None
+
+    add_node_subtree_size: bool = False
+    add_node_subtree_digest: bool = False
+    add_group_subtree_size: bool = False
+    add_group_subtree_digest: bool = False
+    add_group_leaf_size: bool = False
+    add_group_leaf_digest: bool = False
+
+    max_tree_degree: Optional[int] = None
+    debug: bool = False

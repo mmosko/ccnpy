@@ -23,25 +23,25 @@ from ccnpy.flic.name_constructor.NcId import NcId
 class NcIdTest(unittest.TestCase):
     def test_serialize(self):
         ncid = NcId(5)
-        expected = array.array("B", [0, 5, 0, 1, 5])
+        expected = array.array("B", [0, 16, 0, 1, 5])
         actual = ncid.serialize()
         self.assertEqual(expected, actual)
 
     def test_serialize_3_bytes(self):
         ncid = NcId(0x123456)
-        expected = array.array("B", [0, 5, 0, 3, 0x12, 0x34, 0x56])
+        expected = array.array("B", [0, 16, 0, 3, 0x12, 0x34, 0x56])
         actual = ncid.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 5, 0, 1, 5])
+        wire_format = array.array("B", [0, 16, 0, 1, 5])
         tlv = Tlv.deserialize(wire_format)
         actual = NcId.parse(tlv)
         expected = NcId(5)
         self.assertEqual(expected, actual)
 
     def test_deserialize_3_bytes(self):
-        wire_format = array.array("B", [0, 5, 0, 3, 0x12, 0x34, 0x56])
+        wire_format = array.array("B", [0, 16, 0, 3, 0x12, 0x34, 0x56])
         tlv = Tlv.deserialize(wire_format)
         actual = NcId.parse(tlv)
         expected = NcId(0x123456)
