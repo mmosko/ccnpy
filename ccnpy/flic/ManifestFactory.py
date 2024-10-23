@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import List, Optional
+
 from .GroupData import GroupData
 from .HashGroup import HashGroup
 from .Locators import Locators
@@ -19,6 +21,7 @@ from .ManifestTreeOptions import ManifestTreeOptions
 from .Node import Node
 from .NodeData import NodeData
 from .Pointers import Pointers
+from .annotations.LeafSize import LeafSize
 from .annotations.SubtreeSize import SubtreeSize
 
 
@@ -35,8 +38,7 @@ class ManifestFactory:
         we cannot add anything.  If you use a HashGroup, we can add a NodeData.  If you pass a Pointers,
         we can add GroupData and NodeData.
 
-        :param tree_options: (optional) If present, options guide how manifest is built, otherwise use defaults from
-                            ManifestTreeOptions.
+        :param tree_options: options guide how manifest is built.
         """
         self._encryptor = tree_options.manifest_encryptor
         self._tree_options = tree_options
@@ -94,14 +96,13 @@ class ManifestFactory:
         if group_subtree_size is not None and isinstance(group_subtree_size, int):
             group_subtree_size = SubtreeSize(group_subtree_size)
         if group_leaf_size is not None and isinstance(group_leaf_size, int):
-            raise RuntimeError("Not implemented")
-        #    group_leaf_size = Leafize(group_leaf_size)
+            group_leaf_size = LeafSize(group_leaf_size)
 
         if isinstance(source, Pointers):
             manifest = self._build_from_pointers(source, node_locators, node_subtree_size,
                                                  group_subtree_size, group_leaf_size)
         elif isinstance(source, HashGroup):
-            manifest = self._build_from_hashgroup(source, node_locators, node_subtree_size)
+            manifest = self._build_node_from_hashgroup(source, node_locators, node_subtree_size)
         elif isinstance(source, Node):
             manifest = self._build_from_node(source)
         else:
@@ -109,8 +110,11 @@ class ManifestFactory:
 
         return manifest
 
-    def _build_from_pointers(self, pointers, node_locators=None, node_subtree_size=None,
-                             group_subtree_size=None, group_leaf_size=None):
+    def _build_from_pointers(self, pointers,
+                             node_locators: Optional[Locators]=None,
+                             node_subtree_size: Optional[SubtreeSize]=None,
+                             group_subtree_size: Optional[SubtreeSize]=None,
+                             group_leaf_siz: Optional[e=None):
         """
         From a Pointers object or a list of hash values, build a Manifest.  If the encryptor is
         not None, it will be an encrypted Manifest.
@@ -120,14 +124,21 @@ class ManifestFactory:
             group_data = GroupData(subtree_size=group_subtree_size, leaf_size=group_leaf_size)
 
         hg = HashGroup(pointers=pointers, group_data=group_data)
-        return self._build_from_hashgroup(hg, node_locators, node_subtree_size)
+        return self._build_node_from_hashgroups(hg, node_locators, node_subtree_size)
 
-    def _build_from_hashgroup(self, hg, node_locators=None, node_subtree_size=None):
+    def _build_node_from_hashgroups(self,
+                                    hash_groups: List[HashGroup],
+                                    node_subtree_size: Optional[int]=None,
+                                    locators: Optional[Locators] = None):
+        """
+        A Node may be one or more hash groups.  In practice, we usually have only one or two hash groups, depending
+        on the name constrictors or locators.
+        """
         node_data = None
-        if node_subtree_size is not None or node_locators is not None:
-            node_data = NodeData(subtree_size=node_subtree_size, locators=node_locators)
+        if node_subtree_size is not None or locators is not None:
+            node_data = NodeData(subtree_size=node_subtree_size, locators=locators)
 
-        node = Node(node_data=node_data, hash_groups=[hg])
+        node = Node(node_data=node_data, hash_groups=hash_groups)
         return self._build_from_node(node)
 
     def _build_from_node(self, node):

@@ -18,6 +18,7 @@ from .GroupData import GroupData
 from .HashGroup import HashGroup
 from .Pointers import Pointers
 from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
+from ..core.HashValue import HashValue
 
 
 class HashGroupBuilder:
@@ -51,7 +52,7 @@ class HashGroupBuilder:
         if leaf_size is not None:
             self._direct_size += leaf_size
 
-    def prepend_direct(self, hash_value, leaf_size=None):
+    def prepend_direct(self, hash_value: HashValue, leaf_size: int=None):
         """
         Prepends a pointer to a single data Content Object
         :param hash_value:

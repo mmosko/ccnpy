@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
 from .GroupData import GroupData
 from .Pointers import Pointers
@@ -25,19 +26,13 @@ class HashGroup(TlvType):
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, group_data=None, pointers=None):
+    def __init__(self, group_data: Optional[GroupData] = None, pointers: Optional[Pointers] = None):
         """
 
         :param group_data:
         :param pointers: A list of HashValue
         """
         TlvType.__init__(self)
-        if group_data is not None and not isinstance(group_data, GroupData):
-            raise TypeError("group_data must be GroupData")
-
-        if pointers is None or not isinstance(pointers, Pointers):
-            raise ValueError("pointers must be type Pointers")
-
         self._group_data = group_data
         self._pointers = pointers
 

@@ -21,7 +21,7 @@ class Traversal:
     def __init__(self, packet_input, data_buffer, decryptor=None, debug=False):
         """
         :param decryptor: A concrete implementation of ManifestDecryptor.
-        :param packet_input: AAn object with a 'get(hash_value)' method.
+        :param packet_input: An object with a 'get(hash_value)' method.
         :param data_buffer: The output buffer of the application data.  It must have an `append(array)` method.
         """
         if decryptor is not None and not issubclass(decryptor.__class__, ManifestDecryptor):

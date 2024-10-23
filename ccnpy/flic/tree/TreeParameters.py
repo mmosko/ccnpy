@@ -11,25 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
+from .Solution import Solution
 from .TreeOptimizer import TreeOptimizer
 from ..ManifestFactory import ManifestFactory
 from ..Pointers import Pointers
+from ..name_constructor.FileMetadata import FileMetadata
 from ...core.HashValue import HashValue
 
 
 class TreeParameters:
     @classmethod
-    def create_optimized_tree(cls, file_chunks, max_packet_size, max_tree_degree=None, manifest_factory=None):
+    def create_optimized_tree(cls,
+                              file_metadata: FileMetadata,
+                              manifest_factory: ManifestFactory,
+                              max_packet_size: int,
+                              max_tree_degree: Optional[int]=None):
         """
-        :param file_chunks: A Pointers object listing all the file hashes in order
+        :param file_metadata: Info about each file chunk.
         :param max_packet_size: Maximum byte length of a CCNx Packet
         :param max_tree_degree: Maximum degree, limited by packet size.  None means only limited by packet size.
         :param manifest_factory: If using non-standard tree options, pass your own factory to get correct sizes.
         :return:
         """
-        if manifest_factory is None:
-            manifest_factory = ManifestFactory()
-
         num_pointers_per_node = cls._calculate_max_pointers(max_packet_size=max_packet_size,
                                                             manifest_factory=manifest_factory)
 
@@ -40,17 +45,17 @@ class TreeParameters:
         if max_tree_degree is not None:
             num_pointers_per_node = min(num_pointers_per_node, max_tree_degree)
 
-        solution = cls._optimize_tree(total_direct_nodes=len(file_chunks), num_pointers_per_node=num_pointers_per_node)
-        return cls(file_chunks=file_chunks, max_packet_size=max_packet_size, solution=solution)
+        solution = cls._optimize_tree(total_direct_nodes=len(file_metadata), num_pointers_per_node=num_pointers_per_node)
+        return cls(file_metadata=file_metadata, max_packet_size=max_packet_size, solution=solution)
 
-    def __init__(self, file_chunks, max_packet_size, solution):
+    def __init__(self, file_metadata: FileMetadata, max_packet_size, solution):
         """
 
         :param file_chunks: A Pointers
         :param max_packet_size:
         """
         self._max_size = max_packet_size
-        self._total_direct_nodes = len(file_chunks)
+        self._total_direct_nodes = len(file_metadata)
         self._num_pointers_per_node = solution.indirect_per_node() + solution.direct_per_node()
         self._solution = solution
 
@@ -110,6 +115,8 @@ class TreeParameters:
         ptrs = Pointers(hash_values=hashes)
 
         # Pass values for each item so if the tree options allow it, they will be put in the manifest
+        # TODO: We need to take these options from ManifestTreeOptions.
+        # TODO: We need to know how many hash groups
         packet = manifest_factory.build_packet(source=ptrs, node_subtree_size=1000,
                                                group_subtree_size=1000, group_leaf_size=1000)
 
@@ -119,9 +126,11 @@ class TreeParameters:
     def _calculate_max_pointers(cls, max_packet_size, manifest_factory):
         """
         Create a Manifest with the specified number of tree pointers and figure out how much space we have left
-        out of self._max_size.  The figure out how many data pointers we can fit in.
+        out of self._max_size.  Then figure out how many data pointers we can fit in.
 
         We only put metadata and locators and things like that in the root manifest.
+
+        TODO: Must account for multiple hash groups
 
         :param max_packet_size: The maximum ccnpy.Packet size (bytes)
         :param manifest_factory: Factory used to create manifests
@@ -157,7 +166,7 @@ class TreeParameters:
         return num_hashes
 
     @staticmethod
-    def _optimize_tree(total_direct_nodes, num_pointers_per_node):
+    def _optimize_tree(total_direct_nodes:int , num_pointers_per_node: int) -> Solution:
         to = TreeOptimizer(total_direct_nodes=total_direct_nodes,
                            num_pointers=num_pointers_per_node)
         solutions = to.minimize_waste()

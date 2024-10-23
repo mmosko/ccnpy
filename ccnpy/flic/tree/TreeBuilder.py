@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .FileChunks import FileChunks
+
 from .TreeParameters import TreeParameters
 from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
-from ..ManifestTreeOptions import ManifestTreeOptions
 from ..Node import Node
 from ..NodeData import NodeData
+from ..name_constructor.FileMetadata import FileMetadata
+from ...core.Packet import Packet
 
 
 class TreeBuilder:
@@ -192,10 +193,10 @@ class TreeBuilder:
         def length(self):
             return self._tail - self._head
 
-    def __init__(self, file_chunks, tree_parameters, manifest_factory, packet_output, tree_options=None):
+    def __init__(self, file_metadata: FileMetadata, tree_parameters, manifest_factory, packet_output, tree_options):
         """
 
-        :param direct_pointers: An in-order list of direct pointers (first byte to last byte)
+        :param file_metadata: Info about the file chunks
         :param tree_parameters:
         :param manifest_factory: ccnpy.flic.ManifestFactory
         :param packet_output: A class that has a `put(packet)` method
@@ -204,27 +205,21 @@ class TreeBuilder:
         if not isinstance(tree_parameters, TreeParameters):
             raise TypeError("tree_parameters must be ccnpy.flic.tree.TreeParameters")
 
-        if not isinstance(file_chunks, FileChunks):
-            raise TypeError("file_chunks must be ccnpy.flic.tree.FileChunks")
-
         if not isinstance(manifest_factory, ManifestFactory):
             raise TypeError("manifest_factory must be ccnpy.flic.ManifestFactory")
 
-        if tree_options is None:
-            tree_options = ManifestTreeOptions()
-
-        self._file_chunks = file_chunks
+        self._file_metadata = file_metadata
         self._params = tree_parameters
         self._factory = manifest_factory
         self._tree_options = tree_options
         self._packet_output = packet_output
 
-    def build(self):
+    def build(self) -> Packet:
         """
 
         :return: The root ccnpy.Packet
         """
-        segment = TreeBuilder.Segment(0, len(self._file_chunks))
+        segment = TreeBuilder.Segment(0, len(self._file_metadata))
         level = 0
 
         # This bootstraps the process by creating the right most child manifest
@@ -269,8 +264,8 @@ class TreeBuilder:
         count = tail - head
         builder = HashGroupBuilder(max_direct=count, max_indirect=0)
         for i in range(head, tail):
-            ptr = self._file_chunks[i]
-            builder.append_direct(hash_value=ptr.content_object_hash(), leaf_size=ptr.length())
+            ptr = self._file_metadata[i]
+            builder.append_direct(hash_value=ptr.content_object_hash, leaf_size=ptr.payload_bytes)
 
         hg = builder.hash_group(include_leaf_size=self._tree_options.add_group_leaf_size,
                                 include_subtree_size=self._tree_options.add_group_subtree_size)
@@ -325,8 +320,8 @@ class TreeBuilder:
 
     def _interior_add_direct(self, builder, segment):
         while not builder.is_direct_full() and not segment.empty():
-            manifest_pointer = self._file_chunks[segment.tail() - 1]
-            builder.prepend_direct(manifest_pointer.content_object_hash(), manifest_pointer.length())
+            chunk_metadata = self._file_metadata[segment.tail() - 1]
+            builder.prepend_direct(chunk_metadata.content_object_hash, chunk_metadata.payload_bytes)
             segment.decrement_tail()
 
     def _interior_packet(self, builder):

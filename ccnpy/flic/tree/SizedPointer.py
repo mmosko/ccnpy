@@ -15,7 +15,7 @@
 
 class SizedPointer:
     """
-    Represents a pointer along with it's size in a Manifest, used while building a manifest
+    Represents a pointer along with its size in a Manifest, used while building a manifest
     """
 
     def __init__(self, content_object_hash, length):

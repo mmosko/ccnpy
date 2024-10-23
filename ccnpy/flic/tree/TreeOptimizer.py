@@ -15,7 +15,7 @@
 
 import math
 
-from ccnpy.flic.tree.Solution import Solution
+from .Solution import Solution
 
 
 class TreeOptimizer:
@@ -24,6 +24,12 @@ class TreeOptimizer:
     A direct pointer locates a file block and an indirect pointer locates another internal node.
     A leaf node has up to d+m direct pointers.  This algorithm will build a compact m-ary regular
     tree.
+
+    TreeOptimizer does not consider that there may be 1 or 2 hash groups per manifest.  If the initial calculation
+    on the number of pointers that can fit in a packet considered 2 hash groups (e.g. Segmented Schema), but there
+    turn out to only be one type (e.g. a leaf manifest with only direct pointers), there will be 4 wasted bytes
+    due to the missing indirect hash group.  To fix this shortcomming, we should consider the number of pointers
+    available for mixed manifests and single-purpose manifests.
 
     Let k be the number of internal nodes and n be the number of direct pointers.  We have
     k * m total indirect pointers, but the k internal nodes use k-1 of the pointers, so here
@@ -57,7 +63,7 @@ class TreeOptimizer:
     The height of a tree is its longest path length, so a tree with only the root node has a height of 0.
     """
 
-    def __init__(self, total_direct_nodes, num_pointers):
+    def __init__(self, total_direct_nodes: int, num_pointers: int):
         """
 
         :param total_direct_nodes: The total number of direct pointers needed

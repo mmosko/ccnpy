@@ -18,7 +18,8 @@ import math
 
 class Solution:
     """
-    Determines tree structure based on certain input parameters.
+    Determines tree structure based on certain input parameters.  It's main job is to calculate the total number
+    of nodes in the tree given assumptions about the tree structure.
 
     Solution is used by `TreeOptimizer`.
     """

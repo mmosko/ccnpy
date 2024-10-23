@@ -31,6 +31,9 @@ class ChunkMetadata:
     content_object_hash: HashValue  # The ContentObjectHash (used for the Pointer)
     name: Optional[Name] = None     # The object name, or None for nameless
 
+    def file_name(self):
+        b = self.content_object_hash.value().tobytes()
+        return b.hex()
 
 @dataclass
 class FileMetadata:
@@ -41,3 +44,42 @@ class FileMetadata:
     """
     chunk_metadata: List[ChunkMetadata]
     total_bytes: int
+
+    def __iter__(self):
+        return FileMetadata.ReverseIterator(self)
+
+    def __len__(self):
+        return len(self.chunk_metadata)
+
+    def __getitem__(self, item) -> ChunkMetadata:
+        """
+
+        :param item:
+        :return: A ManifestPointer
+        """
+        return self.chunk_metadata[item]
+
+    # def append(self, manifest_pointer: SizedPointer):
+    #     if not isinstance(manifest_pointer, SizedPointer):
+    #         raise TypeError("manifest_pointer must be ccnpy.flic.ManifestPointer")
+    #
+    #     self._chunks.append(manifest_pointer)
+
+    def reverse_iterator(self):
+        return self.__iter__()
+
+    class ReverseIterator:
+        def __init__(self, iterable):
+            self._iterable = iterable
+            self._offset = len(iterable) - 1
+
+        def __next__(self):
+            if self._offset < 0:
+                raise StopIteration
+
+            result = self._iterable[self._offset]
+            self._offset -= 1
+            return result
+
+        def next(self) -> ChunkMetadata:
+            return self.__next__()
