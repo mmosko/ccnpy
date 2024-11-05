@@ -11,6 +11,8 @@ no network operations.
 The primary use of this code, at the moment, is to prototype the FLIC Manifest specification.   Everything is
 still in play at the moment and this is not a final specification or implementation yet.
 
+This project uses `poetry` for the python build system.
+
 Table Of Contents:
 * [Application Interface](#Application-Interface)
 * [Programming Interfaces](#Programming-Interfaces)
@@ -66,6 +68,8 @@ only by the ContentObjectHash.  The `name` is the common prefix.
 No locators are used, unless `--manifest-locator` or `--data-locator` is given.  If `ML` is different
 from `DL`, then two has groups must be used.
 
+The Root Manifest contains the NsDefs for the name constructors.  These contain the node locators.
+
 ```bash
 manifest_writer --schema PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...
 ```
@@ -74,13 +78,18 @@ manifest_writer --schema PrefixSchema --name N [--manifest-locator ML] [--data-l
 
 In this mode, one name is used for the manifest tree and another name is used for the data tree.
 Every name has a ChunkNumber.  Each GroupData has a StartSegmentId in it to help with the numbering
-of chunks.  The root manifest has a unique name.
+of chunks.  The root manifest has a unique name.  There are always two name spaces for
+Segmented Schema.
 
 No locators are used, unless `--manifest-locator` or `--data-locator` is used.
+
+The Root Manifest contains the NsDefs for the name constructors.  These contain the node locators.
 
 ```bash
 manifest_writer --schema SegmentedSchema --name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
 ```
+
+The manifest prefix must be different from the data prefix.  FLIC will append chunk numbers to each of the names.
 
 ## Encryption
 

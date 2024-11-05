@@ -25,8 +25,8 @@ from ccnpy.flic.Locators import Locators
 
 class LocatorsTest(unittest.TestCase):
     def test_serialize_final(self):
-        loc1 = Locator(Link(name=Name.from_uri('ccnx:/a/b')))
-        loc2 = Locator(Link(name=Name.from_uri('ccnx:/c')))
+        loc1 = Locator.from_uri('ccnx:/a/b')
+        loc2 = Locator.from_uri('ccnx:/c')
         locators = Locators(locators=[loc1, loc2])
         actual = locators.serialize()
         expected = array.array("B", [0, 3, 0, 31,

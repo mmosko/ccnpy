@@ -14,10 +14,13 @@
 
 from typing import BinaryIO
 
+from .Locators import Locators
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
 from .Pointers import Pointers
 from .name_constructor.FileMetadata import FileMetadata
+from .name_constructor.NcId import NcId
+from .name_constructor.NcSchema import HashSchema
 from .name_constructor.SchemaImplFactory import SchemaImplFactory
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
@@ -41,7 +44,9 @@ class ManifestTree:
         self._data_input = data_input
         self._packet_output = packet_output
         self._tree_options = tree_options
-        self._nc_impl = SchemaImplFactory.create(tree_options)
+        nc_id = NcId(0)
+        schema = HashSchema(locators=tree_options.manifest_locators)
+        self._nc_impl = SchemaImplFactory.create(nc_id=nc_id, schema=schema, tree_options=tree_options)
 
     def build(self) -> Packet:
         """
@@ -75,7 +80,7 @@ class ManifestTree:
         """
         ptr = Pointers([top_manifest_packet.content_object_hash()])
         root_manifest = manifest_factory.build(source=ptr,
-                                               node_locators=self._tree_options.root_locators,
+                                               node_locators=self._tree_options.manifest_locators,
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes)
 

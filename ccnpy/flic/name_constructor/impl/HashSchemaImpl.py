@@ -12,13 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import BinaryIO, List
+from typing import BinaryIO, List, Optional
 
 from ..FileMetadata import FileMetadata, ChunkMetadata
+from ..NcDef import NcDef
+from ..NcId import NcId
+from ..NcSchema import HashSchema, NcSchema
 from ..SchemaType import SchemaType
 from ..SchemaImpl import SchemaImpl
+from ...Locators import Locators
 from ...ManifestTreeOptions import ManifestTreeOptions
 from ....core.ContentObject import ContentObject
+from ....core.Name import Name
 from ....core.Packet import Packet, PacketWriter
 from ....core.Payload import Payload
 
@@ -27,9 +32,26 @@ class HashSchemaImpl(SchemaImpl):
     """
     In the Hashed schema, the data packets are all nameless objects.
     """
-    def __init__(self, tree_options: ManifestTreeOptions):
+    def __init__(self, nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
+        super().__init__()
         assert tree_options.schema_type == SchemaType.HASHED
+        assert isinstance(schema, HashSchema)
+        self._schema = schema
+        self._nc_id = nc_id
+        self._nc_def = NcDef(nc_id=nc_id, schema=schema)
         self._tree_options = tree_options
+
+    def get_name(self, chunk_id) -> Optional[Name]:
+        """
+        HashSchema always uses nameless objects
+        """
+        return None
+
+    def nc_id(self) -> NcId:
+        return self._nc_id
+
+    def locators(self) -> Optional[Locators]:
+        return self._schema.locators()
 
     def chunk_data(self, data_input: BinaryIO, packet_output: PacketWriter) -> FileMetadata:
         chunk_metadata: List[ChunkMetadata] = []

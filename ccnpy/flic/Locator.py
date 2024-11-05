@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from ..core.Link import Link
+from ..core.Name import Name
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
 from ..exceptions.CannotParseError import CannotParseError
@@ -27,6 +28,13 @@ class Locator(TlvType):
     @classmethod
     def class_type(cls):
         return cls.__type
+
+    @classmethod
+    def from_uri(cls, uri: str):
+        """
+        A convenience method when making a singleton Locator
+        """
+        return cls(Link(name=Name.from_uri(uri)))
 
     def __init__(self, link):
         """

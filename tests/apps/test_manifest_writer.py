@@ -18,6 +18,9 @@ import unittest
 from array import array
 
 from ccnpy.apps.manifest_writer import ManifestWriter
+from ccnpy.core.Name import Name
+from ccnpy.flic.Locator import Locator
+from ccnpy.flic.Locators import Locators
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 
@@ -90,8 +93,8 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         args.root_flag = False,
         args.tree_degree = 4
         args.out_dir = self.test_out_dir.name
-        args.manifest_locator = None
-        args.data_locator = None
+        args.manifest_locator = 'ccnx:/foo.bar'
+        args.data_locator = 'ccnx:/foo.bar'
         args.root_expiry = '2019-10-11T01:02:03+00:00'
         args.node_expiry = None
         args.data_expiry = '2019-10-11T01:02:03+00:00'

@@ -13,9 +13,12 @@
 #  limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import BinaryIO
+from typing import BinaryIO, Optional
 
 from .FileMetadata import FileMetadata
+from .NcId import NcId
+from ..Locators import Locators
+from ...core.Name import Name
 from ...core.Packet import PacketWriter
 
 
@@ -25,8 +28,39 @@ class SchemaImpl(ABC):
     classes implement the schemas.
     """
 
+    def __init__(self):
+        self._next_chunk_id = 0
+
+    def _get_and_increment_next_chunk_id(self) -> int:
+        next_chunk_id = self._next_chunk_id
+        self._next_chunk_id += 1
+        return next_chunk_id
+
+    def get_next_name(self) -> Optional[Name]:
+        """
+        Returns the name of the next object, which maybe None for hash schema.  This metnod increments an internal
+        counter to track the generated names.
+        """
+        next_chunk_id = self._get_and_increment_next_chunk_id()
+        return self.get_name(chunk_id=next_chunk_id)
+
+    @abstractmethod
+    def nc_id(self) -> NcId:
+        pass
+
+    @abstractmethod
+    def locators(self) -> Optional[Locators]:
+        """The locators associated with this schema, which may be None"""
+        pass
+
     @abstractmethod
     def chunk_data(self, data_input: BinaryIO, packet_output: PacketWriter) -> FileMetadata:
         pass
 
+    @abstractmethod
+    def get_name(self, chunk_id) -> Optional[Name]:
+        """
+        Returns the CCNx name of the object at `chunk_id` offset.
+        """
+        pass
 

@@ -50,7 +50,7 @@ class ManifestWriter:
     @staticmethod
     def _create_locator(uri: str) -> Optional[Locators]:
         if uri is not None:
-            return Locators([Locator(link=Link(name=Name.from_uri(uri)))])
+            return Locators.from_uri(uri)
         return None
 
     @staticmethod

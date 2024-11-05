@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from .NcDef import NcDef
+from .NcId import NcId
+from .NcSchema import HashSchema, NcSchema
 from ..ManifestTreeOptions import ManifestTreeOptions
 from ..name_constructor.SchemaType import SchemaType
 from ..name_constructor.impl.HashSchemaImpl import HashSchemaImpl
@@ -20,8 +22,8 @@ from ..name_constructor.impl.HashSchemaImpl import HashSchemaImpl
 class SchemaImplFactory:
 
     @staticmethod
-    def create(tree_options: ManifestTreeOptions):
-        if tree_options.schema_type == SchemaType.HASHED:
-            return HashSchemaImpl(tree_options=tree_options)
+    def create(nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
+        if isinstance(schema, HashSchema):
+            return HashSchemaImpl(nc_id=nc_id, schema=schema, tree_options=tree_options)
 
         raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")

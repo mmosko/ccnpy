@@ -60,7 +60,7 @@ class NodeData(TlvType):
             raise TypeError("subtree_digest, if present, must be SubtreeDigest")
 
         if locators is not None and not isinstance(locators, Locators):
-            raise TypeError("locators, if present, must be LocatorList")
+            raise TypeError(f"locators, if present, must be LocatorList, got {type(locators)}")
 
         if vendors is not None and len(vendors) == 0:
             vendors = None

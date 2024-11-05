@@ -31,6 +31,7 @@ class ManifestFactory:
     `HashGroup` or `Node`.  The factory can also apply a `ManifestEncryptor` and generate
     encrypted manifests.
     """
+
     def __init__(self, tree_options: ManifestTreeOptions):
         """
         When passing tree options, note that they will only be applied if you construct the manifest at a
@@ -43,7 +44,8 @@ class ManifestFactory:
         self._encryptor = tree_options.manifest_encryptor
         self._tree_options = tree_options
 
-    def build_packet(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None, group_leaf_size=None):
+    def build_packet(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None,
+                     group_leaf_size=None):
         """
         Calls `build()` and then construct a content object and packet to contain it.  Includes a maniest expiry time
         from tree_options.
@@ -59,7 +61,11 @@ class ManifestFactory:
         packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
         return packet
 
-    def build(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None, group_leaf_size=None):
+    def build(self, source,
+              node_locators: Optional[Locators] = None,
+              node_subtree_size: Optional[int] = None,
+              group_subtree_size: Optional[int] = None,
+              group_leaf_size: Optional[int] = None):
         """
         depending on the level of control you wish to have over the manifest creation, you can
         pass one of several types as the source.
@@ -111,10 +117,10 @@ class ManifestFactory:
         return manifest
 
     def _build_from_pointers(self, pointers,
-                             node_locators: Optional[Locators]=None,
-                             node_subtree_size: Optional[SubtreeSize]=None,
-                             group_subtree_size: Optional[SubtreeSize]=None,
-                             group_leaf_siz: Optional[e=None):
+                             node_locators: Optional[Locators] = None,
+                             node_subtree_size: Optional[SubtreeSize] = None,
+                             group_subtree_size: Optional[SubtreeSize] = None,
+                             group_leaf_size: Optional[LeafSize] = None):
         """
         From a Pointers object or a list of hash values, build a Manifest.  If the encryptor is
         not None, it will be an encrypted Manifest.
@@ -124,11 +130,11 @@ class ManifestFactory:
             group_data = GroupData(subtree_size=group_subtree_size, leaf_size=group_leaf_size)
 
         hg = HashGroup(pointers=pointers, group_data=group_data)
-        return self._build_node_from_hashgroups(hg, node_locators, node_subtree_size)
+        return self._build_node_from_hashgroups(hash_groups=[hg], locators=node_locators, node_subtree_size=node_subtree_size)
 
     def _build_node_from_hashgroups(self,
                                     hash_groups: List[HashGroup],
-                                    node_subtree_size: Optional[int]=None,
+                                    node_subtree_size: Optional[SubtreeSize] = None,
                                     locators: Optional[Locators] = None):
         """
         A Node may be one or more hash groups.  In practice, we usually have only one or two hash groups, depending

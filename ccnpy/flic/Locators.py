@@ -15,6 +15,7 @@ from typing import List
 
 from .Locator import Locator
 from ..core.Link import Link
+from ..core.Name import Name
 from ..core.Tlv import Tlv
 from ..core.TlvType import TlvType
 from ..exceptions.CannotParseError import CannotParseError
@@ -31,6 +32,13 @@ class Locators(TlvType):
     @classmethod
     def class_type(cls):
         return cls.__type
+
+    @classmethod
+    def from_uri(cls, uri: str):
+        """
+        A convenience method when making a singleton Locator
+        """
+        return cls([Locator.from_uri(uri)])
 
     def __init__(self, locators: List[Locator]):
         """
