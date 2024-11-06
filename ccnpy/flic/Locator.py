@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
 from ..core.Link import Link
 from ..core.Name import Name
@@ -46,6 +47,9 @@ class Locator(TlvType):
         if not isinstance(link, Link):
             raise TypeError("link must be ccnpy.core.Link")
 
+        if link.name() is None:
+            raise ValueError('A locator link must have a name')
+
         self._link = link
         self._tlv = Tlv(self.class_type(), link.serialize())
 
@@ -60,6 +64,9 @@ class Locator(TlvType):
 
     def serialize(self):
         return self._tlv.serialize()
+
+    def name(self) -> Name:
+        return self._link.name()
 
     @classmethod
     def parse(cls, tlv):

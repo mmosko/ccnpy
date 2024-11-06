@@ -19,7 +19,7 @@ from array import array
 
 from ccnpy.core.Name import Name
 from ccnpy.crypto.RsaKey import RsaKey
-from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
+from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.tree.Traversal import Traversal
@@ -81,8 +81,9 @@ YwIDAQAB
         root_name = Name.from_uri("ccnx:/example.com/manifest")
 
         rsa_key = RsaKey(pem_key=self.private_key)
-        root_signer = RsaSha256_Signer(key=rsa_key)
+        root_signer = RsaSha256Signer(key=rsa_key)
 
+        # TODO: Fix
         tree = ManifestTree(data_input=data_input,
                             packet_output=packet_buffer,
                             root_manifest_name=root_name,
@@ -118,8 +119,9 @@ YwIDAQAB
         root_name = Name.from_uri("ccnx:/example.com/manifest")
 
         rsa_key = RsaKey(pem_key=self.private_key)
-        root_signer = RsaSha256_Signer(key=rsa_key)
+        root_signer = RsaSha256Signer(key=rsa_key)
 
+        # TODO: Fix
         tree = ManifestTree(data_input=data_input,
                             packet_output=packet_buffer,
                             root_manifest_name=root_name,

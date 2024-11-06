@@ -12,27 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import array
 import unittest
 
+from ccnpy.core.FinalChunkId import FinalChunkId
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.name_constructor.NcDef import NcDef
-from ccnpy.flic.name_constructor.NcId import NcId
-from ccnpy.flic.name_constructor.NcSchema import InterestDerivedSchema
 
 
-class NcDefTest(unittest.TestCase):
+class FinalChunkIdTest(unittest.TestCase):
     def test_serialize(self):
-        nc_def = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())
-        expected = array.array("B", [0, 6, 0, 9, 0, 5, 0, 1, 5, 0, 1, 0, 0])
-        actual = nc_def.serialize()
+        fcid = FinalChunkId(0x123456)
+        expected = array.array("B", [0, FinalChunkId.class_type(), 0, 3, 0x12, 0x34, 0x56])
+        actual = fcid.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 6, 0, 9, 0, 5, 0, 1, 5, 0, 1, 0, 0])
+        wire_format = array.array("B", [0, FinalChunkId.class_type(), 0, 3, 0x12, 0x34, 0x56])
         tlv = Tlv.deserialize(wire_format)
-        actual = NcDef.parse(tlv)
-        expected = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())
+        actual = FinalChunkId.parse(tlv)
+        expected = FinalChunkId(0x123456)
         self.assertEqual(expected, actual)
-

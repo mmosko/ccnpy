@@ -94,6 +94,15 @@ class TreeIO:
         def __len__(self):
             return len(self.by_hash)
 
+        def __eq__(self, other):
+            return self.packets == other.packets
+
+        def __repr__(self):
+            return f"PacketMemoryWriter({self.packets})"
+
+        def __getitem__(self, index):
+            return self.packets[index]
+
         def put(self, packet: Packet):
             self.packets.append(packet)
             self.by_hash[packet.content_object_hash()] = packet

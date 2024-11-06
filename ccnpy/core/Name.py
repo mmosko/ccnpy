@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from pathlib import PurePath
+from typing import List, Optional
 from urllib.parse import urlparse
 
 from .Tlv import Tlv
@@ -22,6 +23,7 @@ from .TlvType import TlvType
 class NameComponent(Tlv):
     __T_NAMESEGMENT=0x0001
     __T_IPID=0x0002
+    __T_CHUNKID=0x0005
 
     @classmethod
     def create_name_segment(cls, value):
@@ -30,6 +32,10 @@ class NameComponent(Tlv):
     @classmethod
     def create_ipid_segment(cls, value):
         return cls(cls.__T_IPID, value)
+
+    @classmethod
+    def create_chunk_segment(cls, value: int):
+        return cls(cls.__T_CHUNKID, Tlv.number_to_array(value))
 
     def __init__(self, tlv_type, value):
         Tlv.__init__(self, tlv_type=tlv_type, value=value)
@@ -42,7 +48,7 @@ class Name(TlvType):
     def class_type(cls):
         return cls.__T_NAME
 
-    def __init__(self, components=None):
+    def __init__(self, components: Optional[List[NameComponent]] = None):
         """
 
         :param components: An array of NameComponents
@@ -70,6 +76,17 @@ class Name(TlvType):
         :return:
         """
         return self._components[index].value().decode('utf-8')
+
+    def append(self, component: NameComponent):
+        """
+        Create a new Name by appending the given name component
+        """
+        if self._components is not None:
+            extended = self._components.copy()
+        else:
+            extended = []
+        extended.append(component)
+        return Name(extended)
 
     def serialize(self):
         return self._tlv.serialize()

@@ -63,12 +63,16 @@ Specifying `ML` or `DL` causes manifest and data to use separate hash groups.
 ### Single Prefix Schema
 
 In this mode, there is a single CCNx name used for all manifests and data.  They are differentiated
-only by the ContentObjectHash.  The `name` is the common prefix.
+only by the ContentObjectHash.
 
-No locators are used, unless `--manifest-locator` or `--data-locator` is given.  If `ML` is different
-from `DL`, then two has groups must be used.
+If only `name` is given, it is used for all manifests and data.  The `name` is always used
+for the root manifest name.  In this case, there is only one hash group, and it has a single
+locator of `name`.
 
-The Root Manifest contains the NsDefs for the name constructors.  These contain the node locators.
+If `ML` is given, it is the common name for all non-root manifests.  There will be two hash groups, as
+al data objects will use `name` as their locator.
+
+If 'DL' is given, it is the common name for all data objects.
 
 ```bash
 manifest_writer --schema PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...

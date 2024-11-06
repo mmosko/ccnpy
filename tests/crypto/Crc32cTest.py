@@ -20,7 +20,7 @@ from ccnpy.core.ValidationPayload import ValidationPayload
 from ccnpy.crypto.Crc32c import Crc32cSigner, Crc32cVerifier
 
 
-class Crc32c_SignerTest(unittest.TestCase):
+class Crc32cSignerTest(unittest.TestCase):
     def test_signer(self):
         # checksum is in little-endian byte order of the Reversed generator (0x82F63B78)
         vectors = [(b'the quick brown fox', 0x3355EFD3),

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import array
+from typing import Optional
 
 from .HashValue import HashValue
 from .Name import Name
@@ -70,6 +71,15 @@ class Link:
 
     def __repr__(self):
         return "Link(%r, %r, %r)" % (self._name, self._keyid, self._digest)
+
+    def name(self) -> Optional[Name]:
+        return self._name
+
+    def keyid(self) -> Optional[HashValue]:
+        return self._keyid
+
+    def digest(self) -> Optional[HashValue]:
+        return self._digest
 
     def serialize(self):
         return self._wire_format

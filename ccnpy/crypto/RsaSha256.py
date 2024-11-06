@@ -22,7 +22,7 @@ from ..core.ValidationAlg import ValidationAlg_RsaSha256
 from ..core.ValidationPayload import ValidationPayload
 
 
-class RsaSha256_Signer(Signer):
+class RsaSha256Signer(Signer):
     """
     """
 
@@ -72,7 +72,7 @@ class RsaSha256_Signer(Signer):
                                        signature_time=signature_time)
 
 
-class RsaSha256_Verifier(Verifier):
+class RsaSha256Verifier(Verifier):
     def __init__(self, key):
         if not isinstance(key, RsaKey):
             raise TypeError("key must be ccnpy.crypto.RsaKey")

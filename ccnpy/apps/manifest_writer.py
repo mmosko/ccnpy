@@ -23,7 +23,7 @@ from ccnpy.core.Name import Name
 from ccnpy.core.Packet import PacketWriter
 from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.crypto.RsaKey import RsaKey
-from ccnpy.crypto.RsaSha256 import RsaSha256_Signer
+from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.Locator import Locator
 from ccnpy.flic.Locators import Locators
 from ccnpy.flic.ManifestTree import ManifestTree
@@ -70,7 +70,7 @@ class ManifestWriter:
 
         tree_options = ManifestTreeOptions(name=Name.from_uri(args.name),
                                            schema_type=SchemaType.parse(args.schema),
-                                           signer=RsaSha256_Signer(signing_key),
+                                           signer=RsaSha256Signer(signing_key),
                                            manifest_prefix=self._create_name(args.manifest_prefix),
                                            data_prefix=self._create_name(args.data_prefix),
 

@@ -216,6 +216,8 @@ class TreeBuilder:
 
     def build(self) -> Packet:
         """
+        TODO: We need to get the chunk_id of each manifest node.  We know the total number of manifest nodes
+        from self._params.total_nodes(), so we can work backwards from that.
 
         :return: The root ccnpy.Packet
         """

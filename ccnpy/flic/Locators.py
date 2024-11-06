@@ -65,11 +65,24 @@ class Locators(TlvType):
     def __repr__(self):
         return f"Locators: {self._locators}"
 
+    def __getitem__(self, index) -> Locator:
+        return self._locators[index]
+
+    def __iter__(self):
+        for loc in self._locators:
+            yield loc
+
     def locators(self):
         return self._locators
 
     def serialize(self):
         return self._tlv.serialize()
+
+    def count(self):
+        """
+        The number of locators
+        """
+        return len(self._locators)
 
     @classmethod
     def parse(cls, tlv):

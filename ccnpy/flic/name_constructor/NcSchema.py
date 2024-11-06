@@ -87,7 +87,7 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
     """
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
         NcSchema.__init__(self)
-        if locators is None or len(locators) == 0:
+        if locators is None or locators.count() == 0:
             raise ValueError("Locators must be a non-empty list")
         self._flags = flags
         self._locators = locators
@@ -101,6 +101,12 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
 
     def locators(self) -> Locators:
         return self._locators
+
+    def count(self):
+        """
+        The number of locators
+        """
+        return self._locators.count()
 
     @classmethod
     def parse(cls, tlv):

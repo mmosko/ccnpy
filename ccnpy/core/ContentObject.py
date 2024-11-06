@@ -14,8 +14,10 @@
 
 
 from datetime import datetime
+from typing import Optional
 
 from .ExpiryTime import ExpiryTime
+from .FinalChunkId import FinalChunkId
 from .Name import Name
 from .Payload import Payload
 from .PayloadType import PayloadType
@@ -31,12 +33,16 @@ class ContentObject(TlvType):
         return cls.__T_OBJECT
 
     @classmethod
-    def create_data(cls, name=None, payload=None, expiry_time=None):
+    def create_data(cls, name: Optional[Name] = None,
+                    payload: Optional[Payload | bytes] = None,
+                    expiry_time: Optional[datetime] = None,
+                    final_chunk_id: Optional[FinalChunkId | int] = None):
         """
 
         :param name: Name
         :param payload: A byte array (array.array("B", ...)) or Payload
         :param expiry_time: A python datetime
+        :param final_chunk_id: The final chunk number, if using chunked names.
         :return: A ContentObject
         """
         payload_type = None
@@ -50,7 +56,13 @@ class ContentObject(TlvType):
             if not isinstance(expiry_time, datetime):
                 raise TypeError("expiry_time must be datetime")
             expiry_time = ExpiryTime.from_datetime(expiry_time)
-        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
+
+        if final_chunk_id is not None:
+            if not isinstance(final_chunk_id, FinalChunkId):
+                final_chunk_id = FinalChunkId(final_chunk_id)
+
+        return cls(name=name, payload_type=payload_type, payload=payload,
+                   expiry_time=expiry_time, final_chunk_id=final_chunk_id)
 
     @classmethod
     def create_manifest(cls, manifest, name=None, expiry_time=None):
@@ -71,9 +83,13 @@ class ContentObject(TlvType):
             if not isinstance(expiry_time, datetime):
                 raise TypeError("expiry_time must be datetime")
             expiry_time = ExpiryTime.from_datetime(expiry_time)
+
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
-    def __init__(self, name=None, payload_type=None, payload=None, expiry_time=None):
+    def __init__(self, name: Optional[Name] = None, payload_type: Optional[PayloadType] = None,
+                 payload: Optional[Payload] = None, expiry_time: Optional[ExpiryTime] = None,
+                 final_chunk_id: Optional[FinalChunkId] = None):
+
         TlvType.__init__(self)
         if name is not None:
             if not isinstance(name, Name):
@@ -91,10 +107,12 @@ class ContentObject(TlvType):
         self._payload_type = payload_type
         self._payload = payload
         self._expiry_time = expiry_time
+        self._final_chunk_id = final_chunk_id
         self._tlv = Tlv(self.class_type(), [self._name,
                                             self._expiry_time,
                                             self._payload_type,
-                                            self._payload])
+                                            self._payload,
+                                            self._final_chunk_id])
 
     def __repr__(self):
         if self.is_manifest():
@@ -103,7 +121,7 @@ class ContentObject(TlvType):
         else:
             payload = self.payload()
 
-        return "CO: {%r, %r, %r, %r}" % (self.name(), self.expiry_time(), self.payload_type(), payload)
+        return "CO: {%r, %r, %r, %r, %r}" % (self.name(), self.expiry_time(), self.payload_type(), payload, self._final_chunk_id)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -127,12 +145,15 @@ class ContentObject(TlvType):
     def expiry_time(self):
         return self._expiry_time
 
+    def final_chunk_id(self):
+        return self._final_chunk_id
+
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise RuntimeError("Incorrect TLV type %r must be T_OBJECT")
 
-        name = payload_type = payload = expiry_time = None
+        name = payload_type = payload = expiry_time = final_chunk_id = None
         offset = 0
         while offset < tlv.length():
             inner_tlv = Tlv.deserialize(tlv.value()[offset:])
@@ -150,10 +171,13 @@ class ContentObject(TlvType):
             elif inner_tlv.type() == ExpiryTime.class_type():
                 assert expiry_time is None
                 expiry_time = ExpiryTime.parse(inner_tlv)
+            elif inner_tlv.type() == FinalChunkId.class_type():
+                assert final_chunk_id is None
+                final_chunk_id = FinalChunkId.parse(inner_tlv)
             else:
                 raise ValueError("Unsupported ContentObject TLV %r" % inner_tlv.type())
 
-        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
+        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time, final_chunk_id=final_chunk_id)
 
     def serialize(self):
         return self._tlv.serialize()

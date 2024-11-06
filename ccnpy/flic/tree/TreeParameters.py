@@ -98,15 +98,10 @@ class TreeParameters:
         return self._num_pointers_per_node
 
     def total_nodes(self):
+        """
+        The total number of manifest nodes (internal plus leaf)
+        """
         return self._solution.total_nodes()
-
-    # def total_internal_direct(self):
-    #     """
-    #     The number of direct objects pointed to by an internal manifest node.  An internal manifest node
-    #     is one that has both direct and indirect pointers.  A leaf manifest node has only direct pointers.
-    #     :return:
-    #     """
-    #     return self._total_internal_direct
 
     @staticmethod
     def _build_manifest_packet(manifest_factory, num_hashes, hv):

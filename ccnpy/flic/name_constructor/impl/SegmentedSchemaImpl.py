@@ -15,33 +15,36 @@
 from typing import Optional
 
 from ..NcId import NcId
-from ..NcSchema import HashSchema
+from ..NcSchema import SegmentedSchema
 from ..SchemaImpl import SchemaImpl
 from ..SchemaType import SchemaType
 from ...Locators import Locators
 from ...ManifestTreeOptions import ManifestTreeOptions
-from ....core.Name import Name
+from ....core.Name import Name, NameComponent
 
 
-class HashSchemaImpl(SchemaImpl):
+class SegmentedSchemaImpl(SchemaImpl):
     """
     In the Hashed schema, the data packets are all nameless objects.
     """
-    def __init__(self, nc_id: NcId, schema: HashSchema, tree_options: ManifestTreeOptions):
+
+    def __init__(self, nc_id: NcId, schema: SegmentedSchema, tree_options: ManifestTreeOptions):
         super().__init__(nc_id=nc_id, schema=schema, tree_options=tree_options)
-        assert tree_options.schema_type == SchemaType.HASHED
-        assert isinstance(self._schema, HashSchema)
-        assert self._schema.count() == 1
+        assert tree_options.schema_type == SchemaType.SEGMENTED
+        assert isinstance(self._schema, SegmentedSchema)
+        assert schema.count() == 1
+        self._name = schema.locators()[0].name()
 
     def get_name(self, chunk_id) -> Optional[Name]:
         """
         HashSchema always uses nameless objects
         """
-        return None
+        return self._name.append(NameComponent.create_chunk_segment(chunk_id))
 
     def nc_id(self) -> NcId:
         return self._nc_id
 
     def locators(self) -> Optional[Locators]:
-        assert isinstance(self._schema, HashSchema)
+        assert isinstance(self._schema, SegmentedSchema)
         return self._schema.locators()
+
