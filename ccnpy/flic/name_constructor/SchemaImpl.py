@@ -124,5 +124,6 @@ class SchemaImpl(ABC):
                                              payload=payload_tlv,
                                              expiry_time=self._tree_options.data_expiry_time)
         packet = Packet.create_content_object(nameless)
-        assert len(packet) <= self._tree_options.max_packet_size
+        if len(packet) > self._tree_options.max_packet_size:
+            raise ValueError(f'The final packet length {len(packet)} > max packet size {self._tree_options.max_packet_size}')
         return packet

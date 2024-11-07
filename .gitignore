@@ -5,3 +5,4 @@
 output/
 test_key.pem
 poetry.lock
+dist/

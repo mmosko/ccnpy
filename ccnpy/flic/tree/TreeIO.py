@@ -29,30 +29,30 @@ class TreeIO:
 
     """
 
-    @staticmethod
-    def _create_data_packet(application_data):
-        payload = Payload(application_data)
-        packet = Packet.create_content_object(ContentObject.create_data(payload=payload))
-        return packet
+    # @staticmethod
+    # def _create_data_packet(application_data):
+    #     payload = Payload(application_data)
+    #     packet = Packet.create_content_object(ContentObject.create_data(payload=payload))
+    #     return packet
 
-    @classmethod
-    def chunk_data_to_packets(cls, application_data, chunk_size):
-        """
-        For example, if the application_data is [1, 2, 3, 4, 5, 6, 7] and chunk_size is 2, then the return will be
-        packets with payloads [1,2], [3, 4], [5, 6], and [7].
-
-        :param application_data: An array (or list) of application data
-        :param chunk_size: The number of array elements to put in each packet's payload
-        :return:
-        """
-        packets = []
-        count = len(application_data)
-        for i in range(0, count, chunk_size):
-            data = application_data[i:(i+chunk_size)]
-            packet = cls._create_data_packet(data)
-            packets.append(packet)
-
-        return packets
+    # @classmethod
+    # def chunk_data_to_packets(cls, application_data, chunk_size):
+    #     """
+    #     For example, if the application_data is [1, 2, 3, 4, 5, 6, 7] and chunk_size is 2, then the return will be
+    #     packets with payloads [1,2], [3, 4], [5, 6], and [7].
+    #
+    #     :param application_data: An array (or list) of application data
+    #     :param chunk_size: The number of array elements to put in each packet's payload
+    #     :return:
+    #     """
+    #     packets = []
+    #     count = len(application_data)
+    #     for i in range(0, count, chunk_size):
+    #         data = application_data[i:(i+chunk_size)]
+    #         packet = cls._create_data_packet(data)
+    #         packets.append(packet)
+    #
+    #     return packets
 
     class DataBuffer:
         def __init__(self):

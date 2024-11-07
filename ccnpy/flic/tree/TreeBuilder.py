@@ -302,9 +302,8 @@ class TreeBuilder:
             if not isinstance(right_most_child, TreeBuilder.ReturnValue):
                 raise TypeError("right_most_child must be ccnpy.flic.tree.TreeBuilder.ReturnValue")
 
-            subtree_size = right_most_child.node.node_data().subtree_size()
             builder.append_indirect(hash_value=right_most_child.packet.content_object_hash(),
-                                    subtree_size=subtree_size.size())
+                                    subtree_size=self._get_optional_subtree_size(right_most_child.node.node_data()))
 
     def _interior_add_indirect(self, builder, segment, level):
         # Reserve space at the head of the segment for this node's direct pointers before
@@ -315,7 +314,7 @@ class TreeBuilder:
         while not builder.is_indirect_full() and not segment.empty():
             child = self._bottom_up_preorder(segment, level - 1)
             builder.prepend_indirect(hash_value=child.packet.content_object_hash(),
-                                     subtree_size=child.node.node_data().subtree_size().size())
+                                     subtree_size=self._get_optional_subtree_size(child.node.node_data()))
 
         # Pull back our reservation and put those pointers in our direct children
         segment.decrement_head(reserve_count)
@@ -357,3 +356,9 @@ class TreeBuilder:
 
         self._write_packet(return_value.packet)
         return return_value
+
+    def _get_optional_subtree_size(self, node_data: NodeData):
+        if self._tree_options.add_node_subtree_size:
+            return node_data.subtree_size().size()
+        else:
+            return None

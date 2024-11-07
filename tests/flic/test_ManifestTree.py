@@ -22,6 +22,8 @@ from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 
@@ -67,35 +69,38 @@ ewM/87c2S2qMwdocG0XZx90GqEI9Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2Gy
 YwIDAQAB
 -----END PUBLIC KEY-----'''
 
+    def setUp(self):
+        self.packet_buffer = TreeIO.PacketMemoryWriter()
+        self.rsa_key = RsaKey(pem_key=self.private_key)
+        self.root_signer = RsaSha256Signer(key=self.rsa_key)
+
+    def _create_options(self, max_packet_size):
+        return ManifestTreeOptions(name=Name.from_uri("ccnx:/example.com/manifest"),
+                                      schema_type=SchemaType.HASHED,
+                                      manifest_locators=Locators.from_uri('ccnx:/x/y'),
+                                      signer=self.root_signer,
+                                      max_packet_size=max_packet_size,
+                                      max_tree_degree=3,
+                                      debug=False)
+
     def test_nary_1_2_14(self):
         """
         3-way tree with 1 direct and 2 indirect and 14 file chunks
 
         :return:
         """
-        packet_buffer = TreeIO.PacketMemoryWriter()
-
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
         data_input = io.BytesIO(self.private_key)
 
-        root_name = Name.from_uri("ccnx:/example.com/manifest")
-
-        rsa_key = RsaKey(pem_key=self.private_key)
-        root_signer = RsaSha256Signer(key=rsa_key)
-
-        # TODO: Fix
         tree = ManifestTree(data_input=data_input,
-                            packet_output=packet_buffer,
-                            root_manifest_name=root_name,
-                            root_manifest_signer=root_signer,
-                            max_packet_size=175,
-                            tree_options=ManifestTreeOptions(debug=False))
+                            packet_output=self.packet_buffer,
+                            tree_options=self._create_options(175))
 
         root_manifest = tree.build()
 
         expected = array("B", self.private_key)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=packet_buffer, data_buffer=actual_data, decryptor=None)
+        traversal = Traversal(packet_input=self.packet_buffer, data_buffer=actual_data, decryptor=None)
         traversal.preorder(root_manifest)
 
         # We have 1674 bytes.  We can fit 159 bytes in a data content object, so we need 11 data object.
@@ -104,36 +109,25 @@ YwIDAQAB
         self.assertEqual(expected, actual_data.buffer)
         self.assertEqual(11, actual_data.count)
         # 11 data nodes plus 3 leaf manifests plus 1 interior manifests plus 1 root manifest
-        self.assertEqual(17, len(packet_buffer))
+        self.assertEqual(17, len(self.packet_buffer))
 
     def test_max_tree_degree(self):
         """
         Use a large packet size, but limit the tree degree to 3.
         :return:
         """
-        packet_buffer = TreeIO.PacketMemoryWriter()
-
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
         data_input = io.BytesIO(self.private_key)
 
-        root_name = Name.from_uri("ccnx:/example.com/manifest")
-
-        rsa_key = RsaKey(pem_key=self.private_key)
-        root_signer = RsaSha256Signer(key=rsa_key)
-
-        # TODO: Fix
         tree = ManifestTree(data_input=data_input,
-                            packet_output=packet_buffer,
-                            root_manifest_name=root_name,
-                            root_manifest_signer=root_signer,
-                            max_packet_size=400,
-                            tree_options=ManifestTreeOptions(max_tree_degree=3, debug=False))
+                            packet_output=self.packet_buffer,
+                            tree_options=self._create_options(400))
 
         root_manifest = tree.build()
 
         expected = array("B", self.private_key)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=packet_buffer, data_buffer=actual_data, decryptor=None)
+        traversal = Traversal(packet_input=self.packet_buffer, data_buffer=actual_data, decryptor=None)
         traversal.preorder(root_manifest)
 
         # We have 1674 bytes.  5 data objects plus 1 leaf manifests and 1 interior manifest
@@ -141,4 +135,4 @@ YwIDAQAB
         self.assertEqual(expected, actual_data.buffer)
         self.assertEqual(5, actual_data.count)
         # 5 data nodes plus 1 leaf manifests plus 1 interior manifests plus 1 root manifest
-        self.assertEqual(8, len(packet_buffer))
+        self.assertEqual(8, len(self.packet_buffer))

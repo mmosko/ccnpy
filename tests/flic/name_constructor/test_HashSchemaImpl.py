@@ -31,7 +31,7 @@ from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.tree.TreeIO import TreeIO
 from tests.crypto.test_RsaSha256 import RsaSha256SignerTest
-from .MockReader import MockReader
+from tests.MockReader import MockReader
 
 
 class HashSchemaImplTest(unittest.TestCase):

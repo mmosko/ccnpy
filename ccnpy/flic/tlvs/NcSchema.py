@@ -88,11 +88,11 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
     """
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
         NcSchema.__init__(self)
-        if locators is None or locators.count() == 0:
-            raise ValueError("Locators must be a non-empty list")
         self._flags = flags
         self._locators = locators
         self._tlv = Tlv(self.class_type(), [self._locators, self._flags])
+        if locators is None or locators.count() == 0:
+            raise ValueError("Locators must be a non-empty list")
 
     def __len__(self):
         return len(self._tlv)
@@ -202,4 +202,4 @@ class HashSchema(LocatorSchema):
         LocatorSchema.__init__(self, locators=locators, flags=flags)
 
     def __repr__(self):
-        return f"SS: {self._flags}, {self._locators}"
+        return f"HS: {self._locators}, {self._flags}"

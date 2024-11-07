@@ -110,7 +110,7 @@ class ManifestFactory:
             manifest = self._build_from_pointers(source, node_locators, node_subtree_size,
                                                  group_subtree_size, group_leaf_size)
         elif isinstance(source, HashGroup):
-            manifest = self._build_node_from_hashgroup(source, node_locators, node_subtree_size)
+            manifest = self._build_node_from_hashgroups(hash_groups=[source], locators=node_locators, node_subtree_size=node_subtree_size)
         elif isinstance(source, Node):
             manifest = self._build_from_node(source)
         else:

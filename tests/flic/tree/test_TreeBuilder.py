@@ -18,19 +18,22 @@ import operator
 import struct
 import unittest
 from array import array
+from typing import Optional
 
 from ccnpy.core.Packet import Packet
 from ccnpy.crypto.AeadKey import AeadCcm
+from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
-from ccnpy.flic.tree.FileChunks import FileChunks
-from ccnpy.flic.tree.SizedPointer import SizedPointer
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tree.Solution import Solution
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 from ccnpy.flic.tree.TreeIO import TreeIO
 from ccnpy.flic.tree.TreeParameters import TreeParameters
+from tests.MockChunker import create_file_chunks
 
 
 class TreeBuilderTest(unittest.TestCase):
@@ -49,16 +52,23 @@ class TreeBuilderTest(unittest.TestCase):
         return result
 
     @staticmethod
-    def _create_file_chunks(packet_buffer, data, length=1000, chunk_size=1):
-        chunks = FileChunks()
-        packets = TreeIO.chunk_data_to_packets(data, chunk_size)
-        for packet in packets:
-            packet_buffer.put(packet)
-            hv = packet.content_object_hash()
-            manifest_pointer = SizedPointer(hv, length)
-            chunks.append(manifest_pointer)
+    def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor]):
+        return ManifestTreeOptions(max_packet_size=max_packet_size,
+                                   name=None,
+                                   schema_type=SchemaType.HASHED,
+                                   signer=None,
+                                   manifest_encryptor=encryptor)
 
-        return chunks
+    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None):
+        tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
+        params = TreeParameters(file_metadata=metadata, max_packet_size=tree_options.max_packet_size, solution=solution)
+        factory = ManifestFactory(tree_options=tree_options)
+
+        return TreeBuilder(file_metadata=metadata,
+                           tree_parameters=params,
+                           manifest_factory=factory,
+                           packet_output=packet_buffer,
+                           tree_options=tree_options)
 
     def test_binary_0_2_15(self):
         """
@@ -69,23 +79,18 @@ class TreeBuilderTest(unittest.TestCase):
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 15)))
-        data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(total_direct_nodes=len(data),
+        # binary tree with no direct storage in internal nodes
+        solution = Solution(total_direct_nodes=len(metadata),
                             num_pointers=2,
                             direct_per_node=0,
                             indirect_per_node=2,
                             num_internal_nodes=None,
                             waste=None)
 
-        params = TreeParameters(data, 1500, solution)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        factory = ManifestFactory()
-
-        tb = TreeBuilder(file_chunks=data,
-                         tree_parameters=params,
-                         manifest_factory=factory,
-                         packet_output=packet_buffer)
         root = tb.build()
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
@@ -106,23 +111,18 @@ class TreeBuilderTest(unittest.TestCase):
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 16)))
-        data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(total_direct_nodes=len(data),
+        # ternary tree with up to 1 direct storage in internal nodes
+        solution = Solution(total_direct_nodes=len(metadata),
                             num_pointers=3,
                             direct_per_node=1,
                             indirect_per_node=2,
                             num_internal_nodes=None,
                             waste=None)
 
-        params = TreeParameters(data, 1500, solution)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        factory = ManifestFactory()
-
-        tb = TreeBuilder(file_chunks=data,
-                         tree_parameters=params,
-                         manifest_factory=factory,
-                         packet_output=packet_buffer)
         root = tb.build()
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
@@ -154,23 +154,18 @@ class TreeBuilderTest(unittest.TestCase):
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 61)))
-        data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(total_direct_nodes=len(data),
+        # Tree as per the figure above
+        solution = Solution(total_direct_nodes=len(metadata),
                             num_pointers=7,
                             direct_per_node=4,
                             indirect_per_node=3,
                             num_internal_nodes=None,
                             waste=None)
 
-        params = TreeParameters(data, 1500, solution)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        factory = ManifestFactory()
-
-        tb = TreeBuilder(file_chunks=data,
-                         tree_parameters=params,
-                         manifest_factory=factory,
-                         packet_output=packet_buffer)
         root = tb.build()
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
@@ -186,30 +181,18 @@ class TreeBuilderTest(unittest.TestCase):
         :return:
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
+        expected = array("B", [x % 256 for x in range(0, 5000)])
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        # Creates an array of 2-byte words
-        expected = array("B", functools.reduce(operator.iconcat,
-                                               # This creates a list of arrays that need to be flattened
-                                               [array("B", struct.pack("!H", x)) for x in range(0, 5000)],
-                                               []))
-
-        data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected, chunk_size=2)
-
-        solution = Solution(total_direct_nodes=len(data),
+        solution = Solution(total_direct_nodes=len(metadata),
                             num_pointers=41,
                             direct_per_node=37,
                             indirect_per_node=4,
                             num_internal_nodes=None,
                             waste=None)
 
-        params = TreeParameters(data, 1500, solution)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        factory = ManifestFactory()
-
-        tb = TreeBuilder(file_chunks=data,
-                         tree_parameters=params,
-                         manifest_factory=factory,
-                         packet_output=packet_buffer)
         root = tb.build()
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
@@ -228,27 +211,21 @@ class TreeBuilderTest(unittest.TestCase):
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", list(range(0, 15)))
-        data = self._create_file_chunks(packet_buffer=packet_buffer, data=expected)
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(total_direct_nodes=len(data),
+        solution = Solution(total_direct_nodes=len(metadata),
                             num_pointers=2,
                             direct_per_node=0,
                             indirect_per_node=2,
                             num_internal_nodes=None,
                             waste=None)
 
-        params = TreeParameters(data, 1500, solution)
-
         key = AeadCcm.generate(bits=256)
         encryptor = AeadEncryptor(key=key, key_number=1234)
         decryptor = AeadDecryptor(key=key, key_number=1234)
 
-        factory = ManifestFactory(encryptor=encryptor)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer, encryptor=encryptor)
 
-        tb = TreeBuilder(file_chunks=data,
-                         tree_parameters=params,
-                         manifest_factory=factory,
-                         packet_output=packet_buffer)
         root = tb.build()
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer, decryptor=decryptor)

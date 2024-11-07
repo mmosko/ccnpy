@@ -74,7 +74,7 @@ class GroupDataTest(unittest.TestCase):
     def test_nc_id(self):
         gd = GroupData(nc_id = NcId(9))
         wire_format = gd.serialize()
-        expected_wire = array.array("B", [0, 1, 0, 5, 0, 5, 0, 1, 9])
+        expected_wire = array.array("B", [0, 1, 0, 5, 0, 16, 0, 1, 9])
         self.assertEqual(expected_wire, wire_format)
         decoded = GroupData.parse(Tlv.deserialize(wire_format))
         self.assertEqual(gd, decoded)

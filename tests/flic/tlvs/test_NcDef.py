@@ -37,12 +37,12 @@ from ccnpy.flic.tlvs.NcSchema import InterestDerivedSchema
 class NcDefTest(unittest.TestCase):
     def test_serialize(self):
         nc_def = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())
-        expected = array.array("B", [0, 6, 0, 9, 0, 5, 0, 1, 5, 0, 1, 0, 0])
+        expected = array.array("B", [0, 6, 0, 9, 0, 16, 0, 1, 5, 0, 1, 0, 0])
         actual = nc_def.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 6, 0, 9, 0, 5, 0, 1, 5, 0, 1, 0, 0])
+        wire_format = array.array("B", [0, 6, 0, 9, 0, 16, 0, 1, 5, 0, 1, 0, 0])
         tlv = Tlv.deserialize(wire_format)
         actual = NcDef.parse(tlv)
         expected = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())

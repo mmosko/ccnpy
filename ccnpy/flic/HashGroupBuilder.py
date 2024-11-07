@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import math
+from typing import Optional
 
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
@@ -38,7 +39,7 @@ class HashGroupBuilder:
     def is_direct_full(self):
         return self._direct_count >= self._max_direct
 
-    def append_direct(self, hash_value, leaf_size=None):
+    def append_direct(self, hash_value: HashValue, leaf_size: Optional[int] = None):
         """
         Appends a pointer to a single data Content Object
         :param hash_value:
@@ -52,7 +53,7 @@ class HashGroupBuilder:
         if leaf_size is not None:
             self._direct_size += leaf_size
 
-    def prepend_direct(self, hash_value: HashValue, leaf_size: int=None):
+    def prepend_direct(self, hash_value: HashValue, leaf_size: Optional[int] = None):
         """
         Prepends a pointer to a single data Content Object
         :param hash_value:
@@ -69,7 +70,7 @@ class HashGroupBuilder:
     def is_indirect_full(self):
         return self._indirect_count >= self._max_indirect
 
-    def append_indirect(self, hash_value, subtree_size=None):
+    def append_indirect(self, hash_value: HashValue, subtree_size: Optional[int] = None):
         """
         Append a pointer to an indirect child manifest
         :param hash_value:
@@ -83,7 +84,7 @@ class HashGroupBuilder:
         if subtree_size is not None:
             self._indirect_size += subtree_size
 
-    def prepend_indirect(self, hash_value, subtree_size=None):
+    def prepend_indirect(self, hash_value: HashValue, subtree_size: Optional[int] = None):
         """
         Append a pointer to an indirect child manifest
         :param hash_value:
@@ -109,7 +110,7 @@ class HashGroupBuilder:
 
     def direct_size(self):
         """
-        :return: The number of bytes used by the direct pointers
+        :return: The number of bytes used by the direct pointers.   It may be 0 if sizes were not accumulated.
         """
         return self._direct_size
 
@@ -118,7 +119,7 @@ class HashGroupBuilder:
 
     def indirect_size(self):
         """
-        :return: The number of bytes used by the indirect pointers
+        :return: The number of bytes used by the indirect pointers.  It may be 0 if sizes were not accumulated.
         """
         return self._indirect_size
 
