@@ -14,42 +14,61 @@
 
 
 import unittest
+from typing import Optional
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.crypto.AeadKey import AeadGcm
+from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.name_constructor.FileMetadata import FileMetadata, ChunkMetadata
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 
 class TreeParametersTest(unittest.TestCase):
+
+    @staticmethod
+    def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor] = None):
+        return ManifestTreeOptions(max_packet_size=max_packet_size,
+                                   name=None,
+                                   schema_type=SchemaType.HASHED,
+                                   signer=None,
+                                   manifest_encryptor=encryptor)
+
+    def setUp(self):
+        self.hv = HashValue.create_sha256(32 * [0])
+        self.file_metadata = FileMetadata(
+            chunk_metadata = [ChunkMetadata(chunk_number=x, payload_bytes=1000, content_object_hash=self.hv) for x in range(0,1000)],
+            total_bytes = 1000 * 1000
+        )
+        self.max_packet_size = 1500
+
     def test_unencrypted_maxsize(self):
-        hv = HashValue.create_sha256(32 * [0])
-        factory = ManifestFactory()
-        chunks = Pointers(hash_values=1000 * [hv])
-        max_packet_size = 1500
-        params = TreeParameters.create_optimized_tree(file_chunks=chunks,
-                                                      max_packet_size=max_packet_size,
+
+        factory = ManifestFactory(tree_options=self._create_options(max_packet_size=self.max_packet_size))
+        params = TreeParameters.create_optimized_tree(file_metadata=self.file_metadata,
+                                                      max_packet_size=self.max_packet_size,
                                                       manifest_factory=factory)
 
-        piece = Pointers(hash_values=params.num_pointers_per_node() * [hv])
+        piece = Pointers(hash_values=params.num_pointers_per_node() * [self.hv])
         packet = factory.build_packet(source=piece)
-        self.assertTrue(len(packet) < max_packet_size)
+        self.assertTrue(len(packet) < self.max_packet_size)
         self.assertEqual(40, params.num_pointers_per_node())
 
     def test_encrypted_maxsize(self):
         key = AeadGcm.generate(128)
         encryptor = AeadEncryptor(key=key, key_number=22)
-        hv = HashValue.create_sha256(32 * [0])
-        factory = ManifestFactory(encryptor=encryptor)
-        chunks = Pointers(hash_values=1000 * [hv])
-        max_packet_size = 1500
-        params = TreeParameters.create_optimized_tree(file_chunks=chunks,
-                                                      max_packet_size=max_packet_size,
+
+        factory = ManifestFactory(tree_options=self._create_options(max_packet_size=self.max_packet_size, encryptor=encryptor))
+
+        params = TreeParameters.create_optimized_tree(file_metadata=self.file_metadata,
+                                                      max_packet_size=self.max_packet_size,
                                                       manifest_factory=factory)
 
-        piece = Pointers(hash_values=params.num_pointers_per_node() * [hv])
+        piece = Pointers(hash_values=params.num_pointers_per_node() * [self.hv])
         packet = factory.build_packet(source=piece)
-        self.assertTrue(len(packet) < max_packet_size)
-        self.assertEqual(38, params.num_pointers_per_node())
+        self.assertTrue(len(packet) < self.max_packet_size)
+        self.assertEqual(39, params.num_pointers_per_node())

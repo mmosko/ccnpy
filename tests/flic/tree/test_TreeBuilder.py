@@ -13,9 +13,6 @@
 #  limitations under the License.
 
 
-import functools
-import operator
-import struct
 import unittest
 from array import array
 from typing import Optional
@@ -37,19 +34,6 @@ from tests.MockChunker import create_file_chunks
 
 
 class TreeBuilderTest(unittest.TestCase):
-    @staticmethod
-    def _contentobject_from_packet(packet):
-        assert isinstance(packet, Packet)
-        return packet.body()
-
-    @staticmethod
-    def _is_packet_manifest(packet):
-        result = False
-        body = packet.body()
-        if body.is_content_object():
-            if body.payload_type().is_manifest():
-                result = True
-        return result
 
     @staticmethod
     def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor]):

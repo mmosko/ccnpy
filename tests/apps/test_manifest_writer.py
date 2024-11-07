@@ -109,13 +109,15 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         print(root_packet)
 
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=packet_writer, data_buffer=buffer)
+        traversal = Traversal(packet_input=TreeIO.PacketMemoryReader(packet_writer), data_buffer=buffer)
         traversal.preorder(root_packet)
         self.assertEqual(self.file_data, buffer.buffer)
 
         # There are 4 objects: 1 root, 1 leaf manifest, 1 long 0's data, 1 short 0's data
         # The long 0's content object is repeated 3 times, so we've achieved data deduplication
         self.assertEqual(4, buffer.count)
+
+        # There were 6 packets created, but 3 of them were wall long strings of '0' and have the same hash
         self.assertEqual(4, len(packet_writer))
 
     def test_to_directory(self):

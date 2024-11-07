@@ -116,6 +116,8 @@ class ManifestFactory:
         else:
             raise TypeError("Unsupported type for source: %r" % source)
 
+        if len(manifest) > self._tree_options.max_packet_size:
+            raise ValueError(f"The manifest is {len(manifest)} bytes and exeeds max_packet_size of {self._tree_options.max_packet_size}")
         return manifest
 
     def _build_from_pointers(self, pointers,

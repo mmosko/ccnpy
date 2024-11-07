@@ -14,6 +14,7 @@
 import abc
 import array
 import hashlib
+from typing import Iterable
 
 from .ContentObject import ContentObject
 from .FixedHeader import FixedHeader
@@ -159,6 +160,13 @@ class Packet:
         tlv = HashValue.create_sha256(array.array("B", digest))
         return tlv
 
+class PacketReader(abc.ABC, Iterable):
+    @abc.abstractmethod
+    def get(self, hash_value) -> Packet:
+        pass
+
+    def close(self):
+        pass
 
 class PacketWriter(abc.ABC):
     @abc.abstractmethod
@@ -167,13 +175,3 @@ class PacketWriter(abc.ABC):
 
     def close(self):
         pass
-
-
-class PacketReader(abc.ABC):
-    @abc.abstractmethod
-    def get(self, hash_value) -> Packet:
-        pass
-
-    def close(self):
-        pass
-

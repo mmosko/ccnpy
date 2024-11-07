@@ -15,20 +15,49 @@
 
 import unittest
 from array import array
+from typing import Optional
 
 from ccnpy.core.ContentObject import ContentObject
-from ccnpy.core.Packet import Packet
+from ccnpy.core.Packet import Packet, PacketReader
 from ccnpy.core.Payload import Payload
 from ccnpy.crypto.AeadKey import AeadGcm
+from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
-from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tree.Traversal import Traversal
+from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 from ccnpy.flic.tree.TreeIO import TreeIO
+from ccnpy.flic.tree.TreeParameters import TreeParameters
+from tests.MockChunker import create_file_chunks
 
 
 class TraversalTest(unittest.TestCase):
+    # TODO: This test does not iterate over internal manifests, it only tests leafs.
+
+    @staticmethod
+    def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor] = None):
+        return ManifestTreeOptions(max_packet_size=max_packet_size,
+                                   name=None,
+                                   schema_type=SchemaType.HASHED,
+                                   signer=None,
+                                   manifest_encryptor=encryptor)
+
+    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None):
+        tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
+        params = TreeParameters(file_metadata=metadata, max_packet_size=tree_options.max_packet_size, solution=solution)
+        factory = ManifestFactory(tree_options=tree_options)
+
+        return TreeBuilder(file_metadata=metadata,
+                           tree_parameters=params,
+                           manifest_factory=factory,
+                           packet_output=packet_buffer,
+                           tree_options=tree_options)
+
+
     @staticmethod
     def _create_data_packet(application_data):
         payload = Payload(application_data)
@@ -36,11 +65,11 @@ class TraversalTest(unittest.TestCase):
         return packet
 
     @classmethod
-    def _create_manifest_from_packets(cls, packets, encryptor=None):
+    def _create_manifest_from_packets(cls, packets: PacketReader, tree_options: ManifestTreeOptions):
         pointers = []
         for packet in packets:
             pointers.append(packet.content_object_hash())
-        manifest = ManifestFactory(encryptor=encryptor).build(Pointers(pointers))
+        manifest = ManifestFactory(tree_options=tree_options).build(Pointers(pointers))
         return manifest
 
     def test_data_node(self):
@@ -61,30 +90,39 @@ class TraversalTest(unittest.TestCase):
         A manifest with only data pointers
         :return:
         """
-        expected = array("B", [1, 2, 3, 4, 5, 6, 7])
-        data_packets = TreeIO.chunk_data_to_packets(expected, 2)
-        manifest = self._create_manifest_from_packets(data_packets)
+        expected = array("B", list(range(1, 8)))
+        packet_buffer = TreeIO.PacketMemoryWriter()
+        create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
+
+        tree_options = self._create_options(max_packet_size=1500)
+        manifest = self._create_manifest_from_packets(packets=packet_buffer, tree_options=tree_options)
+
         root = Packet.create_content_object(manifest.content_object())
 
-        packet_input = TreeIO.PacketMemoryReader(data_packets)
+        # The reconstructed application data
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=buffer, packet_input=packet_input)
+        traversal = Traversal(data_buffer=buffer, packet_input=packet_buffer)
         traversal.preorder(root)
         self.assertEqual(expected, buffer.buffer)
 
-    def test_encrypted_manifest(self):
+    def test_encrypted_leaf_manifest(self):
         key = AeadGcm.generate(bits=128)
         encryptor = AeadEncryptor(key=key, key_number=77)
         decryptor = AeadDecryptor(key=key, key_number=77)
 
-        expected = array("B", [1, 2, 3, 4, 5, 6, 7])
-        data_packets = TreeIO.chunk_data_to_packets(expected, 2)
-        manifest = self._create_manifest_from_packets(packets=data_packets, encryptor=encryptor)
+        # This size needs to be small enough that all the pointers fit in one manifest.
+        expected = array("B", range(0, 30))
+        packet_buffer = TreeIO.PacketMemoryWriter()
+        create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
+
+        tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
+        manifest = self._create_manifest_from_packets(packets=packet_buffer, tree_options=tree_options)
+
         root = Packet.create_content_object(manifest.content_object())
 
-        packet_input = TreeIO.PacketMemoryReader(data_packets)
+        # The reconstructed application data
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=buffer, packet_input=packet_input, decryptor=decryptor)
+        traversal = Traversal(data_buffer=buffer, packet_input=packet_buffer, decryptor=decryptor)
         traversal.preorder(root)
         self.assertEqual(expected, buffer.buffer)
 

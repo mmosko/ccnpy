@@ -29,31 +29,6 @@ class TreeIO:
 
     """
 
-    # @staticmethod
-    # def _create_data_packet(application_data):
-    #     payload = Payload(application_data)
-    #     packet = Packet.create_content_object(ContentObject.create_data(payload=payload))
-    #     return packet
-
-    # @classmethod
-    # def chunk_data_to_packets(cls, application_data, chunk_size):
-    #     """
-    #     For example, if the application_data is [1, 2, 3, 4, 5, 6, 7] and chunk_size is 2, then the return will be
-    #     packets with payloads [1,2], [3, 4], [5, 6], and [7].
-    #
-    #     :param application_data: An array (or list) of application data
-    #     :param chunk_size: The number of array elements to put in each packet's payload
-    #     :return:
-    #     """
-    #     packets = []
-    #     count = len(application_data)
-    #     for i in range(0, count, chunk_size):
-    #         data = application_data[i:(i+chunk_size)]
-    #         packet = cls._create_data_packet(data)
-    #         packets.append(packet)
-    #
-    #     return packets
-
     class DataBuffer:
         def __init__(self):
             self.buffer = array("B", [])
@@ -70,47 +45,57 @@ class TreeIO:
         """
         An in-memory cache of packets that can be fetch by their content object hash
         """
+
+        def __iter__(self):
+            for packet in self.packets:
+                yield packet
+
+        def __getitem__(self, index):
+            return self.packets[index]
+
         def __init__(self, packets):
-            self.index = {}
-            for packet in packets:
-                # print("PacketInput: add key %r" % packet.content_object_hash())
-                self.index[packet.content_object_hash()] = packet
+            if isinstance(packets, TreeIO.PacketMemoryWriter):
+                self.packets = packets.packets
+                self.by_hash = packets.by_hash
+            else:
+                self.packets = packets
+                self.by_hash = {}
+                for packet in self.packets:
+                    # print("PacketInput: add key %r" % packet.content_object_hash())
+                    self.by_hash[packet.content_object_hash()] = packet
 
         def get(self, hash_value) -> Packet:
-            return self.index[hash_value]
+            return self.by_hash[hash_value]
 
         def close(self):
             pass
 
-    class PacketMemoryWriter(PacketWriter):
+    class PacketMemoryWriter(PacketMemoryReader, PacketWriter):
         """
         An in-memory cache of packets that can be written to.  They are stored as an in-order
         list and a map by content-object hash.
+
+        The PacketMemoryWriter is also a reader to simplify tests.
         """
         def __init__(self):
-            self.packets = []
-            self.by_hash = {}
+            super().__init__([])
 
         def __len__(self):
             return len(self.by_hash)
 
         def __eq__(self, other):
+            if not isinstance(other, TreeIO.PacketMemoryWriter):
+                return False
             return self.packets == other.packets
 
         def __repr__(self):
-            return f"PacketMemoryWriter({self.packets})"
-
-        def __getitem__(self, index):
-            return self.packets[index]
+            return f"PacketMemoryWriter({self.by_hash})"
 
         def put(self, packet: Packet):
             self.packets.append(packet)
             self.by_hash[packet.content_object_hash()] = packet
 
-        def get(self, hash_value):
-            return self.by_hash[hash_value]
-
-    class PacketDirectoryWriter(PacketWriter, PacketReader):
+    class PacketDirectoryWriter(PacketWriter):
         """
         A file-system based write.  Packets are saved to the directory using their
         hash-based named (in UTF-8 hex).
@@ -130,12 +115,6 @@ class TreeIO:
             path = PurePath(self._directory, ptr.file_name())
             packet.save(path)
 
-        def get(self, hash_value) -> Packet:
-            ptr = SizedPointer(content_object_hash=hash_value, length=0)
-            path = PurePath(self._directory, ptr.file_name())
-            packet = Packet.load(path)
-            return packet
-
         def close(self):
             pass
 
@@ -143,6 +122,11 @@ class TreeIO:
         """
         A file-system based packet reader.  Reads packets based on their hash name from a directory
         """
+
+        def __iter__(self):
+            # TODO: Open the directory and iterate all the files in it
+            raise NotImplementedError()
+
         def __init__(self, directory):
             """
 
@@ -150,7 +134,6 @@ class TreeIO:
             """
             if not os.path.isdir(directory):
                 raise RuntimeError("directory does not exist: %r" % directory)
-
             self._directory = directory
 
         def get(self, hash_value) -> Packet:
