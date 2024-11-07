@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ..Manifest import Manifest
+from ccnpy.flic.tlvs.Manifest import Manifest
 from ..ManifestDecryptor import ManifestDecryptor
 from ...core.ContentObject import ContentObject
 from ...core.Packet import Packet

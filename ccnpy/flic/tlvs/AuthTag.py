@@ -11,17 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import HashSchema, NcSchema
-from ..ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 
 
-class SchemaImplFactory:
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Payload import Payload
 
-    @staticmethod
-    def create(nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
-        if isinstance(schema, HashSchema):
-            return HashSchemaImpl(nc_id=nc_id, schema=schema, tree_options=tree_options)
 
-        raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")
+class AuthTag(Payload):
+    """
+    AuthTag works just like ccnpy.core.Payload -- it stores a byte array.
+
+    The AuthTag is the (normally) 16 byte authentication tag used by AES GCM or CCM to authenticate
+    a message.
+    """
+    __T_AUTHTAG = 0x0003
+
+    @classmethod
+    def class_type(cls):
+        return cls.__T_AUTHTAG
+
+    def __init__(self, value):
+        super().__init__(value)
+
+    def __repr__(self):
+        return "AuthTag: %r" % DisplayFormatter.hexlify(self._value)

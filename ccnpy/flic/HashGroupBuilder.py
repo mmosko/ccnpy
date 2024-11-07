@@ -14,10 +14,10 @@
 
 import math
 
-from .GroupData import GroupData
-from .HashGroup import HashGroup
-from .Pointers import Pointers
-from ccnpy.flic.annotations.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.GroupData import GroupData
+from ccnpy.flic.tlvs.HashGroup import HashGroup
+from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ..core.HashValue import HashValue
 
 

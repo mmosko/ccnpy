@@ -15,8 +15,8 @@
 from .TreeParameters import TreeParameters
 from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
-from ..Node import Node
-from ..NodeData import NodeData
+from ccnpy.flic.tlvs.Node import Node
+from ccnpy.flic.tlvs.NodeData import NodeData
 from ..name_constructor.FileMetadata import FileMetadata
 from ...core.Packet import Packet
 

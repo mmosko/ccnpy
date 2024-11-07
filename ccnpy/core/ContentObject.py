@@ -116,7 +116,7 @@ class ContentObject(TlvType):
 
     def __repr__(self):
         if self.is_manifest():
-            from ccnpy.flic.Manifest import Manifest
+            from ccnpy.flic.tlvs.Manifest import Manifest
             payload = Manifest.deserialize(self._payload.value())
         else:
             payload = self.payload()

@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .AeadCtx import AeadCtx
-from ..AuthTag import AuthTag
-from ..EncryptedNode import EncryptedNode
-from ..Manifest import Manifest
-from ..Node import Node
+from ccnpy.flic.tlvs.AeadCtx import AeadCtx
+from ccnpy.flic.tlvs.AuthTag import AuthTag
+from ccnpy.flic.tlvs.EncryptedNode import EncryptedNode
+from ccnpy.flic.tlvs.Manifest import Manifest
+from ccnpy.flic.tlvs.Node import Node
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 
 

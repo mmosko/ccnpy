@@ -41,3 +41,8 @@ class DisplayFormatterTest(unittest.TestCase):
         input="{NAME: [{TLV: {T: 1, L: 3, V: b'foo'}, {TLV: {T: 1, L: 3, V: b'bar'}]}"
         pass
 
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(DisplayFormatterTest())

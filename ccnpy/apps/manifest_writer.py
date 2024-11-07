@@ -18,14 +18,12 @@ import getpass
 from datetime import datetime
 from typing import Optional
 
-from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.core.Packet import PacketWriter
 from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
-from ccnpy.flic.Locator import Locator
-from ccnpy.flic.Locators import Locators
+from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor

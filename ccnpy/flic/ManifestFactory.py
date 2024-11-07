@@ -13,16 +13,16 @@
 #  limitations under the License.
 from typing import List, Optional
 
-from .GroupData import GroupData
-from .HashGroup import HashGroup
-from .Locators import Locators
-from .Manifest import Manifest
+from ccnpy.flic.tlvs.GroupData import GroupData
+from ccnpy.flic.tlvs.HashGroup import HashGroup
+from ccnpy.flic.tlvs.Locators import Locators
+from ccnpy.flic.tlvs.Manifest import Manifest
 from .ManifestTreeOptions import ManifestTreeOptions
-from .Node import Node
-from .NodeData import NodeData
-from .Pointers import Pointers
-from .annotations.LeafSize import LeafSize
-from .annotations.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.Node import Node
+from ccnpy.flic.tlvs.NodeData import NodeData
+from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.LeafSize import LeafSize
+from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 
 
 class ManifestFactory:
@@ -30,6 +30,8 @@ class ManifestFactory:
     Streamlines building a Manifest from a source.  The source may be any of `Pointers` or
     `HashGroup` or `Node`.  The factory can also apply a `ManifestEncryptor` and generate
     encrypted manifests.
+
+    This class is used by ManifestTree (and others), which is the top-level interface to FLIC.
     """
 
     def __init__(self, tree_options: ManifestTreeOptions):

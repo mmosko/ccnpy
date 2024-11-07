@@ -16,7 +16,7 @@ from typing import Optional
 from .Solution import Solution
 from .TreeOptimizer import TreeOptimizer
 from ..ManifestFactory import ManifestFactory
-from ..Pointers import Pointers
+from ccnpy.flic.tlvs.Pointers import Pointers
 from ..name_constructor.FileMetadata import FileMetadata
 from ...core.HashValue import HashValue
 

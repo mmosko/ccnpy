@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Optional, List
+from typing import Optional, List
 
 from .FileMetadata import FileMetadata, ChunkMetadata
-from .NcDef import NcDef
-from .NcId import NcId
-from .NcSchema import NcSchema
-from ..Locators import Locators
+from ccnpy.flic.tlvs.NcDef import NcDef
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import NcSchema
+from ccnpy.flic.tlvs.Locators import Locators
 from ..ManifestTreeOptions import ManifestTreeOptions
 from ...core.ContentObject import ContentObject
 from ...core.Name import Name

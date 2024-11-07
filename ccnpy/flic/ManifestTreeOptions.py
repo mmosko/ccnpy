@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from .Locators import Locators
+from ccnpy.flic.tlvs.Locators import Locators
 from .ManifestEncryptor import ManifestEncryptor
 from .name_constructor.SchemaType import SchemaType
 from ..core.ExpiryTime import ExpiryTime

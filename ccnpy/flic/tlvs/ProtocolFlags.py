@@ -11,17 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import HashSchema, NcSchema
-from ..ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
+
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Payload import Payload
 
 
-class SchemaImplFactory:
+class ProtocolFlags(Payload):
+    """
+    These are CCN/NDN flags to pass as part of the Interest.
+    """
+    __T_PROTOCOL_FLAGS = 0x0009
 
-    @staticmethod
-    def create(nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
-        if isinstance(schema, HashSchema):
-            return HashSchemaImpl(nc_id=nc_id, schema=schema, tree_options=tree_options)
+    @classmethod
+    def class_type(cls):
+        return cls.__T_PROTOCOL_FLAGS
 
-        raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")
+    def __init__(self, value):
+        super().__init__(value)
+
+    def __repr__(self):
+        return "Flags: %r" % DisplayFormatter.hexlify(self._value)

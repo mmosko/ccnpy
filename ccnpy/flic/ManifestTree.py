@@ -14,13 +14,12 @@
 
 from typing import BinaryIO
 
-from .Locators import Locators
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
-from .Pointers import Pointers
+from ccnpy.flic.tlvs.Pointers import Pointers
 from .name_constructor.FileMetadata import FileMetadata
-from .name_constructor.NcId import NcId
-from .name_constructor.NcSchema import HashSchema
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import HashSchema
 from .name_constructor.SchemaImplFactory import SchemaImplFactory
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters

@@ -11,17 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import HashSchema, NcSchema
-from ..ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
+
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Payload import Payload
 
 
-class SchemaImplFactory:
+class EncryptedNode(Payload):
+    """
+    EncryptedNode works just like ccnpy.Payload -- it stores a byte array.
 
-    @staticmethod
-    def create(nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
-        if isinstance(schema, HashSchema):
-            return HashSchemaImpl(nc_id=nc_id, schema=schema, tree_options=tree_options)
+    An EncryptedNode represents an encrypted manifest: `SecurityCtx EncryptedNode AuthTag`.
+    """
+    __T_ENC_NODE = 0x0004
 
-        raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")
+    @classmethod
+    def class_type(cls):
+        return cls.__T_ENC_NODE
+
+    def __init__(self, value):
+        Payload.__init__(self, value)
+
+    def __repr__(self):
+        return "EncNode: %r" % DisplayFormatter.hexlify(self._value)

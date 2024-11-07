@@ -18,9 +18,6 @@ import unittest
 from array import array
 
 from ccnpy.apps.manifest_writer import ManifestWriter
-from ccnpy.core.Name import Name
-from ccnpy.flic.Locator import Locator
-from ccnpy.flic.Locators import Locators
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 
@@ -138,3 +135,8 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         # There are 4 objects: 1 root, 1 leaf manifest, 1 long 0's data, 1 short 0's data
         # The long 0's content object is repeated 3 times, so we've achieved data deduplication
         self.assertEqual(4, buffer.count)
+
+
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(ManifestWriterTest())
