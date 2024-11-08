@@ -17,6 +17,7 @@ import unittest
 from array import array
 from typing import Optional
 
+from ccnpy.core.Name import Name
 from ccnpy.core.Packet import Packet
 from ccnpy.crypto.AeadKey import AeadCcm
 from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
@@ -24,6 +25,7 @@ from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tree.Solution import Solution
 from ccnpy.flic.tree.Traversal import Traversal
@@ -38,7 +40,7 @@ class TreeBuilderTest(unittest.TestCase):
     @staticmethod
     def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor]):
         return ManifestTreeOptions(max_packet_size=max_packet_size,
-                                   name=None,
+                                   name=Name.from_uri('ccnx:/a'),
                                    schema_type=SchemaType.HASHED,
                                    signer=None,
                                    manifest_encryptor=encryptor)
@@ -52,7 +54,8 @@ class TreeBuilderTest(unittest.TestCase):
                            tree_parameters=params,
                            manifest_factory=factory,
                            packet_output=packet_buffer,
-                           tree_options=tree_options)
+                           tree_options=tree_options,
+                           name_ctx=NameConstructorContext.create(tree_options=tree_options))
 
     def test_binary_0_2_15(self):
         """

@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import BinaryIO
-
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
 from .name_constructor.FileMetadata import FileMetadata
@@ -21,7 +19,6 @@ from .name_constructor.NameConstructorContext import NameConstructorContext
 from .tlvs.Pointers import Pointers
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
-from ..core.ContentObject import ContentObject
 from ..core.Packet import Packet, PacketWriter
 
 
@@ -104,7 +101,8 @@ class ManifestTree:
                                    tree_parameters=tree_parameters,
                                    manifest_factory=manifest_factory,
                                    packet_output=self._packet_output,
-                                   tree_options=self._tree_options)
+                                   tree_options=self._tree_options,
+                                   name_ctx=self._name_ctx)
         return tree_builder.build()
 
     def _calculate_optimal_tree(self, file_metadata: FileMetadata, manifest_factory: ManifestFactory) -> TreeParameters:

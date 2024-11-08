@@ -16,5 +16,8 @@
 import unittest
 
 
-class test_HashGroupBuilder(unittest.TestCase):
+class HashGroupBuilderTest(unittest.TestCase):
+    """
+    TODO: Add unit tests
+    """
     pass

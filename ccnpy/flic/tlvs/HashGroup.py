@@ -42,7 +42,9 @@ class HashGroup(TlvType):
         return len(self._tlv)
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, HashGroup):
+            return False
+        return self._tlv == other._tlv
 
     def __repr__(self):
         return "HashGroup: {%r, %r}" % (self._group_data, self._pointers)

@@ -17,11 +17,9 @@ import io
 import unittest
 from array import array
 from binascii import unhexlify
-from pprint import pprint
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Name import Name
-from ccnpy.core.Packet import Packet
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.ManifestTree import ManifestTree
@@ -34,7 +32,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import PrefixSchema, SegmentedSchema
+from ccnpy.flic.tlvs.NcSchema import SegmentedSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
@@ -172,7 +170,7 @@ YwIDAQAB
                 ]),
                 hash_groups=[
                     HashGroup(pointers=Pointers([HashValue.create_sha256(
-                        unhexlify('fb8c7b8085f89e2087fffa5739aaf4bcd13515840c6917ed23294614196718eb'))]))
+                        unhexlify('8cae1a3b7cd13e7ce5d66f82ee86471ce6db04f88c07ce245d16b9c13e101fda'))]))
                 ]
             )
         )
@@ -181,6 +179,7 @@ YwIDAQAB
         self.assertEqual(actual_root_manifest_packet.body().name(), Name.from_uri("ccnx:/example.com/manifest"))
 
     def _test_top_manifest(self, actual_top_manifest_packet):
+        print("actual top manifest packet")
         print(actual_top_manifest_packet)
         manifest_prefix = Name.from_uri('ccnx:/manifest')
         expected_top_manifest = Manifest(
@@ -201,6 +200,7 @@ YwIDAQAB
         )
         expected_top_packet = expected_top_manifest.packet(name=manifest_prefix.append_chunk_id(0))
         print(expected_top_packet)
+        self.fail("not implemented")
 
     def test_segmented_tree(self):
         """

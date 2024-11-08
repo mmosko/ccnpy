@@ -25,6 +25,13 @@ from ...core.HashValue import HashValue
 
 
 class TreeParameters:
+    """
+    These are the detailed tree parameters that direct how to build a manifest tree.  It is calculated based
+    on `ManifestTreeOptions.max_packet_size` and `ManifestTreeOptions.max_tree_degree` and the size of the
+    user data, which are user-input options.
+
+    Usually, one calls `create_optimized_tree` to calculate these parameters.
+    """
     @classmethod
     def create_optimized_tree(cls,
                               file_metadata: FileMetadata,

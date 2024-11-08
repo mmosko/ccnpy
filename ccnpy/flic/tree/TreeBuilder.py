@@ -12,13 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Optional
+
+from ccnpy.flic.tlvs.Node import Node
+from ccnpy.flic.tlvs.NodeData import NodeData
+from .HashGroupBuilderPair import HashGroupBuilderPair
 from .TreeParameters import TreeParameters
 from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
-from ccnpy.flic.tlvs.Node import Node
-from ccnpy.flic.tlvs.NodeData import NodeData
+from ..ManifestTreeOptions import ManifestTreeOptions
 from ..name_constructor.FileMetadata import FileMetadata
-from ...core.Packet import Packet
+from ..name_constructor.NameConstructorContext import NameConstructorContext
+from ..tlvs.StartSegmentId import StartSegmentId
+from ...core.Name import Name
+from ...core.Packet import Packet, PacketWriter
 
 
 class TreeBuilder:
@@ -193,26 +200,28 @@ class TreeBuilder:
         def length(self):
             return self._tail - self._head
 
-    def __init__(self, file_metadata: FileMetadata, tree_parameters, manifest_factory, packet_output, tree_options):
+    def __init__(self, file_metadata: FileMetadata, tree_parameters: TreeParameters,
+                manifest_factory: ManifestFactory, packet_output: PacketWriter, tree_options: ManifestTreeOptions,
+                name_ctx: NameConstructorContext):
         """
 
         :param file_metadata: Info about the file chunks
         :param tree_parameters:
         :param manifest_factory: ccnpy.flic.ManifestFactory
         :param packet_output: A class that has a `put(packet)` method
-        :param expiry_time: Optional expiry time to apply to all Manifest Content Objects.
+        :param tree_options: The user arguments to the program
+        :param name_ctx: The name constructors for manifests and data
+
         """
-        if not isinstance(tree_parameters, TreeParameters):
-            raise TypeError("tree_parameters must be ccnpy.flic.tree.TreeParameters")
-
-        if not isinstance(manifest_factory, ManifestFactory):
-            raise TypeError("manifest_factory must be ccnpy.flic.ManifestFactory")
-
         self._file_metadata = file_metadata
         self._params = tree_parameters
         self._factory = manifest_factory
         self._tree_options = tree_options
         self._packet_output = packet_output
+        self._name_ctx = name_ctx
+
+        # a counter of the number of manifests created
+        self._manifest_count = 0
 
     def build(self) -> Packet:
         """
@@ -221,10 +230,14 @@ class TreeBuilder:
 
         :return: The root ccnpy.Packet
         """
+
+        # It should be true that head points to chunk 0 and tail points to the last chunk of the data,
+        # with all the other chunk numbers sequentailly between.
         segment = TreeBuilder.Segment(0, len(self._file_metadata))
         level = 0
 
         # This bootstraps the process by creating the right most child manifest
+        # We call it `root` as it is, for now, the top-most manifest node.
         root = self._leaf_manifest(segment=segment)
 
         # Keep building subtrees until we're out of direct pointers
@@ -233,6 +246,15 @@ class TreeBuilder:
             root = self._bottom_up_preorder(segment=segment, level=level, right_most_child=root)
 
         return root.packet
+
+    def _get_next_manifest_name(self) -> Name:
+        """
+        Gets the name corresponding to the current manifest, knowing that we start with the last
+        manifest and work towards the top.
+        """
+        manifest_chunk_id = self._params.total_direct_nodes() - self._manifest_count - 1
+        self._manifest_count += 1
+        return self._name_ctx.manifest_schema_impl.get_name(manifest_chunk_id)
 
     def _write_packet(self, packet):
         if self._packet_output is not None:
@@ -261,26 +283,39 @@ class TreeBuilder:
 
         return return_value
 
+    def _get_start_segment_id(self, head) -> Optional[StartSegmentId]:
+        if self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
+            return StartSegmentId(self._file_metadata[head].chunk_number)
+        else:
+            return None
+
     def _build_leaf_packet(self, head, tail):
+        """
+        A leaf packet is a direct-pointer only manifest.  That is, it has no sub-manifests.
+        """
         assert tail > head
         count = tail - head
         builder = HashGroupBuilder(max_direct=count, max_indirect=0)
         for i in range(head, tail):
-            ptr = self._file_metadata[i]
-            builder.append_direct(hash_value=ptr.content_object_hash, leaf_size=ptr.payload_bytes)
+            chunk_metadata = self._file_metadata[i]
+            builder.append_direct(hash_value=chunk_metadata.content_object_hash, leaf_size=chunk_metadata.payload_bytes)
 
         hg = builder.hash_group(include_leaf_size=self._tree_options.add_group_leaf_size,
-                                include_subtree_size=self._tree_options.add_group_subtree_size)
+                                include_subtree_size=self._tree_options.add_group_subtree_size,
+                                start_segment_id=self._get_start_segment_id(head),
+                                # These are all direct pointers, so they are in the data hash group
+                                nc_id=self._name_ctx.data_schema_impl.nc_id())
 
         if self._tree_options.add_node_subtree_size:
-            node_size = builder.direct_size()
+            # obviously, indirect size should be 0 as we only called append_direct
+            node_size = builder.direct_size() + builder.indirect_size()
             node_data = NodeData(subtree_size=node_size)
         else:
             node_data = None
 
         node = Node(node_data=node_data, hash_groups=[hg])
         manifest = self._factory.build(node)
-        packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
+        packet = manifest.packet(self._get_next_manifest_name(), expiry_time=self._tree_options.manifest_expiry_time)
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
         return return_value
 
@@ -297,59 +332,71 @@ class TreeBuilder:
         self._write_packet(return_value.packet)
         return return_value
 
-    def _interior_add_right_most_child(self, builder, right_most_child):
+    def _interior_add_right_most_child(self, builders: HashGroupBuilderPair, right_most_child):
         if right_most_child is not None:
             if not isinstance(right_most_child, TreeBuilder.ReturnValue):
-                raise TypeError("right_most_child must be ccnpy.flic.tree.TreeBuilder.ReturnValue")
+                raise TypeError("right_most_child must be TreeBuilder.ReturnValue")
 
-            builder.append_indirect(hash_value=right_most_child.packet.content_object_hash(),
-                                    subtree_size=self._get_optional_subtree_size(right_most_child.node.node_data()))
+            builders.append_indirect(hash_value=right_most_child.packet.content_object_hash(),
+                                     subtree_size=self._get_optional_subtree_size(right_most_child.node.node_data()))
 
-    def _interior_add_indirect(self, builder, segment, level):
+    def _interior_add_indirect(self, builders: HashGroupBuilderPair, segment, level):
         # Reserve space at the head of the segment for this node's direct pointers before
         # descending to children.  We want the top of the tree packed.
         reserve_count = min(self._params.internal_direct_per_node(), segment.length())
         segment.increment_head(reserve_count)
 
-        while not builder.is_indirect_full() and not segment.empty():
+        while not builders.is_indirect_full() and not segment.empty():
             child = self._bottom_up_preorder(segment, level - 1)
-            builder.prepend_indirect(hash_value=child.packet.content_object_hash(),
+            builders.prepend_indirect(hash_value=child.packet.content_object_hash(),
                                      subtree_size=self._get_optional_subtree_size(child.node.node_data()))
 
         # Pull back our reservation and put those pointers in our direct children
         segment.decrement_head(reserve_count)
 
-    def _interior_add_direct(self, builder, segment):
-        while not builder.is_direct_full() and not segment.empty():
+    def _interior_add_direct(self, builders: HashGroupBuilderPair, segment) -> Optional[StartSegmentId]:
+        least_chunk_id = None
+        while not builders.is_direct_full() and not segment.empty():
             chunk_metadata = self._file_metadata[segment.tail() - 1]
-            builder.prepend_direct(chunk_metadata.content_object_hash, chunk_metadata.payload_bytes)
+            least_chunk_id = chunk_metadata.chunk_number
+            builders.prepend_direct(chunk_metadata.content_object_hash, chunk_metadata.payload_bytes)
             segment.decrement_tail()
 
-    def _interior_packet(self, builder):
-        hg = builder.hash_group(include_leaf_size=self._tree_options.add_group_leaf_size,
-                                include_subtree_size=self._tree_options.add_group_subtree_size)
+        if least_chunk_id is not None:
+            return StartSegmentId(least_chunk_id)
+        # we did not execute the while loop
+        return None
+
+    def _interior_packet(self, builders: HashGroupBuilderPair, start_segment_id: Optional[StartSegmentId]):
+        if not self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
+            start_segment_id = None
+
+        hgs = builders.hash_groups(include_leaf_size=self._tree_options.add_group_leaf_size,
+                                   include_subtree_size=self._tree_options.add_group_subtree_size,
+                                   start_segment_id=start_segment_id)
 
         if self._tree_options.add_node_subtree_size:
-            node_size = builder.direct_size() + builder.indirect_size()
+            node_size = builders.direct_size() + builders.indirect_size()
             node_data = NodeData(subtree_size=node_size)
         else:
             node_data = None
 
-        node = Node(node_data=node_data, hash_groups=[hg])
+        node = Node(node_data=node_data, hash_groups=hgs)
         manifest = self._factory.build(node)
-        packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
+        packet = manifest.packet(name=self._get_next_manifest_name(), expiry_time=self._tree_options.manifest_expiry_time)
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
         return return_value
 
     def _interior_manifest(self, segment, level, right_most_child=None):
-        builder = HashGroupBuilder(max_direct=self._params.internal_direct_per_node(),
-                                   max_indirect=self._params.internal_indirect_per_node())
+        builders = HashGroupBuilderPair(name_ctx=self._name_ctx,
+                                        max_direct=self._params.internal_direct_per_node(),
+                                        max_indirect=self._params.internal_indirect_per_node())
 
-        self._interior_add_right_most_child(builder, right_most_child)
-        self._interior_add_indirect(builder, segment, level)
-        self._interior_add_direct(builder, segment)
+        self._interior_add_right_most_child(builders, right_most_child)
+        self._interior_add_indirect(builders, segment, level)
+        start_segment_id = self._interior_add_direct(builders, segment)
 
-        return_value = self._interior_packet(builder)
+        return_value = self._interior_packet(builders, start_segment_id)
 
         if self._tree_options.debug:
             print("node_manifest: %r" % return_value)
