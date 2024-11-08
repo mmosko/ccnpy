@@ -56,6 +56,9 @@ class ManifestTree:
         optimized_params = self._calculate_optimal_tree(file_metadata=file_metadata,
                                                         manifest_factory=manifest_factory)
 
+        if self._tree_options.debug:
+            print(f"Optimized parameters: {optimized_params}")
+
         top_manifest_packet = self._build_tree(tree_parameters=optimized_params,
                                                manifest_factory=manifest_factory,
                                                file_metadata=file_metadata)

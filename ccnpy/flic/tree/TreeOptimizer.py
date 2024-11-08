@@ -63,13 +63,13 @@ class TreeOptimizer:
     The height of a tree is its longest path length, so a tree with only the root node has a height of 0.
     """
 
-    def __init__(self, total_direct_nodes: int, num_pointers: int):
+    def __init__(self, num_direct_nodes: int, num_pointers: int):
         """
 
-        :param total_direct_nodes: The total number of direct pointers needed
+        :param num_direct_nodes: The total number of direct pointers needed
         :param num_pointers: The number of pointers (direct or indirect) per internal node
         """
-        self._direct_nodes = total_direct_nodes
+        self._num_direct_nodes = num_direct_nodes
         self._num_pointers = num_pointers
 
     def calculate_k(self, d, m):
@@ -81,12 +81,12 @@ class TreeOptimizer:
         :return:
         """
         if m == 0:
-            if self._direct_nodes > d:
+            if self._num_direct_nodes > d:
                 return math.inf
             else:
                 return 1
 
-        k = math.ceil((self._direct_nodes - d - m) / ( m * (d + m - 1)))
+        k = math.ceil((self._num_direct_nodes - d - m) / (m * (d + m - 1)))
         return k
 
     @staticmethod
@@ -119,10 +119,10 @@ class TreeOptimizer:
             w = self.calculate_waste(k, d, m)
             if k < best_k:
                 best_k = k
-                solution = Solution(self._direct_nodes, self._num_pointers, d, m, k, w)
+                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions = [solution]
             elif k == best_k:
-                solution = Solution(self._direct_nodes, self._num_pointers, d, m, k, w)
+                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions.append(solution)
 
         #print("Min k    : best solutions: %r" % best_solutions)
@@ -145,12 +145,12 @@ class TreeOptimizer:
             w = self.calculate_waste(k, d, m)
             if w < best_w:
                 best_w = w
-                solution = Solution(self._direct_nodes, self._num_pointers, d, m, k, w)
+                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions = [solution]
                 # print("best so far %r" % best_solutions)
 
             elif w == best_w:
-                solution = Solution(self._direct_nodes, self._num_pointers, d, m, k, w)
+                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions.append(solution)
 
         #print("Min Waste: best solutions: %r" % best_solutions)
@@ -161,5 +161,5 @@ class TreeOptimizer:
 
     def calculate_waste(self, k, d, m):
         n = self.calculate_n(k, d, m)
-        waste = n - self._direct_nodes
+        waste = n - self._num_direct_nodes
         return waste

@@ -222,6 +222,14 @@ class TreeBuilder:
 
         # a counter of the number of manifests created
         self._manifest_count = 0
+        self._leaf_count = 0
+        self._internal_count = 0
+
+    def leaf_count(self):
+        return self._leaf_count
+
+    def internal_count(self):
+        return self._internal_count
 
     def build(self) -> Packet:
         """
@@ -247,16 +255,28 @@ class TreeBuilder:
 
         return root.packet
 
+    @staticmethod
+    def _debug_packet(packet):
+        name = packet.body().name()
+        if name is not None:
+            name = str(name)
+        print(f"packet: {packet.content_object_hash()}, {name}")
+
     def _get_next_manifest_name(self) -> Name:
         """
         Gets the name corresponding to the current manifest, knowing that we start with the last
         manifest and work towards the top.
         """
-        manifest_chunk_id = self._params.total_direct_nodes() - self._manifest_count - 1
+        manifest_chunk_id = self._params.total_nodes() - self._manifest_count
+        if manifest_chunk_id < 0:
+            raise ValueError(f"Created negative chunk id for manifest #{self._manifest_count}")
         self._manifest_count += 1
         return self._name_ctx.manifest_schema_impl.get_name(manifest_chunk_id)
 
     def _write_packet(self, packet):
+        if self._tree_options.debug:
+            self._debug_packet(packet)
+
         if self._packet_output is not None:
             self._packet_output.put(packet)
 
@@ -317,6 +337,7 @@ class TreeBuilder:
         manifest = self._factory.build(node)
         packet = manifest.packet(self._get_next_manifest_name(), expiry_time=self._tree_options.manifest_expiry_time)
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
+        self._leaf_count += 1
         return return_value
 
     def _leaf_manifest(self, segment):
@@ -399,9 +420,10 @@ class TreeBuilder:
         return_value = self._interior_packet(builders, start_segment_id)
 
         if self._tree_options.debug:
-            print("node_manifest: %r" % return_value)
+            print(f"node_manifest: {return_value}")
 
         self._write_packet(return_value.packet)
+        self._internal_count += 1
         return return_value
 
     def _get_optional_subtree_size(self, node_data: NodeData):

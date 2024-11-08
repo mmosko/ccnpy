@@ -193,7 +193,7 @@ class TreeParameters:
 
     @staticmethod
     def _optimize_tree(total_direct_nodes:int , num_pointers_per_node: int) -> Solution:
-        to = TreeOptimizer(total_direct_nodes=total_direct_nodes,
+        to = TreeOptimizer(num_direct_nodes=total_direct_nodes,
                            num_pointers=num_pointers_per_node)
         solutions = to.minimize_waste()
         # the results are sorted by m (number of indirect pointers per node), so pick something in the middle

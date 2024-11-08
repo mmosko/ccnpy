@@ -64,7 +64,7 @@ class Name(TlvType):
         return self.__dict__ == other.__dict__
 
     def __str__(self):
-        return "NAME: %r" % self._components
+        return "NAME: %r" % [f'{c.type()} = {c.value()}' for c in self._components]
 
     def __repr__(self):
         return "NAME: %r" % self._components

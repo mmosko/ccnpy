@@ -22,11 +22,11 @@ from ccnpy.crypto.AeadKey import AeadGcm
 from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.FileMetadata import FileMetadata, ChunkMetadata
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Pointers import Pointers
-from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 

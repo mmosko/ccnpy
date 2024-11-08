@@ -14,7 +14,6 @@
 
 
 import unittest
-from tokenize import group
 from typing import Optional
 
 from ccnpy.core.HashValue import HashValue

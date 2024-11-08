@@ -36,6 +36,7 @@ from ccnpy.flic.tlvs.NcSchema import SegmentedSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 from tests.MockReader import MockReader
@@ -170,7 +171,7 @@ YwIDAQAB
                 ]),
                 hash_groups=[
                     HashGroup(pointers=Pointers([HashValue.create_sha256(
-                        unhexlify('8cae1a3b7cd13e7ce5d66f82ee86471ce6db04f88c07ce245d16b9c13e101fda'))]))
+                        unhexlify('960a9c7859ac5f6c64212fe1f8fef71c475f39807b12380da183467d9d03a4ac'))]))
                 ]
             )
         )
@@ -179,28 +180,30 @@ YwIDAQAB
         self.assertEqual(actual_root_manifest_packet.body().name(), Name.from_uri("ccnx:/example.com/manifest"))
 
     def _test_top_manifest(self, actual_top_manifest_packet):
-        print("actual top manifest packet")
-        print(actual_top_manifest_packet)
         manifest_prefix = Name.from_uri('ccnx:/manifest')
         expected_top_manifest = Manifest(
             node=Node(
                 hash_groups=[
                     HashGroup(
-                        group_data=GroupData(nc_id=NcId(1)),
+                        group_data=GroupData(nc_id=NcId(2), start_segment_id=StartSegmentId(0)),
                         pointers=Pointers([
                             HashValue.create_sha256(
                                 unhexlify('eb96aebb6f998228f6d7060f50385d6378121522b9e13cfe98e1a39ebff3f4cc')),
+                        ])),
+                    HashGroup(
+                        group_data=GroupData(nc_id=NcId(1)),
+                        pointers=Pointers([
                             HashValue.create_sha256(
-                                unhexlify('23bfc3c67a5c88186e8560756263b95a01e91df1be374c84c39d121ecdabdd61')),
+                                unhexlify('b1d9f624e58ba6c8066749c05c0856101df14ece1227cd6233ce391087af736e')),
                             HashValue.create_sha256(
-                                unhexlify('d3114afb9a40852c9dd2c6f06184af8db5c378904823e6fca3017b13bcdd9387')),
-                        ]))
+                                unhexlify('e7563a7d23b2da1088563f32cc4cfaa2cb9b2843e58c469fff9d1aa92269a8ae')),
+                        ])),
                 ]
             )
         )
         expected_top_packet = expected_top_manifest.packet(name=manifest_prefix.append_chunk_id(0))
         print(expected_top_packet)
-        self.fail("not implemented")
+        self.assertEqual(expected_top_packet, actual_top_manifest_packet)
 
     def test_segmented_tree(self):
         """
