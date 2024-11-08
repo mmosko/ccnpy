@@ -15,7 +15,7 @@
 
 import math
 
-from .Solution import Solution
+from .OptimizerResult import OptimizerResult
 
 
 class TreeOptimizer:
@@ -119,10 +119,10 @@ class TreeOptimizer:
             w = self.calculate_waste(k, d, m)
             if k < best_k:
                 best_k = k
-                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
+                solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions = [solution]
             elif k == best_k:
-                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
+                solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions.append(solution)
 
         #print("Min k    : best solutions: %r" % best_solutions)
@@ -145,12 +145,12 @@ class TreeOptimizer:
             w = self.calculate_waste(k, d, m)
             if w < best_w:
                 best_w = w
-                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
+                solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions = [solution]
                 # print("best so far %r" % best_solutions)
 
             elif w == best_w:
-                solution = Solution(self._num_direct_nodes, self._num_pointers, d, m, k, w)
+                solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
                 best_solutions.append(solution)
 
         #print("Min Waste: best solutions: %r" % best_solutions)

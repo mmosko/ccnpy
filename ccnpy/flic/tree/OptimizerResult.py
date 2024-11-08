@@ -16,12 +16,12 @@
 import math
 
 
-class Solution:
+class OptimizerResult:
     """
     Determines tree structure based on certain input parameters.  It's main job is to calculate the total number
     of nodes in the tree given assumptions about the tree structure.
 
-    Solution is used by `TreeOptimizer`.
+    OptimizerResult is created by `TreeOptimizer` and then put into a `TreeParameters` for use by `TreeBuilder`.
     """
     def __init__(self, num_data_objects, num_pointers, direct_per_node, indirect_per_node, num_internal_nodes, waste):
         """
@@ -42,7 +42,7 @@ class Solution:
         self._sanity_check()
 
     def __repr__(self):
-        return "{Solution n=%r, p=%r, d=%r, m=%r, k=%r, l=%r, w=%r}" % (
+        return "{OptResult n=%r, p=%r, d=%r, m=%r, k=%r, l=%r, w=%r}" % (
             self._num_data_objects,
             self._num_pointers,
             self._direct_per_node,

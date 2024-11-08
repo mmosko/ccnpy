@@ -13,7 +13,7 @@
 #  limitations under the License.
 from typing import Optional
 
-from .Solution import Solution
+from .OptimizerResult import OptimizerResult
 from .TreeOptimizer import TreeOptimizer
 from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
@@ -61,7 +61,7 @@ class TreeParameters:
         solution = cls._optimize_tree(total_direct_nodes=len(file_metadata), num_pointers_per_node=num_pointers_per_node)
         return cls(file_metadata=file_metadata, max_packet_size=max_packet_size, solution=solution)
 
-    def __init__(self, file_metadata: FileMetadata, max_packet_size: int, solution: Solution):
+    def __init__(self, file_metadata: FileMetadata, max_packet_size: int, solution: OptimizerResult):
         """
 
         :param file_chunks: A Pointers
@@ -192,7 +192,7 @@ class TreeParameters:
         return num_hashes
 
     @staticmethod
-    def _optimize_tree(total_direct_nodes:int , num_pointers_per_node: int) -> Solution:
+    def _optimize_tree(total_direct_nodes:int , num_pointers_per_node: int) -> OptimizerResult:
         to = TreeOptimizer(num_direct_nodes=total_direct_nodes,
                            num_pointers=num_pointers_per_node)
         solutions = to.minimize_waste()

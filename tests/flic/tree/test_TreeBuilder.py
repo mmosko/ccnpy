@@ -26,7 +26,7 @@ from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
-from ccnpy.flic.tree.Solution import Solution
+from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 from ccnpy.flic.tree.TreeIO import TreeIO
@@ -68,13 +68,13 @@ class TreeBuilderTest(unittest.TestCase):
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
         # binary tree with no direct storage in internal nodes
-        solution = Solution(num_data_objects=len(metadata),
-                            num_pointers=2,
-                            direct_per_node=0,
-                            indirect_per_node=2,
-                            # 15 data objects with only leaf nodes => 8 leaf nodes, so 7 internal
-                            num_internal_nodes=7,
-                            waste=1)
+        solution = OptimizerResult(num_data_objects=len(metadata),
+                                   num_pointers=2,
+                                   direct_per_node=0,
+                                   indirect_per_node=2,
+                                   # 15 data objects with only leaf nodes => 8 leaf nodes, so 7 internal
+                                   num_internal_nodes=7,
+                                   waste=1)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
@@ -101,13 +101,13 @@ class TreeBuilderTest(unittest.TestCase):
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
         # ternary tree with up to 1 direct storage in internal nodes
-        solution = Solution(num_data_objects=len(metadata),
-                            num_pointers=3,
-                            direct_per_node=1,
-                            indirect_per_node=2,
-                            num_internal_nodes=3,
-                            # 3 internal * 1 + 4 leaf * 3 = 15
-                            waste=0)
+        solution = OptimizerResult(num_data_objects=len(metadata),
+                                   num_pointers=3,
+                                   direct_per_node=1,
+                                   indirect_per_node=2,
+                                   num_internal_nodes=3,
+                                   # 3 internal * 1 + 4 leaf * 3 = 15
+                                   waste=0)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
@@ -144,13 +144,13 @@ class TreeBuilderTest(unittest.TestCase):
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
         # Tree as per the figure above
-        solution = Solution(num_data_objects=len(metadata),
-                            num_pointers=7,
-                            direct_per_node=4,
-                            indirect_per_node=3,
-                            # 61 data objects => 3 internal * 4 direct + 7 leaf * 7 = 12 + 49 = 61 OK
-                            num_internal_nodes=3,
-                            waste=0)
+        solution = OptimizerResult(num_data_objects=len(metadata),
+                                   num_pointers=7,
+                                   direct_per_node=4,
+                                   indirect_per_node=3,
+                                   # 61 data objects => 3 internal * 4 direct + 7 leaf * 7 = 12 + 49 = 61 OK
+                                   num_internal_nodes=3,
+                                   waste=0)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
@@ -172,19 +172,19 @@ class TreeBuilderTest(unittest.TestCase):
         expected = array("B", [x % 256 for x in range(0, 5000)])
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(num_data_objects=len(metadata),
-                            num_pointers=41,
-                            direct_per_node=37,
-                            indirect_per_node=4,
-                            # 5000 data objects.
-                            # 33 internal * 37 = 1221
-                            # 93 leaf * 41 = 3813
-                            # capacity = 5034
-                            # A 4-ary tree needs height 3 to accomodate up to 256 pointers
-                            # 1 + 4 + 16 + 12 internal => (16*4 - 12 + 12*4) = 100 available leaf manifest pointers,
-                            # so the tree is feasible (100 >= 93).
-                            num_internal_nodes=33,
-                            waste=34)
+        solution = OptimizerResult(num_data_objects=len(metadata),
+                                   num_pointers=41,
+                                   direct_per_node=37,
+                                   indirect_per_node=4,
+                                   # 5000 data objects.
+                                   # 33 internal * 37 = 1221
+                                   # 93 leaf * 41 = 3813
+                                   # capacity = 5034
+                                   # A 4-ary tree needs height 3 to accomodate up to 256 pointers
+                                   # 1 + 4 + 16 + 12 internal => (16*4 - 12 + 12*4) = 100 available leaf manifest pointers,
+                                   # so the tree is feasible (100 >= 93).
+                                   num_internal_nodes=33,
+                                   waste=34)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
@@ -208,13 +208,13 @@ class TreeBuilderTest(unittest.TestCase):
         expected = array("B", list(range(0, 15)))
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = Solution(num_data_objects=len(metadata),
-                            num_pointers=2,
-                            direct_per_node=0,
-                            indirect_per_node=2,
-                            # 15 data objects with only leaf nodes => 8 leaf nodes, so 7 internal
-                            num_internal_nodes=7,
-                            waste=1)
+        solution = OptimizerResult(num_data_objects=len(metadata),
+                                   num_pointers=2,
+                                   direct_per_node=0,
+                                   indirect_per_node=2,
+                                   # 15 data objects with only leaf nodes => 8 leaf nodes, so 7 internal
+                                   num_internal_nodes=7,
+                                   waste=1)
 
         key = AeadCcm.generate(bits=256)
         encryptor = AeadEncryptor(key=key, key_number=1234)

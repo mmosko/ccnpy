@@ -15,14 +15,14 @@
 
 import unittest
 
-from ccnpy.flic.tree.Solution import Solution
+from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 
 
-class SolutionTest(unittest.TestCase):
+class OptimizerResultTest(unittest.TestCase):
 
     def test_one(self):
         # this is not an optimal design
-        s = Solution(num_data_objects=6, num_pointers=3, direct_per_node=1, indirect_per_node=2, num_internal_nodes=5, waste=2)
+        s = OptimizerResult(num_data_objects=6, num_pointers=3, direct_per_node=1, indirect_per_node=2, num_internal_nodes=5, waste=2)
         self.assertEqual(6, s.num_data_objects())
         self.assertEqual(3, s.num_pointers())
         self.assertEqual(1, s.direct_per_node())
@@ -35,7 +35,7 @@ class SolutionTest(unittest.TestCase):
 
     def test_two(self):
         # this is optimal
-        s = Solution(num_data_objects=6, num_pointers=3, direct_per_node=1, indirect_per_node=2, num_internal_nodes=1, waste=1)
+        s = OptimizerResult(num_data_objects=6, num_pointers=3, direct_per_node=1, indirect_per_node=2, num_internal_nodes=1, waste=1)
         self.assertEqual(6, s.num_data_objects())
         self.assertEqual(3, s.num_pointers())
         self.assertEqual(1, s.direct_per_node())
