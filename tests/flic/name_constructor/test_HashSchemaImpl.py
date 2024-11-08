@@ -22,16 +22,16 @@ from ccnpy.core.Packet import Packet
 from ccnpy.core.Payload import Payload
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
-from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.name_constructor.FileMetadata import FileMetadata, ChunkMetadata
+from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.NcId import NcId
 from ccnpy.flic.tlvs.NcSchema import HashSchema
-from ccnpy.flic.name_constructor.SchemaType import SchemaType
-from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.tree.TreeIO import TreeIO
-from tests.crypto.test_RsaSha256 import RsaSha256SignerTest
 from tests.MockReader import MockReader
+from tests.crypto.test_RsaSha256 import private_key_pem
 
 
 class HashSchemaImplTest(unittest.TestCase):
@@ -39,7 +39,7 @@ class HashSchemaImplTest(unittest.TestCase):
     def setUp(self):
         self.nc_id = NcId(5)
         self.schema = HashSchema(locators=Locators.from_uri('ccnx:/foo/bar'))
-        signer = RsaSha256Signer(RsaKey(RsaSha256SignerTest.private_key))
+        signer = RsaSha256Signer(RsaKey(private_key_pem))
         self.tree_options = ManifestTreeOptions(name=Name.from_uri('ccnx:/cat/dog'),
                                                 schema_type=SchemaType.HASHED,
                                                 signer=signer)

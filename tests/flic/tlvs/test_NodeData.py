@@ -20,14 +20,24 @@ from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
+from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
+from ccnpy.flic.name_constructor.SchemaImplFactory import SchemaImplFactory
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Locator import Locator
 from ccnpy.flic.tlvs.Locators import Locators
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import HashSchema
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 
 
 class NodeDataTest(unittest.TestCase):
+    def setUp(self):
+        SchemaImplFactory.reset_nc_id()
+
     def test_serialize(self):
         size = SubtreeSize(0x0102)
         digest = SubtreeDigest(HashValue.create_sha256(array.array("B", [100, 110, 120])))
@@ -73,3 +83,52 @@ class NodeDataTest(unittest.TestCase):
         actual = NodeData.parse(tlv)
 
         self.assertEqual(expected, actual)
+
+    def test_with_nc_defs_hashed(self):
+        options=ManifestTreeOptions(
+            name=Name.from_uri('ccnx:/root'),
+            schema_type=SchemaType.HASHED,
+            manifest_locators=Locators.from_uri('ccnx:/manifest'),
+            data_locators=Locators.from_uri('ccnx:/data'),
+            signer=None
+        )
+        name_ctx = NameConstructorContext.create(options)
+
+        node_data = NodeData(subtree_size=SubtreeSize(0x1234), nc_defs=[name_ctx.manifest_schema_impl.nc_def(),
+                                                                        name_ctx.data_schema_impl.nc_def()])
+
+        wire_format = node_data.serialize()
+        print(wire_format)
+
+        expected_wire_format = array.array('B',
+                                     [0, 1, 0, 82,
+                                        0, 1, 0, 8, 0, 0, 0, 0, 0, 0, 18, 52,
+                                        # NC DEF for NcId #1
+                                        0, 6, 0, 33,
+                                            # ncid
+                                            0, 16, 0, 1, 1,
+                                            # Hash Schema
+                                            0, 5, 0, 24,
+                                                # locators
+                                                0, 3, 0, 20,
+                                                    # Locator
+                                                    0, 2, 0, 16,
+                                                        # name
+                                                        0, 0, 0, 12,
+                                                            0, 1, 0, 8, 109, 97, 110, 105, 102, 101, 115, 116,
+                                        # NC DEF for NcId #2
+                                        0, 6, 0, 29,
+                                            # ncid
+                                            0, 16, 0, 1, 2,
+                                            # Hash Schema
+                                            0, 5, 0, 20,
+                                                # Locators
+                                                0, 3, 0, 16,
+                                                    # Locator
+                                                    0, 2, 0, 12,
+                                                        0, 0, 0, 8, 0, 1, 0, 4, 100, 97, 116, 97])
+
+        self.assertEqual(expected_wire_format, wire_format)
+        decoded = Tlv.deserialize(wire_format)
+        actual = NodeData.parse(decoded)
+        self.assertEqual(node_data, actual)

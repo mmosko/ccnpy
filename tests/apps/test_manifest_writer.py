@@ -101,9 +101,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 
     def test_manifest(self):
         args = self._create_args()
-        # Use an in-memory packet buffer
         packet_writer = TreeIO.PacketMemoryWriter()
-
         mw = ManifestWriter(args=args, packet_writer=packet_writer)
         root_packet = mw.build()
         print(root_packet)

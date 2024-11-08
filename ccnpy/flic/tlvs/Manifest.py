@@ -23,6 +23,8 @@ from ccnpy.core.Packet import Packet
 from ccnpy.core.Payload import Payload
 from ccnpy.core.PayloadType import PayloadType
 from ccnpy.core.Tlv import Tlv
+from ...core.ExpiryTime import ExpiryTime
+from ...core.Name import Name
 
 
 class Manifest:
@@ -65,7 +67,9 @@ class Manifest:
         return "Manifest: {%r, %r, %r}" % (self._security_ctx, self._node, self._auth_tag)
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, Manifest):
+            return False
+        return self._wire_format == other._wire_format
 
     def __len__(self):
         return len(self._wire_format)
@@ -117,7 +121,7 @@ class Manifest:
     def is_encrypted(self):
         return isinstance(self._node, EncryptedNode)
 
-    def content_object(self, name=None, expiry_time=None):
+    def content_object(self, name: Name = None, expiry_time: ExpiryTime = None):
         co = ContentObject(name=name,
                            payload_type=PayloadType.create_manifest_type(),
                            payload=Payload(self.serialize()),

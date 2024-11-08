@@ -36,7 +36,9 @@ class NcId(TlvType):
         return f"NCID: {self._nc_id}"
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, NcId):
+            return False
+        return self._nc_id == other._nc_id
 
     @classmethod
     def parse(cls, tlv):

@@ -16,27 +16,30 @@ from typing import BinaryIO
 
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.tlvs.Pointers import Pointers
 from .name_constructor.FileMetadata import FileMetadata
-from .name_constructor.NameConstructorContext import NameConstructorContext
-from .tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import HashSchema
+from .name_constructor.SchemaImplFactory import SchemaImplFactory
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
 from ..core.ContentObject import ContentObject
 from ..core.Packet import Packet, PacketWriter
 
 
-class ManifestTree:
+class LeafOnlyManifestTree:
     """
     Builds a manifest tree.
     """
 
-    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions):
+    def __init__(self, data_input: BinaryIO, packet_output: PacketWriter, tree_options: ManifestTreeOptions):
         """
-        The `tree_options` must specify the name and schema.  Creates an optimized manifest tree, packing some data
-        into the internal nodes.  it will minimize the tree height within the `tree_options.max_tree_degree`.
+        The `LeafOnlyManifestTree` only stores data at the leaf nodes.  It is provided as an example of
+        a simpler tree construction than the `ManifestTree`.  The leaf only tree is built from the
+        top-down.
 
-        If `tree_options.max_tree_degree` is not given, it will pick a degree that minimizes the wasted space
-        in the tree.
+        It will pick the largest tree degree that fits in a max_packet_size, but will not exceed
+        `tree_options.max_tree_degree`.
 
         :param data_input: Something we can call read() on that returns byte arrays, e.g. open(filename, 'rb')
         :param packet_output: Something we can call put(ccnpy.Packet) on to output packets (see .tree.TreeIO)
@@ -45,7 +48,10 @@ class ManifestTree:
         self._data_input = data_input
         self._packet_output = packet_output
         self._tree_options = tree_options
-        self._name_ctx = NameConstructorContext.create(self._tree_options)
+
+        nc_id = NcId(0)
+        schema = HashSchema(locators=tree_options.manifest_locators)
+        self._nc_impl = SchemaImplFactory.create(nc_id=nc_id, schema=schema, tree_options=tree_options)
 
     def build(self) -> Packet:
         """
@@ -54,10 +60,9 @@ class ManifestTree:
         :return: The root_manifest packet, which is the named and signed manifest
         """
 
-        file_metadata = self._name_ctx.data_schema_impl.chunk_data(self._data_input, self._packet_output)
+        file_metadata = self._nc_impl.chunk_data(self._data_input, self._packet_output)
         manifest_factory = ManifestFactory(tree_options=self._tree_options)
-        optimized_params = self._calculate_optimal_tree(file_metadata=file_metadata,
-                                                        manifest_factory=manifest_factory)
+        optimized_params = self._calculate_optimal_tree(file_metadata=file_metadata, manifest_factory=manifest_factory)
 
         top_manifest_packet = self._build_tree(tree_parameters=optimized_params,
                                                manifest_factory=manifest_factory,
@@ -74,29 +79,24 @@ class ManifestTree:
         The root manifest has a CCNx Name and public key signature.  It is a manifest with one pointer to the
         top manifest packet.
 
-        The root manifest has the name constructor definitions (`nc_defs`)
-
         :param top_manifest_packet: ccnpy.Packet with the top-level manifest
         :param manifest_factory: The factory to use to create manifests
         :return:
         """
         ptr = Pointers([top_manifest_packet.content_object_hash()])
         root_manifest = manifest_factory.build(source=ptr,
-                                               nc_defs = [self._name_ctx.manifest_schema_impl.nc_def(), self._name_ctx.data_schema_impl.nc_def()],
+                                               node_locators=self._tree_options.manifest_locators,
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes)
 
-        body = root_manifest.content_object(name=self._tree_options.name,
+        body = ContentObject.create_manifest(manifest=root_manifest,
+                                             name=self._tree_options.name,
                                              expiry_time=self._tree_options.root_expiry_time)
 
         validation_alg = self._tree_options.signer.validation_alg()
         validation_payload = self._tree_options.signer.sign(body.serialize(), validation_alg.serialize())
 
         root_packet = Packet.create_signed_content_object(body, validation_alg, validation_payload)
-        if len(root_packet) > self._tree_options.max_packet_size:
-            # should be logged as a warning?  This only really happens when we set a small MTU in
-            # unit tests.
-            print(ValueError(f'The root manifest packet is {len(root_packet)} bytes, greater than max_packet_size {self._tree_options.max_packet_size}'))
         return root_packet
 
     def _build_tree(self, tree_parameters: TreeParameters, manifest_factory: ManifestFactory, file_metadata: FileMetadata) -> Packet:
@@ -109,6 +109,7 @@ class ManifestTree:
 
     def _calculate_optimal_tree(self, file_metadata: FileMetadata, manifest_factory: ManifestFactory) -> TreeParameters:
         optimized_params = TreeParameters.create_optimized_tree(file_metadata=file_metadata,
-                                                                manifest_factory=manifest_factory,
-                                                                name_ctx=self._name_ctx)
+                                                                max_packet_size=self._tree_options.max_packet_size,
+                                                                max_tree_degree=self._tree_options.max_tree_degree,
+                                                                manifest_factory=manifest_factory)
         return optimized_params

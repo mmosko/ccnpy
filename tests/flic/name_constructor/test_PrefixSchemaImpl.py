@@ -22,28 +22,27 @@ from ccnpy.core.Packet import Packet
 from ccnpy.core.Payload import Payload
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
-from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.name_constructor.FileMetadata import FileMetadata, ChunkMetadata
+from ccnpy.flic.name_constructor.PrefixSchemaImpl import PrefixSchemaImpl
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.NcId import NcId
 from ccnpy.flic.tlvs.NcSchema import PrefixSchema
-from ccnpy.flic.name_constructor.SchemaType import SchemaType
-from ccnpy.flic.name_constructor.PrefixSchemaImpl import PrefixSchemaImpl
 from ccnpy.flic.tree.TreeIO import TreeIO
-from tests.crypto.test_RsaSha256 import RsaSha256SignerTest
 from tests.MockReader import MockReader
+from tests.crypto.test_RsaSha256 import private_key_pem
 
 
 class PrefixSchemaImplTest(unittest.TestCase):
 
     def setUp(self):
         self.nc_id = NcId(5)
-        self.schema = PrefixSchema(locators=Locators.from_uri('ccnx:/foo/bar'))
-        self.prefix = self.schema.locators()[0].name()
-        signer = RsaSha256Signer(RsaKey(RsaSha256SignerTest.private_key))
-        self.tree_options = ManifestTreeOptions(name=Name.from_uri('ccnx:/cat/dog'),
+        signer = RsaSha256Signer(RsaKey(private_key_pem))
+        self.prefix = Name.from_uri('ccnx:/manifest/name')
+        self.tree_options = ManifestTreeOptions(name=Name.from_uri('ccnx:/root/name'),
                                                 schema_type=SchemaType.PREFIX,
                                                 signer=signer)
+        self.schema = PrefixSchema(name=self.prefix)
         self.impl = PrefixSchemaImpl(nc_id=self.nc_id, schema=self.schema, tree_options=self.tree_options)
 
     def test_get_name(self):
@@ -63,19 +62,19 @@ class PrefixSchemaImplTest(unittest.TestCase):
             Packet.create_content_object(
                 ContentObject.create_data(
                     name=self.prefix,
-                 payload=Payload(application_data[0:1461]))))
+                 payload=Payload(application_data[0:1455]))))
         expected_packets.put(
             Packet.create_content_object(
                 ContentObject.create_data(
                     name=self.prefix,
-                    payload=Payload(application_data[1461:2000]))))
+                    payload=Payload(application_data[1455:2000]))))
         self.assertEqual(expected_packets, packet_buffer)
 
         expected = FileMetadata(chunk_metadata=[ChunkMetadata(chunk_number=0,
-                                                              payload_bytes=1461,
+                                                              payload_bytes=1455,
                                                               content_object_hash=expected_packets[0].content_object_hash()),
                                                 ChunkMetadata(chunk_number=1,
-                                                              payload_bytes=539,
+                                                              payload_bytes=545,
                                                               content_object_hash=expected_packets[1].content_object_hash()),
                                                 ],
                                 total_bytes=2000)

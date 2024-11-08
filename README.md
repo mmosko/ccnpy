@@ -69,13 +69,14 @@ If only `name` is given, it is used for all manifests and data.  The `name` is a
 for the root manifest name.  In this case, there is only one hash group, and it has a single
 locator of `name`.
 
-If `ML` is given, it is the common name for all non-root manifests.  There will be two hash groups, as
+If `MP` is given, it is the common name for all non-root manifests.  There will be two hash groups, as
 al data objects will use `name` as their locator.
 
-If 'DL' is given, it is the common name for all data objects.
+If 'DP' is given, it is the common name for all data objects.
+
 
 ```bash
-manifest_writer --schema PrefixSchema --name N [--manifest-locator ML] [--data-locator DL] ...
+manifest_writer --schema PrefixSchema --name N --manifest-prefix MP --data-prefix DP ...
 ```
 
 ### Segmented Schema
@@ -85,15 +86,21 @@ Every name has a ChunkNumber.  Each GroupData has a StartSegmentId in it to help
 of chunks.  The root manifest has a unique name.  There are always two name spaces for
 Segmented Schema.
 
-No locators are used, unless `--manifest-locator` or `--data-locator` is used.
+No locators are used, as all objects have their own name.  (For an NDN implementation, this
+could be different)
 
 The Root Manifest contains the NsDefs for the name constructors.  These contain the node locators.
 
 ```bash
-manifest_writer --schema SegmentedSchema --name N --manifest-prefix MP --data-prefix DP [--manifest-locator ML] [--data-locator DL] ...
+manifest_writer --schema SegmentedSchema --name N --manifest-prefix MP --data-prefix DP  ...
 ```
 
 The manifest prefix must be different from the data prefix.  FLIC will append chunk numbers to each of the names.
+
+TThe root manifest will be named simply 'N'.  The internal manifest nodes (and top node) will use
+chunked names of prefix 'MP'.  MP may be the same as N, in which case the root name is unchunked and
+the internal names are chunked.  Likewise, 'DP' prefix could be the same as 'N', as long as 'MP' is distinct
+from 'DP'.
 
 ## Encryption
 

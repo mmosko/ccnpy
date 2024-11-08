@@ -88,6 +88,12 @@ class Name(TlvType):
         extended.append(component)
         return Name(extended)
 
+    def append_chunk_id(self, chunk_id: int):
+        """
+        A convenience function to append a ChunkId name segment
+        """
+        return self.append(NameComponent.create_chunk_segment(chunk_id))
+
     def serialize(self):
         return self._tlv.serialize()
 

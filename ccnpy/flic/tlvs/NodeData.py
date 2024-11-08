@@ -14,6 +14,7 @@
 from typing import Optional, List
 
 from ccnpy.flic.tlvs.Locators import Locators
+from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
 from ccnpy.flic.tlvs.Vendor import Vendor
@@ -40,12 +41,14 @@ class NodeData(TlvType):
                  subtree_size: Optional[SubtreeSize] = None,
                  subtree_digest: Optional[SubtreeDigest] = None,
                  locators: Optional[Locators] = None,
-                 vendors: Optional[List[Vendor]] = None):
+                 vendors: Optional[List[Vendor]] = None,
+                 nc_defs: Optional[List[NcDef]] = None):
         """
 
         :param subtree_size:
         :param subtree_digest:
         :param locators:
+        :param nc_defs: Name constructor definitions.  Recommend only be used in root manifest.
         """
         TlvType.__init__(self)
 
@@ -68,16 +71,20 @@ class NodeData(TlvType):
         self._subtree_digest = subtree_digest
         self._locators = locators
         self._vendors = vendors
+        self._nc_defs = nc_defs if nc_defs is not None else []
 
         tlvs = []
         if self._subtree_size is not None:
-            tlvs.append(subtree_size)
+            tlvs.append(self._subtree_size)
 
         if self._subtree_digest is not None:
             tlvs.append(self._subtree_digest)
 
         if self._locators is not None:
             tlvs.append(self._locators)
+
+        if self._nc_defs is not None and len(self._nc_defs) > 0:
+            tlvs.extend(self._nc_defs)
 
         if self._vendors is not None and len(self._vendors) > 0:
             tlvs.extend(self._vendors)
@@ -91,7 +98,7 @@ class NodeData(TlvType):
         return self.__dict__ == other.__dict__
 
     def __repr__(self):
-        return "NodeData: {%r, %r, %r}" % (self._subtree_size, self._subtree_digest, self._locators)
+        return "NodeData: {%r, %r, %r, %r, %r}" % (self._subtree_size, self._subtree_digest, self._locators, self._nc_defs, self._vendors)
 
     def subtree_size(self):
         return self._subtree_size
@@ -105,6 +112,9 @@ class NodeData(TlvType):
     def vendor_tags(self):
         return self._vendors
 
+    def nc_defs(self) -> Optional[List[NcDef]]:
+        return self._nc_defs
+
     def serialize(self):
         return self._tlv.serialize()
 
@@ -115,6 +125,7 @@ class NodeData(TlvType):
 
         subtree_size = subtree_digest = locators = None
         vendors = []
+        nc_defs = []
 
         offset = 0
         while offset < tlv.length():
@@ -130,9 +141,12 @@ class NodeData(TlvType):
             elif inner_tlv.type() == Locators.class_type():
                 assert locators is None
                 locators = Locators.parse(inner_tlv)
+            elif inner_tlv.type() == NcDef.class_type():
+                nc_defs.append(NcDef.parse(inner_tlv))
             elif inner_tlv.type() == Vendor.class_type():
                 vendors.append(Vendor.parse(inner_tlv))
             else:
                 raise ParseError("Unsupported NodeData TLV type %r" % inner_tlv)
 
-        return cls(subtree_size=subtree_size, subtree_digest=subtree_digest, locators=locators, vendors=vendors)
+        return cls(subtree_size=subtree_size, subtree_digest=subtree_digest, locators=locators,
+                   vendors=vendors, nc_defs=nc_defs)

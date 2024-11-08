@@ -19,9 +19,7 @@ from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer, RsaSha256Verifier
 
 
-class RsaSha256SignerTest(unittest.TestCase):
-    # openssl genrsa -out test_key.pem
-    private_key = b'''-----BEGIN RSA PRIVATE KEY-----
+private_key_pem=b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
 NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
 Yx1MvFKjWAHRDsVTdPNGKqNt8wFZgzxTZw24IlBIk0hOXlgV70TIbo9TvZ9Wl7nI
@@ -49,8 +47,9 @@ x03TA4KebgVHxWU+ozn/jOFwXg1m8inSt3LolR9pARSHXCbwerhvE9fN+QA9CPqq
 YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 -----END RSA PRIVATE KEY-----'''
 
-    # openssl rsa -in test_key.pem -pubout -out rsa_pub.pem
-    public_key = b'''-----BEGIN PUBLIC KEY-----
+
+# openssl rsa -in test_key.pem -pubout -out rsa_pub.pem
+public_key_pem=b'''-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7QdUuaoTr4gA1bMoCdjU
 NPqpb7f211TYFcahHhaBPnBwQwYjNIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/o
 R2MWVaJoeSKq7UP7gqlSjrplZEaIYx1MvFKjWAHRDsVTdPNGKqNt8wFZgzxTZw24
@@ -60,14 +59,18 @@ ewM/87c2S2qMwdocG0XZx90GqEI9Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2Gy
 YwIDAQAB
 -----END PUBLIC KEY-----'''
 
+
+class RsaSha256SignerTest(unittest.TestCase):
+    # openssl genrsa -out test_key.pem
+
     def test_sign_verify(self):
         # checksum is in little-endian byte order of the Reversed generator (0x82F63B78)
         vectors = [b'the quick brown fox',
                    b'The quick brown fox jumps over the lazy dog',
                    b'abcdefg']
 
-        private_key = RsaKey(self.private_key)
-        public_key = RsaKey(self.public_key)
+        private_key = RsaKey(private_key_pem)
+        public_key = RsaKey(public_key_pem)
 
         signer = RsaSha256Signer(private_key)
         verifier = RsaSha256Verifier(public_key)

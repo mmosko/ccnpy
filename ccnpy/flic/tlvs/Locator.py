@@ -37,6 +37,13 @@ class Locator(TlvType):
         """
         return cls(Link(name=Name.from_uri(uri)))
 
+    @classmethod
+    def from_name(cls, name: Name):
+        """
+        A convenience method when making a singleton Locator
+        """
+        return cls(Link(name=name))
+
     def __init__(self, link):
         """
 

@@ -23,6 +23,7 @@ from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tlvs.LeafSize import LeafSize
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from .tlvs.NcDef import NcDef
 
 
 class ManifestFactory:
@@ -46,25 +47,35 @@ class ManifestFactory:
         self._encryptor = tree_options.manifest_encryptor
         self._tree_options = tree_options
 
-    def build_packet(self, source, node_locators=None, node_subtree_size=None, group_subtree_size=None,
-                     group_leaf_size=None):
+    def tree_options(self) -> ManifestTreeOptions:
+        return self._tree_options
+
+    def build_packet(self, source,
+                     nc_defs: Optional[List[NcDef]] = None,
+                     node_subtree_size: Optional[int] = None,
+                     group_subtree_size: Optional[int] = None,
+                     group_leaf_size: Optional[int] = None):
         """
         Calls `build()` and then construct a content object and packet to contain it.  Includes a maniest expiry time
         from tree_options.
 
-        :param source:
-        :param node_locators:
+        :param source: A Node, or a list of pointers, or a list of hash groups
         :param node_subtree_size:
         :param group_subtree_size:
         :param group_leaf_size:
+        :param nc_defs: A list of name contructor definitions to include in the NodeData
         :return:
         """
-        manifest = self.build(source, node_locators, node_subtree_size, group_subtree_size, group_leaf_size)
+        manifest = self.build(source=source,
+                              nc_defs = nc_defs,
+                              node_subtree_size=node_subtree_size,
+                              group_subtree_size=group_subtree_size,
+                              group_leaf_size=group_leaf_size)
         packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
         return packet
 
     def build(self, source,
-              node_locators: Optional[Locators] = None,
+              nc_defs: Optional[List[NcDef]] = None,
               node_subtree_size: Optional[int] = None,
               group_subtree_size: Optional[int] = None,
               group_leaf_size: Optional[int] = None):
@@ -75,8 +86,8 @@ class ManifestFactory:
         The optional arguments are used to build NodeData and GroupData structures if not already present
         and if required by the ManifestTreeOptions.
 
-        :param source: One of Pointers or HashGroup or Node
-        :param node_locators: (optional) A LocatorList to include in the NodeData
+        :param source: One of Pointers or HashGroups or Node
+        :param nc_defs: A list of name contructor definitions to include in the NodeData
         :param node_subtree_size: If not None and ManifestTreeOptions.add_node_subtree_size is True,
                                     add a NodeData with the subtree size.
         :param group_subtree_size: If not None and ManifestTreeOptions.add_group_subtree_size is True and
@@ -86,9 +97,6 @@ class ManifestFactory:
         :return: A Manifest
         """
         manifest = None
-
-        if node_locators is not None and not isinstance(node_locators, Locators):
-            raise TypeError("node_locators must be LocatorList")
 
         # If the tree options do not allow adding a type of metadata, we None it out here
         if not self._tree_options.add_node_subtree_size:
@@ -107,10 +115,18 @@ class ManifestFactory:
             group_leaf_size = LeafSize(group_leaf_size)
 
         if isinstance(source, Pointers):
-            manifest = self._build_from_pointers(source, node_locators, node_subtree_size,
-                                                 group_subtree_size, group_leaf_size)
+            manifest = self._build_from_pointers(pointers=source,
+                                                 nc_defs=nc_defs,
+                                                 node_subtree_size=node_subtree_size,
+                                                 group_subtree_size=group_subtree_size,
+                                                 group_leaf_size=group_leaf_size)
         elif isinstance(source, HashGroup):
-            manifest = self._build_node_from_hashgroups(hash_groups=[source], locators=node_locators, node_subtree_size=node_subtree_size)
+            manifest = self._build_node_from_hashgroups(hash_groups=[source], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
+
+        elif isinstance(source, List):
+            manifest = self._build_node_from_hashgroups(hash_groups=source,
+                                                        nc_defs=nc_defs,
+                                                        node_subtree_size=node_subtree_size)
         elif isinstance(source, Node):
             manifest = self._build_from_node(source)
         else:
@@ -121,7 +137,7 @@ class ManifestFactory:
         return manifest
 
     def _build_from_pointers(self, pointers,
-                             node_locators: Optional[Locators] = None,
+                             nc_defs: Optional[List[NcDef]] = None,
                              node_subtree_size: Optional[SubtreeSize] = None,
                              group_subtree_size: Optional[SubtreeSize] = None,
                              group_leaf_size: Optional[LeafSize] = None):
@@ -134,19 +150,19 @@ class ManifestFactory:
             group_data = GroupData(subtree_size=group_subtree_size, leaf_size=group_leaf_size)
 
         hg = HashGroup(pointers=pointers, group_data=group_data)
-        return self._build_node_from_hashgroups(hash_groups=[hg], locators=node_locators, node_subtree_size=node_subtree_size)
+        return self._build_node_from_hashgroups(hash_groups=[hg], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
 
     def _build_node_from_hashgroups(self,
                                     hash_groups: List[HashGroup],
-                                    node_subtree_size: Optional[SubtreeSize] = None,
-                                    locators: Optional[Locators] = None):
+                                    nc_defs: Optional[List[NcDef]] = None,
+                                    node_subtree_size: Optional[SubtreeSize] = None):
         """
         A Node may be one or more hash groups.  In practice, we usually have only one or two hash groups, depending
         on the name constrictors or locators.
         """
         node_data = None
-        if node_subtree_size is not None or locators is not None:
-            node_data = NodeData(subtree_size=node_subtree_size, locators=locators)
+        if node_subtree_size is not None or nc_defs is not None:
+            node_data = NodeData(subtree_size=node_subtree_size, nc_defs=nc_defs)
 
         node = Node(node_data=node_data, hash_groups=hash_groups)
         return self._build_from_node(node)

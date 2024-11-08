@@ -43,10 +43,12 @@ class NcDef(TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return f"NCDEF: {self._nc_id}, {self._schema}"
+        return f"NCDEF: ({self._nc_id}, {self._schema})"
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, NcDef):
+            return False
+        return self._tlv == other._tlv
 
     @classmethod
     def parse(cls, tlv):

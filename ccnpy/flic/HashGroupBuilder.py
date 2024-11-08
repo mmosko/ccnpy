@@ -19,6 +19,9 @@ from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from .tlvs.LeafSize import LeafSize
+from .tlvs.NcId import NcId
+from .tlvs.StartSegmentId import StartSegmentId
 from ..core.HashValue import HashValue
 
 
@@ -123,20 +126,30 @@ class HashGroupBuilder:
         """
         return self._indirect_size
 
-    def hash_group(self, include_leaf_size=False, include_subtree_size=False):
+    def hash_group(self, nc_id: Optional[NcId] = None,
+                   start_segment_id: Optional[StartSegmentId] = None,
+                   include_leaf_size = False, include_subtree_size = False):
         """
         TODO: leaf_size is not implemented
-
+        :param nc_id: The NCID  to include in the GroupData
+        :param start_segment_id: The begining chunk number for the first pointer in this hash group
         :param include_leaf_size:
         :param include_subtree_size:
         :return:
         """
         gd = None
-        if include_leaf_size or include_subtree_size:
-            subtree_size = subtree_digest = None
+        if include_leaf_size or include_subtree_size or nc_id is not None or start_segment_id is not None:
+            subtree_size = subtree_digest = leaf_size = leaf_digest = None
             if include_subtree_size:
-                subtree_size = SubtreeSize(self.indirect_size())
-            gd = GroupData(subtree_size=subtree_size, subtree_digest=subtree_digest)
+                subtree_size = SubtreeSize(self.indirect_size() + self.direct_size())
+            if include_leaf_size:
+                leaf_size = LeafSize(self.direct_size())
+            gd = GroupData(nc_id=nc_id,
+                           start_segment_id=start_segment_id,
+                           subtree_size=subtree_size,
+                           subtree_digest=subtree_digest,
+                           leaf_size=leaf_size,
+                           leaf_digest=leaf_digest)
 
         hg = HashGroup(group_data=gd, pointers=self.pointers())
         return hg

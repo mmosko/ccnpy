@@ -43,6 +43,9 @@ class Node(TlvType):
         :param hash_groups: a list of HashGroups
         """
         TlvType.__init__(self)
+        self._node_data = node_data
+        self._hash_groups = hash_groups
+
         if node_data is not None and not isinstance(node_data, NodeData):
             raise TypeError("node_data must be ccnpy.flic.NodeData")
 
@@ -51,9 +54,6 @@ class Node(TlvType):
 
         if not isinstance(hash_groups, list) or len(hash_groups) == 0:
             raise TypeError("hash_groups must be a list of one or more ccnpy.flic.HashGroup")
-
-        self._node_data = node_data
-        self._hash_groups = hash_groups
 
         self._tlv = Tlv(self.class_type(), [self._node_data, *self._hash_groups])
 

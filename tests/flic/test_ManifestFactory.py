@@ -25,6 +25,9 @@ from ccnpy.flic.tlvs.Locator import Locator
 from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.tlvs.NcDef import NcDef
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import PrefixSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
@@ -146,26 +149,34 @@ class ManiestFactoryTest(unittest.TestCase):
 
         self.assertEqual(node, actual_manifest.node())
 
-    def test_node_locators(self):
+    def test_nc_defs(self):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
-        locator = Locator(Link(name=Name.from_uri("ccnx:/example/pie")))
-        locator_list = Locators(locators=[locator])
         factory = ManifestFactory(self._create_options())
-        manifest = factory.build(source=ptr, node_locators=locator_list)
+        nc_def = NcDef(nc_id=NcId(7), schema=PrefixSchema(name=Name.from_uri('ccnx:/a')))
+        manifest = factory.build(source=ptr, nc_defs=[nc_def])
         actual = manifest.serialize()
 
-        expected = array('B', [0, 2, 0, 48,   # Node
-                               0, 1, 0, 30,   # NodeData
-                               0, 3, 0, 26,   # Locators
-                               0, 2, 0, 22,   # Locator
-                               0, 0, 0, 18,   # Name
-                               0, 1, 0, 7, 101, 120, 97, 109, 112, 108, 101,
-                               0, 1, 0,  3, 112, 105, 101,
-                               0, 2, 0, 10,   # HashGroup
-                               0, 2, 0,  6,   # Pointers
-                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
-                         )
+        expected = array('B',[
+                    # Node
+                    0, 2, 0, 40,
+                        # Node Data
+                        0, 1, 0, 22,
+                            # NcDef
+                            0, 6, 0, 18,
+                                # ncid
+                                0, 16, 0, 1, 7,
+                                    # prefix schema
+                                    0, 3, 0, 9,
+                                    # name
+                                    0, 0, 0, 5, 0, 1, 0, 1, 97,
+                        # hash group
+                        0, 2, 0, 10,
+                            # pointers
+                            0, 2, 0, 6,
+                                # hash value
+                                0, 1, 0, 2, 1, 2
+                         ])
         self.assertEqual(expected, actual)
 
 

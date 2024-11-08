@@ -40,6 +40,13 @@ class Locators(TlvType):
         """
         return cls([Locator.from_uri(uri)])
 
+    @classmethod
+    def from_name(cls, name: Name):
+        """
+        A convenience method when making a singleton Locator
+        """
+        return cls([Locator.from_name(name)])
+
     def __init__(self, locators: List[Locator]):
         """
 

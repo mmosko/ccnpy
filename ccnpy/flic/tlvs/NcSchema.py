@@ -22,6 +22,7 @@ from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
 from ccnpy.exceptions.ParseError import ParseError
+from ...core.Name import Name
 
 
 class NcSchema(TlvType, ABC):
@@ -50,8 +51,8 @@ class ProtocolFlagsSchema(NcSchema, ABC):
     Intermediate supertype for name constructor schemas that have a ProtocolFlags field.
     """
     def __init__(self, flags: Optional[ProtocolFlags] = None):
-        NcSchema.__init__(self)
         self._flags = flags
+        super().__init__()
         self._tlv = Tlv(self.class_type(), self._flags)
 
     def __len__(self):
@@ -87,12 +88,9 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
     Intermediate supertype for name constructors that have Locators.
     """
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
-        NcSchema.__init__(self)
-        self._flags = flags
         self._locators = locators
+        super().__init__(flags)
         self._tlv = Tlv(self.class_type(), [self._locators, self._flags])
-        if locators is None or locators.count() == 0:
-            raise ValueError("Locators must be a non-empty list")
 
     def __len__(self):
         return len(self._tlv)
@@ -107,7 +105,10 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
         """
         The number of locators
         """
-        return self._locators.count()
+        if self._locators is None:
+            return 0
+        else:
+            return self._locators.count()
 
     @classmethod
     def parse(cls, tlv):
@@ -120,7 +121,6 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
         while offset < tlv.length():
             inner_tlv = Tlv.deserialize(tlv.value()[offset:])
             offset += len(inner_tlv)
-
             if inner_tlv.type() == ProtocolFlags.class_type():
                 flags = ProtocolFlags.parse(inner_tlv)
             elif inner_tlv.type() == Locators.class_type():
@@ -130,6 +130,45 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
 
         return cls(locators=locators, flags=flags)
 
+class NamedSchema(LocatorSchema, ABC):
+    """
+    Intermediate supertype for name constructors that have Locators.
+    """
+    def __init__(self, name: Name, locators: Optional[Locators], flags: Optional[ProtocolFlags] = None):
+        self._name = name
+        super().__init__(locators=locators, flags=flags)
+        self._tlv = Tlv(self.class_type(), [self._name, self._locators, self._flags])
+
+    def __len__(self):
+        return len(self._tlv)
+
+    def serialize(self):
+        return self._tlv.serialize()
+
+    def name(self) -> Name:
+        return self._name
+
+    @classmethod
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv)
+
+        flags = locators = name = None
+        offset = 0
+        while offset < tlv.length():
+            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+            offset += len(inner_tlv)
+
+            if inner_tlv.type() == ProtocolFlags.class_type():
+                flags = ProtocolFlags.parse(inner_tlv)
+            elif inner_tlv.type() == Locators.class_type():
+                locators = Locators.parse(inner_tlv)
+            elif inner_tlv.type() == Name.class_type():
+                name = Name.parse(inner_tlv)
+            else:
+                raise ParseError(f'Unsupported tlv: {inner_tlv}')
+
+        return cls(name=name, locators=locators, flags=flags)
 
 class InterestDerivedSchema(ProtocolFlagsSchema):
     __T_INTEREST_DERIVED_SCHEMA = 0x0001
@@ -159,32 +198,37 @@ class DataDerivedSchema(ProtocolFlagsSchema):
         return f"DDS: {self._flags}"
 
 
-class PrefixSchema(LocatorSchema):
+class PrefixSchema(NamedSchema):
     __T_PREFIX_SCHEMA = 0x0003
 
     @classmethod
     def class_type(cls):
         return cls.__T_PREFIX_SCHEMA
 
-    def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
-        LocatorSchema.__init__(self, locators=locators, flags=flags)
+    def __init__(self, name: Name, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
+        super().__init__(name=name, locators=locators, flags=flags)
 
     def __repr__(self):
-        return f"PS: {self._flags}, {self._locators}"
+        return f"PS: {self._name}, {self._locators}, {self._flags}"
+
+    def __eq__(self, other):
+        if not isinstance(other, PrefixSchema):
+            return False
+        return self._tlv == other._tlv
 
 
-class SegmentedSchema(LocatorSchema):
+class SegmentedSchema(NamedSchema):
     __T_SEGMENTED_SCHEMA = 0x0004
 
     @classmethod
     def class_type(cls):
         return cls.__T_SEGMENTED_SCHEMA
 
-    def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
-        LocatorSchema.__init__(self, locators=locators, flags=flags)
+    def __init__(self, name: Name, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
+        super().__init__(name=name, locators=locators, flags=flags)
 
     def __repr__(self):
-        return f"SS: {self._flags}, {self._locators}"
+        return f"SS: {self._name}, {self._locators}, {self._flags}"
 
 
 class HashSchema(LocatorSchema):
@@ -199,7 +243,7 @@ class HashSchema(LocatorSchema):
         return cls.__T_HASH_SCHEMA
 
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
-        LocatorSchema.__init__(self, locators=locators, flags=flags)
+        super().__init__(locators=locators, flags=flags)
 
     def __repr__(self):
         return f"HS: {self._locators}, {self._flags}"

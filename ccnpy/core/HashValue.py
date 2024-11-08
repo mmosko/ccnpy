@@ -71,7 +71,9 @@ class HashValue(TlvType):
         return "HashValue: {alg: %r, val: %r}" % (self.__alg_string(), DisplayFormatter.hexlify(self._value))
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, HashValue):
+            return False
+        return self._tlv == other._tlv
 
     def __hash__(self):
         # TODO: Inefficient way to get a hash of this array

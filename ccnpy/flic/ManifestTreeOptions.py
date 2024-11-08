@@ -19,6 +19,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from .ManifestEncryptor import ManifestEncryptor
 from .name_constructor.SchemaType import SchemaType
 from ..core.ExpiryTime import ExpiryTime
+from ..core.Name import Name
 from ..crypto.Signer import Signer
 
 
@@ -44,11 +45,11 @@ class ManifestTreeOptions:
         debug: Print debugging messages
     """
 
-    name: str
+    name: Name
     schema_type: SchemaType
     signer: Signer
-    manifest_prefix: Optional[str] = None
-    data_prefix: Optional[str] = None
+    manifest_prefix: Optional[Name] = None
+    data_prefix: Optional[Name] = None
 
     manifest_locators: Optional[Locators] = None
     data_locators: Optional[Locators] = None

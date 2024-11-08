@@ -15,9 +15,12 @@ from typing import Optional
 
 from .Solution import Solution
 from .TreeOptimizer import TreeOptimizer
+from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ..name_constructor.FileMetadata import FileMetadata
+from ..name_constructor.NameConstructorContext import NameConstructorContext
+from ..name_constructor.SchemaImpl import SchemaImpl
 from ...core.HashValue import HashValue
 
 
@@ -26,17 +29,20 @@ class TreeParameters:
     def create_optimized_tree(cls,
                               file_metadata: FileMetadata,
                               manifest_factory: ManifestFactory,
-                              max_packet_size: int,
-                              max_tree_degree: Optional[int]=None):
+                              name_ctx: NameConstructorContext):
         """
         :param file_metadata: Info about each file chunk.
-        :param max_packet_size: Maximum byte length of a CCNx Packet
-        :param max_tree_degree: Maximum degree, limited by packet size.  None means only limited by packet size.
         :param manifest_factory: If using non-standard tree options, pass your own factory to get correct sizes.
+        :param name_ctx: The name constructor context, so we can reserve the needed space for names
         :return:
         """
+        max_packet_size = manifest_factory.tree_options().max_packet_size
+        max_tree_degree = manifest_factory.tree_options().max_tree_degree
+
         num_pointers_per_node = cls._calculate_max_pointers(max_packet_size=max_packet_size,
-                                                            manifest_factory=manifest_factory)
+                                                            manifest_factory=manifest_factory,
+                                                            name_ctx=name_ctx,
+                                                            total_bytes=file_metadata.total_bytes)
 
         if num_pointers_per_node < 2:
             raise ValueError("With a max_packet_size of %r there is only %r pointers per node, must have at least 2" %
@@ -48,7 +54,7 @@ class TreeParameters:
         solution = cls._optimize_tree(total_direct_nodes=len(file_metadata), num_pointers_per_node=num_pointers_per_node)
         return cls(file_metadata=file_metadata, max_packet_size=max_packet_size, solution=solution)
 
-    def __init__(self, file_metadata: FileMetadata, max_packet_size, solution):
+    def __init__(self, file_metadata: FileMetadata, max_packet_size: int, solution: Solution):
         """
 
         :param file_chunks: A Pointers
@@ -103,37 +109,57 @@ class TreeParameters:
         """
         return self._solution.total_nodes()
 
-    @staticmethod
-    def _build_manifest_packet(manifest_factory, num_hashes, hv):
-        # we will assume a SHA256 hash
-        hashes = num_hashes * [hv]
-        ptrs = Pointers(hash_values=hashes)
+    @classmethod
+    def _build_single_hash_group(cls, manifest_factory, indirect_ptrs, direct_ptrs, nc_id, total_bytes):
+        # We use total bytes for the subtree size and leaf size.  This might end up reserving one one more byte
+        # than necessary if it overflows.
+        hgb1 = HashGroupBuilder()
+        for ptr in indirect_ptrs:
+            hgb1.append_indirect(ptr, subtree_size=total_bytes)
+        for ptr in direct_ptrs:
+            hgb1.append_direct(ptr, leaf_size=total_bytes)
 
-        # Pass values for each item so if the tree options allow it, they will be put in the manifest
-        # TODO: We need to take these options from ManifestTreeOptions.
-        # TODO: We need to know how many hash groups
-        packet = manifest_factory.build_packet(source=ptrs, node_subtree_size=1000,
-                                               group_subtree_size=1000, group_leaf_size=1000)
+        hg1 = hgb1.hash_group(nc_id=nc_id,
+                              include_leaf_size=manifest_factory.tree_options().add_group_leaf_size,
+                              include_subtree_size=manifest_factory.tree_options().add_group_subtree_size)
+        return hg1
+
+    @classmethod
+    def _build_manifest_packet(cls, manifest_factory, num_hashes, hv, name_ctx, total_bytes):
+        # We need to make some direct and some indirect to get both a leaf_size and subtree_size with values.
+        direct_ptrs = Pointers(hash_values=(num_hashes -1) * [hv])
+        indirect_ptrs = Pointers(hash_values=[hv])
+
+        if name_ctx.hash_group_count() == 1:
+            hg1 = cls._build_single_hash_group(manifest_factory, indirect_ptrs, direct_ptrs, name_ctx.manifest_schema_impl.nc_id(), total_bytes)
+            groups = [hg1]
+        else:
+            hg1 = cls._build_single_hash_group(manifest_factory, indirect_ptrs, [], name_ctx.manifest_schema_impl.nc_id(), total_bytes)
+            hg2 = cls._build_single_hash_group(manifest_factory, [], direct_ptrs, name_ctx.data_schema_impl.nc_id(), total_bytes)
+            groups = [hg1, hg2]
+
+        packet = manifest_factory.build_packet(source=groups, node_subtree_size=total_bytes)
 
         return packet
 
     @classmethod
-    def _calculate_max_pointers(cls, max_packet_size, manifest_factory):
+    def _calculate_max_pointers(cls, max_packet_size: int, manifest_factory: ManifestFactory,
+                                name_ctx: NameConstructorContext, total_bytes: int):
         """
         Create a Manifest with the specified number of tree pointers and figure out how much space we have left
         out of self._max_size.  Then figure out how many data pointers we can fit in.
 
         We only put metadata and locators and things like that in the root manifest.
 
-        TODO: Must account for multiple hash groups
-
         :param max_packet_size: The maximum ccnpy.Packet size (bytes)
         :param manifest_factory: Factory used to create manifests
+        :param total_bytes: The total file bytes.  We need to reserve big enough ints for leaf_size and subtree_size
         :return: The number of data points we can fit in a max_size nameless manifest
         """
+        # Assume 32-byte sha256 hashes
         hv = HashValue.create_sha256(32 * [0])
         hash_value_len = len(hv)
-        packet = cls._build_manifest_packet(manifest_factory, 1, hv)
+        packet = cls._build_manifest_packet(manifest_factory, 1, hv, name_ctx, total_bytes)
         length = len(packet)
         if length >= max_packet_size:
             raise ValueError("An empty manifest packet is %r bytes and exceeds max_size %r" % (length, max_packet_size))
@@ -141,13 +167,11 @@ class TreeParameters:
         slack = max_packet_size - length
         # +1 because we already have 1 hash in the manifest
         num_hashes = int(slack / hash_value_len) + 1
-        #print("empty manifest length = %r, num_hashes = %r" % (length, num_hashes))
 
         # Now validate that it works
-
-        packet = cls._build_manifest_packet(manifest_factory, num_hashes, hv)
+        packet = cls._build_manifest_packet(manifest_factory, num_hashes, hv, name_ctx, total_bytes)
         length = len(packet)
-        if length >= max_packet_size:
+        if length > max_packet_size:
             raise ValueError(
                 "A filled manifest packet is %r bytes with %r hashes, a hash is %r bytes, and exceeds max_size %r" %
                 (length, num_hashes, hash_value_len, max_packet_size))

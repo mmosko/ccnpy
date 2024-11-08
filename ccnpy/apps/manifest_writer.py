@@ -18,6 +18,7 @@ import getpass
 from datetime import datetime
 from typing import Optional
 
+from ccnpy.core.ExpiryTime import ExpiryTime
 from ccnpy.core.Name import Name
 from ccnpy.core.Packet import PacketWriter
 from ccnpy.crypto.AeadKey import AeadGcm
@@ -109,7 +110,7 @@ class ManifestWriter:
         if value is None:
             return None
         else:
-            return datetime.fromisoformat(value)
+            return ExpiryTime.from_datetime(datetime.fromisoformat(value))
 
     def _create_manifest_tree(self):
         """

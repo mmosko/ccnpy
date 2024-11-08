@@ -53,9 +53,10 @@ class ContentObject(TlvType):
                 payload = Payload(payload)
 
         if expiry_time is not None:
-            if not isinstance(expiry_time, datetime):
-                raise TypeError("expiry_time must be datetime")
-            expiry_time = ExpiryTime.from_datetime(expiry_time)
+            if isinstance(expiry_time, datetime):
+                expiry_time = ExpiryTime.from_datetime(expiry_time)
+            if not isinstance(expiry_time, ExpiryTime):
+                raise TypeError("expiry_time must be ExpiryTime")
 
         if final_chunk_id is not None:
             if not isinstance(final_chunk_id, FinalChunkId):
