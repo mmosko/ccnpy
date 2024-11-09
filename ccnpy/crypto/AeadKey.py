@@ -20,10 +20,15 @@ from abc import ABC, abstractmethod
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM, AESCCM
 
+from ccnpy.crypto.DecryptionError import DecryptionError
+
 
 class AeadKey(ABC):
     """
     Use either derived class `AeadGcm` or `AeadCcm`.
+
+    AeadKey does not have a concept of salt, only an IV.  It is up to the user of the class to
+    handle salt, if used.  `flic.aeadctx.AeadImpl` is where we find salt.
     """
 
     __salt_length = 128
@@ -44,6 +49,12 @@ class AeadKey(ABC):
 
     @classmethod
     @abstractmethod
+    def aead_mode(cls) -> str:
+        """The name of the AEAD mode, e.g. GCM or CCM"""
+        pass
+
+    @classmethod
+    @abstractmethod
     def generate(cls, bits):
         """
         Generate a secure key and return a SymmetricKey object
@@ -56,14 +67,12 @@ class AeadKey(ABC):
     @staticmethod
     def nonce(bits=96):
         """
-        Generate a randomized nonce, such as for use as an IV
+        Generate a randomized nonce, such as for use as an IV.  Normal values are 96, 128, or 256.
+        If using salt, it may be 32 bits shorter.
 
         :param bits: 96 or 128 or 256
         :return:
         """
-        if bits not in [96, 128, 256]:
-            raise ValueError("bits must be 96 or 128 or 256")
-
         nonce = array.array("B", os.urandom(bits // 8))
         return nonce
 
@@ -95,6 +104,7 @@ class AeadKey(ABC):
         :param associated_data: a byte array
         :param auth_tag: a byte array
         :return: The plaintext byte array or None (if authentication fails)
+        :raises DecryptionError: If the decryption fails authentication
         """
 
         if isinstance(ciphertext, array.array):
@@ -108,18 +118,24 @@ class AeadKey(ABC):
 
         combined = ciphertext + auth_tag
 
-        plaintext = None
         try:
             plaintext = self._impl.decrypt(iv, combined, associated_data)
-        except InvalidTag:
-            pass
+            return array.array("B", plaintext)
+        except InvalidTag as e:
+            print("Decryption failed.  Either the key or salt is incorrect for the packet.")
+            # translate a Cryptography package exception into our own exception
+            raise DecryptionError(e)
 
-        return array.array("B", plaintext)
 
 
 class AeadGcm(AeadKey):
     def __init__(self, key):
         AeadKey.__init__(self, key, AESGCM)
+
+    @classmethod
+    @staticmethod
+    def aead_mode(cls) -> str:
+        return "GCM"
 
     @classmethod
     def generate(cls, bits):
@@ -139,6 +155,11 @@ class AeadGcm(AeadKey):
 class AeadCcm(AeadKey):
     def __init__(self, key):
         AeadKey.__init__(self, key, AESCCM)
+
+    @classmethod
+    @staticmethod
+    def aead_mode(cls) -> str:
+        return "CCM"
 
     @classmethod
     def generate(cls, bits):

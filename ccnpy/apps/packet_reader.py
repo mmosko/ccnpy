@@ -15,11 +15,15 @@
 import argparse
 from pathlib import PurePath
 
-import ccnpy.core
-import ccnpy.crypto
-import ccnpy.flic
-import ccnpy.flic.tree
-from ccnpy.flic.aeadctx import AeadDecryptor
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Packet import Packet
+from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c, ValidationAlg_RsaSha256
+from ccnpy.crypto.Crc32c import Crc32cVerifier
+from ccnpy.crypto.DecryptionError import DecryptionError
+from ccnpy.crypto.RsaSha256 import RsaSha256Verifier
+from ccnpy.flic.tlvs.Manifest import Manifest
+from .cli_utils import add_encryption_cli_args, aead_decryptor_from_cli_args, rsa_verifier_from_cli_args, \
+    fixup_key_password
 
 
 class PacketReader:
@@ -35,44 +39,80 @@ class PacketReader:
         self._path = PurePath(args.in_dir, args.filename)
         self._prettify = args.prettify
 
-        self._decryptor=None
-        if args.enc_key is not None:
-            key_bytes = bytearray.fromhex(args.enc_key)
-            key = ccnpy.crypto.AesGcmKey(key_bytes)
-            self._decryptor=PresharedKeyDecryptor(key=key, key_number=args.key_num)
+        self._decryptor=aead_decryptor_from_cli_args(args)
+        self._verifier = rsa_verifier_from_cli_args(args)
 
     def _output(self, value):
         if self._prettify:
-            print(ccnpy.core.DisplayFormatter.prettify(value))
+            print(DisplayFormatter.prettify(value))
         else:
             print(value)
 
     def read(self):
         """
         """
-        packet = ccnpy.core.Packet.load(self._path)
+        packet = Packet.load(self._path)
         self._output(packet)
 
+        try:
+            self._validate_packet(packet)
+        except RuntimeError as e:
+            print(e)
+            return
+
         if packet.body().is_manifest():
-            manifest = ccnpy.flic.Manifest.from_content_object(packet.body())
+            manifest = Manifest.from_content_object(packet.body())
             if manifest.is_encrypted():
                 if self._decryptor is not None:
-                    plaintext = self._decryptor.decrypt_manifest(manifest)
-                    print("Decryption successful")
-                    self._output(plaintext)
+                    try:
+                        plaintext = self._decryptor.decrypt_manifest(manifest)
+                        print("Decryption successful")
+                        self._output(plaintext)
+                    except DecryptionError as e:
+                        print(f"Failed decryption: {e}")
                 else:
                     print("No decryption key provided")
 
+    def _validate_packet(self, packet):
+        alg = packet.validation_alg()
+        if alg is None:
+            print("Packet has no validation algorithm, not validating")
+            return
 
-if __name__ == "__main__":
+        if isinstance(alg, ValidationAlg_Crc32c):
+            verifier = Crc32cVerifier()
+        elif isinstance(alg, ValidationAlg_RsaSha256):
+            if self._verifier is None:
+                print("Packet requires RsaSha256 verifier, but no keyfile specified on CLI.  Not validating.")
+                return
+
+            verifier = self._verifier
+        else:
+            raise ValueError(f'Validation alg {alg} not supported.')
+
+        result = verifier.verify(packet.body().serialize(), alg.serialize(),
+                                 validation_payload=packet.validation_payload())
+        if not result:
+            raise ValueError(f'Packet fails validation')
+        print(f"Packet validation success with {verifier}")
+        return
+
+
+def run():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', dest="in_dir", default='.', help="input directory (default=%r)" % '.')
-    parser.add_argument('--enc-key', dest="enc_key", help="AES decryption key (hex string)")
-    parser.add_argument('--key-num', dest="key_num", type=int, help="Key number of pre-shared key")
+
+    add_encryption_cli_args(parser)
+
     parser.add_argument('--pretty', dest="prettify", action='store_true', help="pretty print the packets")
     parser.add_argument('filename', help='The filename to read and display')
 
     args = parser.parse_args()
+    fixup_key_password(args, ask_for_pass=False)
 
     reader = PacketReader(args)
     reader.read()
+
+
+if __name__ == "__main__":
+    run()

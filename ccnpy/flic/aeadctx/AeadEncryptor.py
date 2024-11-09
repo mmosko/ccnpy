@@ -16,8 +16,8 @@ from ..ManifestEncryptor import ManifestEncryptor
 
 
 class AeadEncryptor(ManifestEncryptor):
-    def __init__(self, key, key_number):
-        self._psk = AeadImpl(key, key_number)
+    def __init__(self, key, key_number, salt=None):
+        self._psk = AeadImpl(key, key_number, salt)
 
     def encrypt(self, node):
         return self._psk.encrypt(node)

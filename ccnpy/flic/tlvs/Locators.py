@@ -36,8 +36,13 @@ class Locators(TlvType):
     @classmethod
     def from_uri(cls, uri: str):
         """
-        A convenience method when making a singleton Locator
+        Creates a locator from a simple CCNx name from a URI.  It only supports "name segments" and no other
+        type of specialized name segment.
+
+        If uri is none, will return None.
         """
+        if uri is None:
+            return None
         return cls([Locator.from_uri(uri)])
 
     @classmethod

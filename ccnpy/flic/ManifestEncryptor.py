@@ -27,3 +27,7 @@ class ManifestEncryptor(ABC):
         :return: The tuple (security_ctx, encrypted_node, auth_tag)
         """
         pass
+
+    def salt_size(self):
+        """0 if no salt, otherwise the bytes of salt"""
+        return 0

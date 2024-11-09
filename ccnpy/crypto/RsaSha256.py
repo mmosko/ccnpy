@@ -80,6 +80,9 @@ class RsaSha256Verifier(Verifier):
             raise RuntimeError("key does not hold a public key, cannot verify")
         self._key = key
 
+    def __repr__(self):
+        return f"RsaSha256Verifier({self._key.keyid()})"
+
     def verify(self, *buffers, validation_payload):
         """
 

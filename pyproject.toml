@@ -18,3 +18,8 @@ coverage = "^7.6.4"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+manifest_writer  = "ccnpy.apps.manifest_writer:run"
+packet_reader  = "ccnpy.apps.packet_reader:run"
+

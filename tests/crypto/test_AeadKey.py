@@ -24,28 +24,21 @@ class AeadKeyTest(unittest.TestCase):
     key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
-    def test_gcm_encrypt_decrypt(self):
+    def _aead(self, key, nonce_length):
         buffer = array.array("B", b'somewhere over the rainbow')
         aad = array.array("B", b'way up high')
 
         key = AeadGcm(self.key)
         iv = key.nonce()
+        self.assertEqual(nonce_length, len(iv))
         (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
-        # print("nonce      = %r" % iv)
-        # print("ciphertext = %r" % c)
-        # print("authtag    = %r" % a)
         plaintext = key.decrypt(iv=iv, ciphertext=c, associated_data=aad, auth_tag=a)
         self.assertEqual(buffer, plaintext)
+
+    def test_gcm_encrypt_decrypt(self):
+        key = AeadGcm(self.key)
+        self._aead(key, 12)
 
     def test_ccm_encrypt_decrypt(self):
-        buffer = array.array("B", b'somewhere over the rainbow')
-        aad = array.array("B", b'way up high')
-
         key = AeadCcm(self.key)
-        iv = key.nonce()
-        (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
-        # print("nonce      = %r" % iv)
-        # print("ciphertext = %r" % c)
-        # print("authtag    = %r" % a)
-        plaintext = key.decrypt(iv=iv, ciphertext=c, associated_data=aad, auth_tag=a)
-        self.assertEqual(buffer, plaintext)
+        self._aead(key, 12)

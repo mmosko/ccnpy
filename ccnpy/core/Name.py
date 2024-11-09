@@ -140,6 +140,14 @@ class Name(TlvType):
 
     @classmethod
     def from_uri(cls, uri):
+        """
+        Creates a simple CCNx name from a URI.  It only supports "name segments" and no other
+        type of specialized name segment.
+
+        If uri is none, will return None.
+        """
+        if uri is None:
+            return None
         p = urlparse(uri)
         assert(p.scheme == 'ccnx')
         path = PurePath(p.path)

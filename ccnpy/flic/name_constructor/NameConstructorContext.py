@@ -12,12 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from dataclasses import dataclass
+from typing import List
 
 from .SchemaImpl import SchemaImpl
 from .SchemaImplFactory import SchemaImplFactory
 from .SchemaType import SchemaType
 from ..ManifestTreeOptions import ManifestTreeOptions
 from ..tlvs.Locators import Locators
+from ..tlvs.NcDef import NcDef
 from ...core.Name import Name
 
 
@@ -35,6 +37,13 @@ class NameConstructorContext:
             return 1
         else:
             return 2
+
+    def nc_def(self) -> List[NcDef]:
+        """Returns one or two NcDefs, depeding on if they are unique"""
+        if self.manifest_schema_impl == self.data_schema_impl:
+            return [self.manifest_schema_impl.nc_def()]
+        else:
+            return [self.manifest_schema_impl.nc_def(), self.data_schema_impl.nc_def()]
 
     @classmethod
     def create(cls, tree_options: ManifestTreeOptions):

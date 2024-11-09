@@ -82,7 +82,7 @@ class ManifestTree:
         """
         ptr = Pointers([top_manifest_packet.content_object_hash()])
         root_manifest = manifest_factory.build(source=ptr,
-                                               nc_defs = [self._name_ctx.manifest_schema_impl.nc_def(), self._name_ctx.data_schema_impl.nc_def()],
+                                               nc_defs=self._name_ctx.nc_def(),
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes)
 

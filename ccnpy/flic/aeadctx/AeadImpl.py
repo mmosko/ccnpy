@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
 from ccnpy.flic.tlvs.AeadCtx import AeadCtx
 from ccnpy.flic.tlvs.AuthTag import AuthTag
@@ -18,6 +19,7 @@ from ccnpy.flic.tlvs.EncryptedNode import EncryptedNode
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.Node import Node
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
+from ...crypto.DecryptionError import DecryptionError
 
 
 class AeadImpl:
@@ -28,7 +30,7 @@ class AeadImpl:
     a Node.
     """
 
-    def __init__(self, key: AeadKey, key_number: int):
+    def __init__(self, key: AeadKey, key_number: int, salt: Optional[int]=None):
         """
 
         :param key: A AesGcmKey
@@ -39,20 +41,37 @@ class AeadImpl:
 
         self._key = key
         self._key_number = key_number
+        self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
+        print(self)
 
-    def _create_gcm_ctx(self, iv):
+    def __repr__(self):
+        return f'AeadImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)})'
+
+    def _generate_nonce(self):
+        if self._salt is None:
+            return self._key.nonce(96)
+
+        salt_len = len(self._salt) * 8
+        return self._key.nonce(96 - salt_len)
+
+    def _iv_from_nonce(self, nonce):
+        if self._salt is None:
+            return nonce
+        return self._salt + nonce
+
+    def _create_gcm_ctx(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, iv=iv)
+            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, nonce=nonce)
         elif len(self._key) == 256:
-            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, iv=iv)
+            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, nonce=nonce)
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
-    def _create_ccm_ctx(self, iv):
+    def _create_ccm_ctx(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, iv=iv)
+            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, nonce=nonce)
         elif len(self._key) == 256:
-            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, iv=iv)
+            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, nonce=nonce)
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
@@ -66,13 +85,13 @@ class AeadImpl:
             raise TypeError("node must be Node")
 
         plaintext = node.serialized_value()
-        iv = self._key.nonce()
+        nonce = self._generate_nonce()
+        iv = self._iv_from_nonce(nonce)
 
-        security_ctx = None
         if isinstance(self._key, AeadGcm):
-            security_ctx = self._create_gcm_ctx(iv)
+            security_ctx = self._create_gcm_ctx(nonce)
         elif isinstance(self._key, AeadCcm):
-            security_ctx = self._create_ccm_ctx(iv)
+            security_ctx = self._create_ccm_ctx(nonce)
         else:
             raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
 
@@ -95,7 +114,7 @@ class AeadImpl:
         manifest = Manifest(security_ctx=security_ctx, node=encrypted_node, auth_tag=auth_tag)
         return manifest
 
-    def decrypt_node(self, security_ctx, encrypted_node, auth_tag):
+    def decrypt_node(self, security_ctx: AeadCtx, encrypted_node: EncryptedNode, auth_tag: AuthTag):
         """
         Example:
             manifest = Manifest.deserialize(payload.value())
@@ -107,28 +126,28 @@ class AeadImpl:
                                         manifest.node(),
                                         manifest.auth_tag())
 
-        :param security_ctx: A PresharedKeyCtx
+        :param security_ctx: A AeadCtx
         :param encrypted_node: A EncryptedNode
         :param auth_tag: A AuthTag
         :return: a Node
         """
 
-        if not isinstance(encrypted_node, EncryptedNode):
-            raise TypeError("encrypted_node must be EncryptedNode")
         if security_ctx is None:
             raise ValueError("security context must not be None")
-        if not isinstance(security_ctx, AeadCtx):
-            raise TypeError("security_ctx must be a PresharedKeyCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
-        if not isinstance(auth_tag, AuthTag):
-            raise TypeError("auth_tag must be AuthTag")
-
         if security_ctx.key_number() != self._key_number:
             raise ValueError("security_ctx.key_number %r != our key_number %r" %
                              (security_ctx.key_number(), self._key_number))
 
-        plaintext = self._key.decrypt(iv=security_ctx.iv(),
+        if self._key.aead_mode() == 'GCM':
+            if not (security_ctx.is_aes_gcm_128() or security_ctx.is_aes_gcm_256()):
+                raise DecryptionError(f'The AES key is for GCM but the manifest is not encrypted with GCM (security ctx type {security_ctx.class_type()})')
+        if self._key.aead_mode() == 'CCM':
+            if not (security_ctx.is_aes_ccm_128() or security_ctx.is_aes_ccm_256()):
+                raise DecryptionError(f'The AES key is for CCM but the manifest is not encrypted with CCM (security ctx type {security_ctx.class_type()})')
+
+        plaintext = self._key.decrypt(iv=self._iv_from_nonce(security_ctx.nonce()),
                                       ciphertext=encrypted_node.value(),
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())
@@ -162,7 +181,7 @@ class AeadImpl:
         if security_ctx is None:
             raise ValueError("security context must not be None")
         if not isinstance(security_ctx, AeadCtx):
-            raise TypeError("security_ctx must be a PresharedKeyCtx")
+            raise TypeError("security_ctx must be a AeadCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
 

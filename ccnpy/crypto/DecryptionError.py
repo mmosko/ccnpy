@@ -11,18 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
-from .AeadImpl import AeadImpl
-from ..ManifestDecryptor import ManifestDecryptor
-
-
-class AeadDecryptor(ManifestDecryptor):
-    def __init__(self, key, key_number: int, salt: Optional[int] = None):
-        self._psk = AeadImpl(key, key_number, salt)
-
-    def decrypt_manifest(self, manifest):
-        return self._psk.decrypt_manifest(manifest)
-
-    def decrypt_node(self, security_ctx, encrypted_node, auth_tag):
-        return self._psk.decrypt_node(security_ctx, encrypted_node, auth_tag)
+class DecryptionError(RuntimeError):
+    """Indicates an error during decryption, such as a bad key or authtag or salt."""
+    pass

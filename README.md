@@ -119,41 +119,50 @@ In this example, we will use `ccnpy.apps.manifest_writer` to split a file into n
 and construct a manifest tree around them.  First, we look at the command-line for `manifest-writer`.  See below
 for background on [CCNx FLIC manifets](#FLIC-Manifests)
 
+You may need to run `poetry build` and `poetry install` before `poetry run`.
+
 ```bash
-ccnpy$ python3 -m ccnpy.apps.manifest_writer --help
-usage: manifest_writer.py [-h] -n NAME [-d TREE_DEGREE] [-k KEY_FILE]
-                          [-p KEY_PASS] [-s MAX_SIZE] [-o OUT_DIR]
-                          [-l LOCATOR] [--root-expiry ROOT_EXPIRY]
-                          [--node-expiry NODE_EXPIRY]
-                          [--data-expiry DATA_EXPIRY] [--enc-key ENC_KEY]
-                          [--key-num KEY_NUM]
-                          filename
+ccnpy$ poetry run manifest_writer --help
+usage: manifest_writer [-h] [--schema {Hashed,Prefix,Segmented}] --name NAME [--manifest-locator MANIFEST_LOCATOR] [--data-locator DATA_LOCATOR] [--manifest-prefix MANIFEST_PREFIX]
+                       [--data-prefix DATA_PREFIX] [-d TREE_DEGREE] [-k KEY_FILE] [-p KEY_PASS] [--enc-key ENC_KEY] [--key-num KEY_NUM] [-s MAX_SIZE] [-o OUT_DIR] [-T]
+                       [--root-expiry ROOT_EXPIRY] [--node-expiry NODE_EXPIRY] [--data-expiry DATA_EXPIRY]
+                       filename
 
 positional arguments:
   filename              The filename to split into the manifest
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -n NAME               root manifest name URI (e.g. ccnx:/example.com/foo)
-  -d TREE_DEGREE        manifest tree degree default 7)
-  -k KEY_FILE           RSA private key in PEM format to sign the root
-                        manifest
+  --schema {Hashed,Prefix,Segmented}
+                        Name constructor schema (default Hashed)
+  --name NAME           CCNx URI for root manifest
+  --manifest-locator MANIFEST_LOCATOR
+                        CCNx URI for manifest locator
+  --data-locator DATA_LOCATOR
+                        CCNx URI for data locator
+  --manifest-prefix MANIFEST_PREFIX
+                        CCNx URI for manifests (Segmented only)
+  --data-prefix DATA_PREFIX
+                        CCNx URI for data (Segmented only)
+  -d TREE_DEGREE        manifest tree degree (default is max that fits in a packet)
+  -k KEY_FILE           RSA private key in PEM format to sign the root manifest
   -p KEY_PASS           RSA private key password (otherwise will prompt)
+  --enc-key ENC_KEY     AES encryption key (hex string)
+  --key-num KEY_NUM     Key number of pre-shared key (defaults to key hash)
   -s MAX_SIZE           maximum content object size (default 1500)
   -o OUT_DIR            output directory (default='.')
-  -l LOCATOR            URI of a locator (root manifest)
+  -T                    Use TCP to 127.0.0.1:9896
   --root-expiry ROOT_EXPIRY
-                        Expiry time (ISO format, .e.g
-                        2020-12-31T23:59:59+00:00) to expire root manifest
+                        Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest
   --node-expiry NODE_EXPIRY
                         Expiry time (ISO format) to expire node manifests
   --data-expiry DATA_EXPIRY
-                        Expiry time (ISO format) to expire data nameless
-                        objects
-  --enc-key ENC_KEY     AES encryption key (hex string)
-  --key-num KEY_NUM     Key number of pre-shared key
+                        Expiry time (ISO format) to expire data nameless objects
 ```
  
+The default behavior is to write the wire format packets to a directory.  With the `-T` option, it will write them
+to the standard CCNx port.
+
 ### Small Packet Example
 
 We create an RSA key that will be used to sign the root manifest, create a temporary
@@ -162,12 +171,12 @@ and a maximum packet size of 500 bytes.  Using at 1500 byte packet will allow a 
 of 41.  Internally, `ccnpy.flic.tree.TreeOptimizer` calculates the best tradeoff between
 direct and indirect pointers per internal manifest node to minimize the waste in the tree,
 so you do not need to specify the exact fanout.
-
+    
 ```bash
 ccnpy$ openssl genrsa -out test_key.pem
 ccnpy$ mkdir output
-ccnpy$ python3 -m ccnpy.apps.manifest_writer \
-                    -n ccnx:/example.com/manifest \
+ccnpy$ poetry run manifest_writer \
+                    --name ccnx:/example.com/manifest \
                     -d 11 \
                     -k test_key.pem \
                     -p '' \
@@ -178,7 +187,7 @@ ccnpy$ python3 -m ccnpy.apps.manifest_writer \
                     LICENSE
                     
 Creating manifest tree
-Root manifest hash: HashValue('SHA256', b'47bb45364425f9d081b4d95b4a39456db55dd53e0c6deb770d534c347333e592'
+Root manifest hash: HashValue: {alg: 'SHA256', val: 'e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7'}
 ```
 
 Looking at the output directory, we see that all the CCNx Packets are 500 bytes or less, which is exactly what
@@ -187,55 +196,61 @@ exactly fit in 500 bytes.  The various sizes depend on the number of pointers in
 packet dumps below.
 
 ```bash
-ccnpy$ ls -l output
-total 224
--rw-r--r--+ 1 mmosko  1987151510  247 Jun 28 23:56 0a88e7d58d1a25cad1cc188c7043c92b6e9ae8764ec6405a5124b086cc7623ac
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 0f5043db4c988440d9803c71e6d4daf47867cdba56e182ccc2e830231a8178fb
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 125fae41a28989145d34ab188fe2190caa4b97011e69446dfe49f5232d609b3b
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 166fc57cad5de9584c3ebdac85a1db968ae41b2d59112ac4818ac3242bf2ff4a
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4
--rw-r--r--+ 1 mmosko  1987151510  361 Jun 28 23:56 28df0ce6953593d4f869a0a1a45682c52752303329628daf7263dcc3fa8afa4d
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 2b293564ccc0ba4f8f85e8e5a4ef90bb58c429a7a0b388a441b086488a288427
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90
--rw-r--r--+ 1 mmosko  1987151510  490 Jun 28 23:56 47bb45364425f9d081b4d95b4a39456db55dd53e0c6deb770d534c347333e592
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 64d8aaebd9f402b833d4c3c64b0b4fed40101f3388a1fa1e0d8eedef4ae23617
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 6698535f4847008068589a117bdb410c17d8d04bf6b91ba5bfcbd43ec49e5f5e
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 67cbb9b8b5ddee8d98311bbcdb792c0adc14171785aca5b1777dd8b2b4a70ed8
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 6d0e16c90c3d8188f7befdd8ce1e72c21d225cc0b52439d3411a4f51b09b5aed
--rw-r--r--+ 1 mmosko  1987151510  499 Jun 28 23:56 71cab6317b43b201d57cd0c524687a9cf7ef302f579c3929bab1899a3d2d8095
--rw-r--r--+ 1 mmosko  1987151510  499 Jun 28 23:56 7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 b2180a827443e3329fe3863656312ccf1978d212b49975e41499f908d39b9704
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 d246d972b2fe993556041a27d1244a3fe3122105927aaed587448083247d9d4a
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 d7bc2a27eb1c1bf08c31f1de582f7c49acccddee141058ccac5a41988f7d4a6c
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 d9a71da31961aa48e32e5a6b0b3784204984cd1e5a4471226bcd6a32f42c4fe8
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 dfd5474165928f5c87717674fb5f76cf39241a9ea8842ea009870827890dfc59
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1
--rw-r--r--+ 1 mmosko  1987151510  500 Jun 28 23:56 f68375a22c5654f1f180c12dc040e8a94cc7aae5edaebfd7ab02a3a92094a47d
+ccnpy$ ls -lgo output
+-rw-r--r--@ 1   500 Nov  8 12:12 0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd
+-rw-r--r--@ 1   500 Nov  8 12:12 0f5043db4c988440d9803c71e6d4daf47867cdba56e182ccc2e830231a8178fb
+-rw-r--r--@ 1   500 Nov  8 12:12 125fae41a28989145d34ab188fe2190caa4b97011e69446dfe49f5232d609b3b
+-rw-r--r--@ 1   500 Nov  8 12:12 166fc57cad5de9584c3ebdac85a1db968ae41b2d59112ac4818ac3242bf2ff4a
+-rw-r--r--@ 1   500 Nov  8 12:12 1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4
+-rw-r--r--@ 1   361 Nov  8 12:12 28df0ce6953593d4f869a0a1a45682c52752303329628daf7263dcc3fa8afa4d
+-rw-r--r--@ 1   500 Nov  8 12:12 2b293564ccc0ba4f8f85e8e5a4ef90bb58c429a7a0b388a441b086488a288427
+-rw-r--r--@ 1   500 Nov  8 12:12 31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90
+-rw-r--r--@ 1   500 Nov  8 12:12 4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac
+-rw-r--r--@ 1   500 Nov  8 12:12 64d8aaebd9f402b833d4c3c64b0b4fed40101f3388a1fa1e0d8eedef4ae23617
+-rw-r--r--@ 1   500 Nov  8 12:12 6698535f4847008068589a117bdb410c17d8d04bf6b91ba5bfcbd43ec49e5f5e
+-rw-r--r--@ 1   500 Nov  8 12:12 67cbb9b8b5ddee8d98311bbcdb792c0adc14171785aca5b1777dd8b2b4a70ed8
+-rw-r--r--@ 1   328 Nov  8 12:12 6a55fec71d85f32f69dda3fd85f454600639636a77a72c474611fccdb4ece8b6
+-rw-r--r--@ 1   500 Nov  8 12:12 6d0e16c90c3d8188f7befdd8ce1e72c21d225cc0b52439d3411a4f51b09b5aed
+-rw-r--r--@ 1   500 Nov  8 12:12 83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f
+-rw-r--r--@ 1   500 Nov  8 12:12 887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d
+-rw-r--r--@ 1   500 Nov  8 12:12 af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185
+-rw-r--r--@ 1   500 Nov  8 12:12 b2180a827443e3329fe3863656312ccf1978d212b49975e41499f908d39b9704
+-rw-r--r--@ 1   472 Nov  8 12:12 c5fad240d7641fee6160bc52ddba6d90da92d44fe49267d1cc58bc3abe6a2784
+-rw-r--r--@ 1   500 Nov  8 12:12 d246d972b2fe993556041a27d1244a3fe3122105927aaed587448083247d9d4a
+-rw-r--r--@ 1   500 Nov  8 12:12 d7bc2a27eb1c1bf08c31f1de582f7c49acccddee141058ccac5a41988f7d4a6c
+-rw-r--r--@ 1   500 Nov  8 12:12 d9a71da31961aa48e32e5a6b0b3784204984cd1e5a4471226bcd6a32f42c4fe8
+-rw-r--r--@ 1   500 Nov  8 12:12 dfd5474165928f5c87717674fb5f76cf39241a9ea8842ea009870827890dfc59
+-rw-r--r--@ 1   472 Nov  8 12:12 e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1
+-rw-r--r--@ 1   500 Nov  8 12:12 e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527
+-rw-r--r--@ 1   500 Nov  8 12:12 e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1
+-rw-r--r--@ 1   350 Nov  8 12:12 e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7
+-rw-r--r--@ 1   500 Nov  8 12:12 f68375a22c5654f1f180c12dc040e8a94cc7aae5edaebfd7ab02a3a92094a47d
 ```
 
 We can look into each of these packets.  First, look at the root manifest, whose hash-based name was in the
-output of `manifest_writer`.
+output of `manifest_writer`.  `packet_reader` can use either a private key or public key to verify the
+signature on a CCNx packet.  We show the usage with a public key, but the syntax is the same for a private key.
+Note that after displaying the content object, it shows "Packet validation success..." before the decrypted packet.
+
+The hash showin the `RsaSha256Verifier` is the public key ID.  You can verify this on the CLI with:
+```openssl rsa -pubin -in test_key.pub -outform DER | openssl sha256```.
 
 ```bash
-ccnpy$ python3 -m ccnpy.apps.packet_reader \
+ccnpy$ openssl rsa -pubout -in test_key.pem -out test_key.pub
+ccnpy$ poetry run packet_reader \
                 --pretty \
                 -i output \
                 --enc-key 0102030405060708090a0b0c0d0e0f10 \
                 --key-num 22 \
-                47bb45364425f9d081b4d95b4a39456db55dd53e0c6deb770d534c347333e592
+                -k test_key.pub \
+                e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7
 
 {
    Packet: {
       FH: {
          ver: 1,
          pt: 1,
-         plen: 490,
+         plen: 350,
          flds: '000000',
          hlen: 8
       },
@@ -243,37 +258,39 @@ ccnpy$ python3 -m ccnpy.apps.packet_reader \
          NAME: [TLV: {
             T: 1,
             L: 11,
-            V: 'example.com'
+            V: b 'example.com'
          }, TLV: {
             T: 1,
             L: 8,
-            V: 'manifest'
+            V: b 'manifest'
          }],
          None,
          PLDTYP: 'MANIFEST',
          Manifest: {
             PSK: {
                kn: 22,
-               iv: '77a5fd92c8890af3d5711239',
+               iv: '511bcb41bfc00297e87e713e',
                mode: 'AES-GCM-128'
             },
-            EncNode: 'f910beaafc36c31b44b0a49ce2ec4d47c0c21e8f821e9027206d8e452b08a26c8312912ab5239455c69953260a4934c8f87811dfb77c9b887ea82f89',
-            AuthTag: '7e9d40d9086bb4a59f9f622fbaba0a42'
-         }
+            EncNode: '74c41a189faeac83824a7bb889f1690b31c3929e56238d66eb06846ff1898dffab5b8289140c35c533141c93a52d41cc54c5bc8feb7049efe8394999018590846471ff269c6a3e42443472cfc1276ff65087cc1206e9e1b2dfc19174dfcc612dfa63f295ec88581c81409d5a7604be28',
+            AuthTag: '7c6ddd29728212f1498d24e2cdca87a8'
+         },
+         None
       },
       RsaSha256: {
          keyid: HashValue: {
             alg: 'SHA256',
-            val: 'c00fdfa98ea156913fb229dd121c1d1f4b32b4c28a557cdeefa04eed59f8bd8e'
+            val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'
          },
          pk: None,
          keylink: None,
-         'SignatureTime': '2019-06-29T13:56:23.910000'
+         'SignatureTime': '2024-11-08T20:12:40.102000+00:00'
       },
-      ValPld: '234e9de696dc8956586b30f899a0dc9bff1c2db4c155950f32264bd472cc735180beef17a6e4fe44449af0a727857befb98a2e4fb40ed7d9ea4a94f5cedd9ee15391f73fa8a1444861a1ee2809c1d6f023d7e5818fceddf07badf83bdff2bc898d0552993cb642622c10691ccc48b1df9434e1e5bb9bbcf5be0b80a717c66e8a7b9cbdd508569342445f5a49a1aa59ac7aaa620ec225570d779d0a59c502994c5a5d56f7e51e86977727d61d7878aefaace428aa0c2b055d2a6c4bbd4d3767817924fd14dcedef6e0d97edf6342cb4158cce91cb4cb545798f5cac8752cb01eac14ffaa263f40237a5e87349c6bf809ed1de7a1d934557167865f74e2d0c6c70'
+      ValPld: '9d098374bc183441394b5dbce5a97c44b3434ae558635c4da12554fac0882413a4a83cfbce148d7d01402945c4766be9c73ff28503f4fd543d99bb4850c07a21'
    }
 }
 
+Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
 Decryption successful
 Manifest: {
    None,
@@ -281,6 +298,16 @@ Manifest: {
       NodeData: {
          SubtreeSize: 11357,
          None,
+         None,
+         [NCDEF: (NCID: 1, HS: Locators: [Locator: Link(NAME: [TLV: {
+            T: 1,
+            L: 11,
+            V: b 'example.com'
+         }, TLV: {
+            T: 1,
+            L: 8,
+            V: b 'manifest'
+         }], None, None)], None)],
          None
       },
       1,
@@ -288,7 +315,7 @@ Manifest: {
          None,
          Ptrs: [HashValue: {
             alg: 'SHA256',
-            val: '7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb'
+            val: 'e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1'
          }]
       }]
    },
@@ -305,26 +332,30 @@ Because we provided the correct decryption key and key number on the command-lin
 the manifest.  This shows there is a Node with NodeData and a subtree size of 11,357 bytes (the filesize of LICENSE).
 There is 1 HashGroup with one pointer, as is normal for the named and signed root manifest.
 
-The next manifest decodes as below.  This is a nameless content object: there is no name and there is no validation,
-we only refer to it by its hash name.  The decryption shows that the manifest has 11 hash pointers, which is what
-we limited the tree to.  Most of those are direct data pointers and the last few will be indirect manifest
-pointers.  A quick scan of the file list above shows that the `1da...` file is the last in the list to be
-exactly 500 bytes, so there are 8 direct pointers and 3 indirect pointers.
+The `NodeData` has one name constructor definition, with a locator of `ccnx:/example.com/manifest`.  That is the same
+name as the root manifest, as we only provided the `--name` flag.  See below for an example with
+the `--manifest-locator` and `--data-locator` flags.
+
+Using the root manifest pointer, the next manifest decodes as below.  This is a nameless content object: there is no name and there is no validation,
+we only refer to it by its hash name.  The decryption shows that the manifest has 10 hash pointers, which is less
+than we limited the tree to (it was 11 to `manifest_writer`).  Most of those are direct data pointers and the last few 
+will be indirect manifest  pointers.  A quick scan of the file list above shows that the `1da...` file is the 
+last in the list to be exactly 500 bytes, so there are 8 direct pointers and 2 indirect pointers (indirect pointers
+are always last due to the post order traversal).
 
 ```bash
-ccnpy$ python3 -m ccnpy.apps.packet_reader \
+ccnpy$ poetry run packet_reader \
                     --pretty \
                     -i output \
                     --enc-key 0102030405060708090a0b0c0d0e0f10 \
                     --key-num 22 \
-                    7df97d5162cfa8e22824a9212e93c54f5ba43cc2a395d994284b9d9bf42886fb
-
+                    e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1
 {
    Packet: {
       FH: {
          ver: 1,
          pt: 1,
-         plen: 499,
+         plen: 472,
          flds: '000000',
          hlen: 8
       },
@@ -335,12 +366,13 @@ ccnpy$ python3 -m ccnpy.apps.packet_reader \
          Manifest: {
             PSK: {
                kn: 22,
-               iv: '41dde96247960b1c173f58dc',
+               iv: 'c533a506acce6b43843ae8bd',
                mode: 'AES-GCM-128'
             },
-            EncNode: '3af7be37b548e55db38917ce511061b45f0a8a0202e1f88f1469413fcf0479b74fcca14c3e9b19a3f9071673ab76ce81771259d2a62c93eff6d0ca0c15951eb0404fff08d55c015f37cfa0c983833debebdcc851bb8922dc6ddbb9051b6b80c54d2a545f17134acfd4d1f5ae76c12a67bb9f9531bd065d4789a0da6125c5afd0d76a3b2cb62355b86e5161447b183e59ae186c9db21c106fd621b31bca9d413bb609ee442d7d63f4e7c71c636d7a9b8ba11d30c5ae0c9c6bb6d7a46c22264627a447c60747d1e6c0649122c3cbedd08e96eb6ecfe9769baa55c15dd53b326532e811e3e02383cfb7e4120b99f9bc02c9d3ffb6f1d4004cdd1ee3e2a4c766e3e4695b40b34391b23024850d12c7a11473f1bba5c554e8b45d12f7cacb1350448740b4672d869515416a6b3cb838d69a603036e25abe2fd27ac7a03f0f9c1ecf77867f313d4435e03ae59d6556f84de283b632cbf09fbae176a6c8a7c220e83291b05d6944373d203ffe182f2624e9d3540d7e9aa2ea5beb74a39f32245fe588e38494a8c09907e2dd68268cbd7ea9e9b9335014dfb75781fa18dd3d91a2248b9f10b2e4d4',
-            AuthTag: '2766365be42c14df136419d784ed1f8f'
-         }
+            EncNode: 'dd848460cd05d030da1c0b5c8b75c2ac3b5abc7572e0a601c1e1b7b29c369552f106f9dc04d4eb2a66b64ce8c7373fe8963892d374fd857ac6b03fc048a9ea956b2ecbaa341910af68e2161a3318a6acb8a32f0a6e71772296f5c9e10a9030c9e486a7dcab010e3bdbc5d47bae48477411416854323b9142430dd03d95630a6dbc7e015f001a1aafbfc616985799c0dde3a4d2376e0a6b1559e857afe9cffd02c054425a5ec47e96d4b49907e371773a48d96af914557e9d7b4a3b8d4282b3a4b949c417d5734c1202a68d00b82621f8f62031f2a81885bba6b1d9eac8ad7714df30befcd0e00e33ce9e76cf4f58a18aa9e5dabe02e229d3090dd2e3c7563f347991ff11f0b7c45f01cdd35b7090453fbba1081849cadecb51db8991e6a31fd6513854ebc47f6bcf7ed7e8793003a0269575a26277641dcc8482a248c209b585238e802a30ae68155bd07bf69373428119b8b94443a8bb42f87ab9f050b4014163689839cef833f653ddd028e205cacf0ccf6d1dda8577a751cb1fb82a45cfe3ecb598cd19fcca3935',
+            AuthTag: '1db8fa20372a9e00d529fed4e91be487'
+         },
+         None
       },
       None,
       None
@@ -354,11 +386,20 @@ Manifest: {
       NodeData: {
          SubtreeSize: 11357,
          None,
+         None,
+         [],
          None
       },
-      11,
+      10,
       [HashGroup: {
-         None,
+         GroupData: {
+            None,
+            None,
+            None,
+            None,
+            NCID: 1,
+            None
+         },
          Ptrs: [HashValue: {
             alg: 'SHA256',
             val: '31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90'
@@ -385,18 +426,16 @@ Manifest: {
             val: '1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4'
          }, HashValue: {
             alg: 'SHA256',
-            val: '0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd'
+            val: '6a55fec71d85f32f69dda3fd85f454600639636a77a72c474611fccdb4ece8b6'
          }, HashValue: {
             alg: 'SHA256',
-            val: '0a88e7d58d1a25cad1cc188c7043c92b6e9ae8764ec6405a5124b086cc7623ac'
-         }, HashValue: {
-            alg: 'SHA256',
-            val: '71cab6317b43b201d57cd0c524687a9cf7ef302f579c3929bab1899a3d2d8095'
+            val: 'c5fad240d7641fee6160bc52ddba6d90da92d44fe49267d1cc58bc3abe6a2784'
          }]
       }]
    },
    None
 }
+
 ```
 
 ### Large Degree Tree
@@ -406,8 +445,10 @@ create only one or two nameless data objects, then a tree with many pointers to 
 
 ```bash
 ccnpy$ dd if=/dev/zero of=zeros bs=1000 count=1000
-ccnpy$ python3 -m ccnpy.apps.manifest_writer  \
-                   -n ccnx:/example.com/manifest \
+ccnpy$ poetry run manifest_writer  \
+                   --name ccnx:/example.com/manifest \
+                   --manifest-locator ccnx:/manifest \
+                   --data-locator ccnx:/data
                    -k test_key.pem \
                    -p '' \
                    -s 1500 \

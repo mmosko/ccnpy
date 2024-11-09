@@ -68,6 +68,9 @@ class Crc32cVerifier(Verifier):
         """
         pass
 
+    def __repr__(self):
+        return "Crc32cVerifier()"
+
     def verify(self, *buffers, validation_payload):
         """
 
