@@ -84,7 +84,8 @@ class ManifestTree:
         root_manifest = manifest_factory.build(source=ptr,
                                                nc_defs=self._name_ctx.nc_def(),
                                                node_subtree_size=total_file_bytes,
-                                               group_subtree_size=total_file_bytes)
+                                               group_subtree_size=total_file_bytes,
+                                               nc_id=self._name_ctx.manifest_schema_impl.nc_id())
 
         body = root_manifest.content_object(name=self._tree_options.name,
                                              expiry_time=self._tree_options.root_expiry_time)

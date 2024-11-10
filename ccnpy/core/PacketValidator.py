@@ -26,7 +26,6 @@ class PacketValidator:
     def validate_packet(self, packet):
         alg = packet.validation_alg()
         if alg is None:
-            print("Packet has no validation algorithm, not validating")
             return
 
         if isinstance(alg, ValidationAlg_Crc32c):

@@ -71,6 +71,9 @@ class Traversal:
         """
         nc_cache = Traversal.NameConstructorCache()
         root_packet = self._packet_input.get(name=root_name, hash_restriction=hash_restriction)
+        if self.debug:
+            print(f'Traversal root packet: {root_packet}')
+
         self._validator.validate_packet(packet=root_packet)
         self.preorder(packet=root_packet, nc_cache=nc_cache)
 
@@ -97,7 +100,11 @@ class Traversal:
                 print("Traversal: %r" % manifest)
 
             nc_cache = self._update_nc_cache(nc_cache=nc_cache, manifest=manifest)
-            self._visit_children(manifest=manifest, nc_cache=nc_cache)
+            try:
+                self._visit_children(manifest=manifest, nc_cache=nc_cache)
+            except Exception as e:
+                print(f'Error {e} processing {manifest}')
+                raise
 
         elif body.payload_type().is_data():
             if self.debug:
@@ -109,6 +116,8 @@ class Traversal:
 
     def _write_data(self, payload):
         if self._data_writer is not None:
+            if self.debug:
+                print(f'Traversal save {len(payload.value())} bytes')
             self._data_writer.write(payload.value())
 
     def _visit_children(self, manifest: Manifest, nc_cache: NameConstructorCache):

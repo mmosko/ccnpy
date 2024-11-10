@@ -128,7 +128,7 @@ def run():
                         help='maximum content object size (default %r)' % max_size)
 
     parser.add_argument('-o', dest="out_dir", default='.', help="output directory (default=%r)" % '.')
-
+    parser.add_argument('--link', dest="write_links", action='store_true', help='When writing to a directory, write links for named objects')
     parser.add_argument('-T', dest="use_tcp", default=False, action=argparse.BooleanOptionalAction,
                         help="Use TCP to 127.0.0.1:9896")
 
@@ -153,7 +153,9 @@ def run():
     if args.use_tcp:
         packet_writer = TreeIO.PacketNetworkWriter("127.0.0.1", 9896)
     else:
-        packet_writer = TreeIO.PacketDirectoryWriter(directory=args.out_dir)
+        packet_writer = TreeIO.PacketDirectoryWriter(directory=args.out_dir,
+                                                     link_named_objects=args.write_links,
+                                                     signer=rsa_signer_from_cli_args(args))
 
     if args.schema == 'Segmented':
         if args.manifest_prefix is None or args.data_prefix is None:

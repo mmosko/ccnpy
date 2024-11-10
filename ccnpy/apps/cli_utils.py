@@ -33,7 +33,7 @@ def add_encryption_cli_args(parser):
     parser.add_argument("--aes-mode", dest="aes_mode", default='GCM', choices=['GCM', 'CCM'], help="Encryption algorithm, default GCM")
     parser.add_argument('--key-num', dest="key_num", type=int, default=None,
                         help="Key number of pre-shared key (defaults to key hash)")
-    parser.add_argument('--salt', dest="salt", type=int, default=None,
+    parser.add_argument('--salt', dest="salt", type=lambda x: int(x,0), default=None,
                         help="Upto a 4-byte salt to include in the IV with the nonce.")
 
 def aes_key_from_cli_args(args) -> Optional[AeadKey]:

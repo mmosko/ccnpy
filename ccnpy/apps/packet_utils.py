@@ -25,7 +25,6 @@ __static_crc32c_verifier = Crc32cVerifier()
 def validate_packet(keystore: InsecureKeystore, packet):
     alg = packet.validation_alg()
     if alg is None:
-        print("Packet has no validation algorithm, not validating")
         return
 
     if isinstance(alg, ValidationAlg_Crc32c):
@@ -33,7 +32,11 @@ def validate_packet(keystore: InsecureKeystore, packet):
         verifier = __static_crc32c_verifier
 
     elif isinstance(alg, ValidationAlg_RsaSha256):
-        rsa_pub_key = keystore.get_rsa(alg.keyid())
+        try:
+            rsa_pub_key = keystore.get_rsa(alg.keyid())
+        except KeyError:
+            raise KeyError(f'Could not find RSA key in keystore with keyid {alg.keyid()}')
+
         if rsa_pub_key is None:
             print(f"Packet requires RsaSha256 verifier, but no key matching keyid {alg.keyid} found.")
             return
@@ -58,7 +61,7 @@ def decrypt_manifest(keystore: InsecureKeystore, manifest: Manifest) -> Manifest
     if isinstance(security_ctx, AeadCtx):
         key = keystore.get_aes_key(security_ctx.key_number())
         salt = keystore.get_aes_salt(security_ctx.key_number())
-        decryptor = AeadDecryptor(key, security_ctx.key_number(), salt=salt)
+        decryptor = AeadDecryptor(key=key, key_number=security_ctx.key_number(), salt=salt)
 
         try:
             return decryptor.decrypt_manifest(manifest)

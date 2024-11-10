@@ -24,6 +24,7 @@ from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tlvs.LeafSize import LeafSize
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from .tlvs.NcDef import NcDef
+from .tlvs.NcId import NcId
 
 
 class ManifestFactory:
@@ -78,7 +79,8 @@ class ManifestFactory:
               nc_defs: Optional[List[NcDef]] = None,
               node_subtree_size: Optional[int] = None,
               group_subtree_size: Optional[int] = None,
-              group_leaf_size: Optional[int] = None):
+              group_leaf_size: Optional[int] = None,
+              nc_id: Optional[NcId] = None):
         """
         depending on the level of control you wish to have over the manifest creation, you can
         pass one of several types as the source.
@@ -88,6 +90,7 @@ class ManifestFactory:
 
         :param source: One of Pointers or HashGroups or Node
         :param nc_defs: A list of name contructor definitions to include in the NodeData
+        :param nc_id: The NcId to put in the hash group data (only applies if building from pointers).
         :param node_subtree_size: If not None and ManifestTreeOptions.add_node_subtree_size is True,
                                     add a NodeData with the subtree size.
         :param group_subtree_size: If not None and ManifestTreeOptions.add_group_subtree_size is True and
@@ -119,7 +122,8 @@ class ManifestFactory:
                                                  nc_defs=nc_defs,
                                                  node_subtree_size=node_subtree_size,
                                                  group_subtree_size=group_subtree_size,
-                                                 group_leaf_size=group_leaf_size)
+                                                 group_leaf_size=group_leaf_size,
+                                                 nc_id=nc_id)
         elif isinstance(source, HashGroup):
             manifest = self._build_node_from_hashgroups(hash_groups=[source], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
 
@@ -140,14 +144,17 @@ class ManifestFactory:
                              nc_defs: Optional[List[NcDef]] = None,
                              node_subtree_size: Optional[SubtreeSize] = None,
                              group_subtree_size: Optional[SubtreeSize] = None,
-                             group_leaf_size: Optional[LeafSize] = None):
+                             group_leaf_size: Optional[LeafSize] = None,
+                             nc_id: Optional[NcId] = None):
         """
         From a Pointers object or a list of hash values, build a Manifest.  If the encryptor is
         not None, it will be an encrypted Manifest.
+
+        :param nc_id: If specified, will be put in the hash group data.
         """
         group_data = None
-        if group_subtree_size is not None or group_leaf_size is not None:
-            group_data = GroupData(subtree_size=group_subtree_size, leaf_size=group_leaf_size)
+        if group_subtree_size is not None or group_leaf_size is not None or nc_id is not None:
+            group_data = GroupData(subtree_size=group_subtree_size, leaf_size=group_leaf_size, nc_id=nc_id)
 
         hg = HashGroup(pointers=pointers, group_data=group_data)
         return self._build_node_from_hashgroups(hash_groups=[hg], nc_defs=nc_defs, node_subtree_size=node_subtree_size)

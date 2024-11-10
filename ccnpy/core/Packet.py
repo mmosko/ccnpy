@@ -163,6 +163,7 @@ class Packet:
         return tlv
 
 class PacketReader(abc.ABC):
+    # TODO: We should bake in a validator callback, so the caller can validate received packets vs a trust or keystore.
     @abc.abstractmethod
     def get(self, name: Name, hash_restriction: HashValue, locators: Optional[Locators] = None) -> Packet:
         pass

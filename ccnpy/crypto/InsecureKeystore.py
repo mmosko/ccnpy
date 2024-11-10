@@ -33,7 +33,7 @@ class InsecureKeystore:
 
     def add_aes_key(self, key_num, key: AeadKey, salt):
         self._symmetric_by_keynum[key_num] = key
-        self._salt_by_keynum = salt
+        self._salt_by_keynum[key_num] = salt
 
     def get_aes_key(self, key_num) -> AeadKey:
         return self._symmetric_by_keynum[key_num]

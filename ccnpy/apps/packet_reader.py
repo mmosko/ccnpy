@@ -37,6 +37,7 @@ class PacketReader:
         self._prettify = args.prettify
         self._keystore = create_keystore(args)
         self._decryptor=aead_decryptor_from_cli_args(args)
+        self._has_rsa_kay = args.key_file is not None
 
     def _output(self, value):
         if self._prettify:
@@ -53,9 +54,10 @@ class PacketReader:
 
         try:
             validate_packet(keystore=self._keystore, packet=packet)
-        except RuntimeError as e:
-            print(e)
+        except KeyError as e:
+            print(f'Could not validate packet: {e}')
             return
+
 
         if packet.body().is_manifest():
             manifest = Manifest.from_content_object(packet.body())

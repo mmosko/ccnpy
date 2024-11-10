@@ -18,6 +18,7 @@ from typing import Optional
 
 from .ExpiryTime import ExpiryTime
 from .FinalChunkId import FinalChunkId
+from .Link import Link
 from .Name import Name
 from .Payload import Payload
 from .PayloadType import PayloadType
@@ -89,6 +90,32 @@ class ContentObject(TlvType):
 
         return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
 
+    @classmethod
+    def create_link(cls, link: Link, name: Name, expiry_time=None):
+        """
+
+        :param link: The object linked to
+        :param name: Name
+        :param manifest: A serializable object to put in the payload
+        :param expiry_time: A python datetime
+        :return: A ContentObject
+        """
+        if link is None:
+            raise ValueError("link must not be None")
+
+        if name is None:
+            raise ValueError("a link object requires a name.")
+
+        payload_type = PayloadType.create_link_type()
+        payload = Payload(link.serialize())
+
+        if expiry_time is not None:
+            if not isinstance(expiry_time, datetime):
+                raise TypeError("expiry_time must be datetime")
+            expiry_time = ExpiryTime.from_datetime(expiry_time)
+
+        return cls(name=name, payload_type=payload_type, payload=payload, expiry_time=expiry_time)
+
     def __init__(self, name: Optional[Name] = None, payload_type: Optional[PayloadType] = None,
                  payload: Optional[Payload] = None, expiry_time: Optional[ExpiryTime] = None,
                  final_chunk_id: Optional[FinalChunkId] = None):
@@ -121,6 +148,8 @@ class ContentObject(TlvType):
         if self.is_manifest():
             from ccnpy.flic.tlvs.Manifest import Manifest
             payload = Manifest.deserialize(self._payload.value())
+        elif self.is_link():
+            payload = Link.deserialize(self._payload.value())
         else:
             if self.USE_BRIEF_OUTPUT:
                 payload = f'(payload {len(self._payload)} bytes)'
@@ -194,6 +223,9 @@ class ContentObject(TlvType):
 
     def is_manifest(self):
         return self.is_content_object() and self._payload_type is not None and self._payload_type.is_manifest()
+
+    def is_link(self):
+        return self.is_content_object() and self._payload_type is not None and self._payload_type.is_link()
 
     @staticmethod
     def is_interest():

@@ -1,6 +1,6 @@
 # Pure Python CCNx 1.0
 
-ccnpy is a pure python implementation of the CCNx 1.0
+`ccnpy` is a pure python implementation of the CCNx 1.0
 protocols (RFC 8609 and RFC 8569).
 
 The implementation focuses on the client libraries used to consume or produce content and to
@@ -174,21 +174,43 @@ so you do not need to specify the exact fanout.
     
 ```bash
 ccnpy$ openssl genrsa -out test_key.pem
+ccnpy$ openssl rsa -pubout -in test_key.pem -out test_key.pub
 ccnpy$ mkdir output
 ccnpy$ poetry run manifest_writer \
-                    --name ccnx:/example.com/manifest \
-                    -d 11 \
-                    -k test_key.pem \
-                    -p '' \
-                    -s 500 \
-                    -o ./output \
-                    --enc-key 0102030405060708090a0b0c0d0e0f10 \
-                    --key-num 22 \
-                    LICENSE
-                    
+   --schema Hashed \
+   --name ccnx:/foo.com/object \
+   --link \
+   -k test_key.pem -p '' \
+   --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+   -s 500 \
+   -o output \
+   LICENSE
+Namespace(schema='Hashed', name='ccnx:/foo.com/object', manifest_locator=None, data_locator=None, manifest_prefix=None, data_prefix=None, tree_degree=None, key_file='test_key.pem', key_pass='', enc_key='0102030405060708090a0b0c0d0e0f10', aes_mode='CCM', key_num=1, salt=16909060, max_size=500, out_dir='output', write_links=True, use_tcp=False, root_expiry=None, node_expiry=None, data_expiry=None, filename='LICENSE')
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
 Creating manifest tree
-Root manifest hash: HashValue: {alg: 'SHA256', val: 'e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7'}
-```
+Root manifest hash: HashValue: {alg: 'SHA256', val: '72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8'}
+````
+
+First, let us go over the command-line term by term:
+- `--schema` specifies the Hashed schema, so only the root manifest will have a name.
+- `--name` is the name of the root manifest.
+- `--link` is useful for writing objects to a direct.  It creates a link from the name to the object hash, 
+   so `manifest_reader` can find the root object without typing in the hash value.
+- `-k` and '-p' open up a PEM private key file to use for signing the root manifest.  Using "-p ''" uses a blank 
+  password for the PEM file.  If -p is not specified, `manifest_writer` will prompt for a password.
+- The AEAD parameters are `--enc-key` and `--salt` and `--key-num` and `--aes-mode`.  The first specifies
+  the encryption key as a hex string (16 bytes or 32 bytes).  The salt is an optional 4-byte value (as an int or hex string) to use
+  with the nonce to create an IV.  The key number identifies the key to the consumer.  The AES mode can
+  be either GCM or CCM.
+- `-s` limits the maximum packet size to 500 bytes.  We picked a smaller value to illustrate multiple
+  packets.  1500 or 1492 or 1480 are more common values.
+- `-o` is the output directory to write the wire-format objects.  There is a `-T` option to use the network.
+- `LICENSE` is the filename to chunk up and wrap in a manifest.
+
+The text output lines are:
+- `Namespace` is all the CLI arguments (the work `Namespace` is from the python argument parser).
+- `AeadImpl` is the encryption implementation parameters
+- `Root manifest hash...` is the SHA256 hash of the root manifest object, which we will use shortly.
 
 Looking at the output directory, we see that all the CCNx Packets are 500 bytes or less, which is exactly what
 we asked for.  The ones exactly 500 bytes are the data content objects.  The others are manifests, which do not
@@ -197,34 +219,87 @@ packet dumps below.
 
 ```bash
 ccnpy$ ls -lgo output
--rw-r--r--@ 1   500 Nov  8 12:12 0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd
--rw-r--r--@ 1   500 Nov  8 12:12 0f5043db4c988440d9803c71e6d4daf47867cdba56e182ccc2e830231a8178fb
--rw-r--r--@ 1   500 Nov  8 12:12 125fae41a28989145d34ab188fe2190caa4b97011e69446dfe49f5232d609b3b
--rw-r--r--@ 1   500 Nov  8 12:12 166fc57cad5de9584c3ebdac85a1db968ae41b2d59112ac4818ac3242bf2ff4a
--rw-r--r--@ 1   500 Nov  8 12:12 1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4
--rw-r--r--@ 1   361 Nov  8 12:12 28df0ce6953593d4f869a0a1a45682c52752303329628daf7263dcc3fa8afa4d
--rw-r--r--@ 1   500 Nov  8 12:12 2b293564ccc0ba4f8f85e8e5a4ef90bb58c429a7a0b388a441b086488a288427
--rw-r--r--@ 1   500 Nov  8 12:12 31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90
--rw-r--r--@ 1   500 Nov  8 12:12 4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac
--rw-r--r--@ 1   500 Nov  8 12:12 64d8aaebd9f402b833d4c3c64b0b4fed40101f3388a1fa1e0d8eedef4ae23617
--rw-r--r--@ 1   500 Nov  8 12:12 6698535f4847008068589a117bdb410c17d8d04bf6b91ba5bfcbd43ec49e5f5e
--rw-r--r--@ 1   500 Nov  8 12:12 67cbb9b8b5ddee8d98311bbcdb792c0adc14171785aca5b1777dd8b2b4a70ed8
--rw-r--r--@ 1   328 Nov  8 12:12 6a55fec71d85f32f69dda3fd85f454600639636a77a72c474611fccdb4ece8b6
--rw-r--r--@ 1   500 Nov  8 12:12 6d0e16c90c3d8188f7befdd8ce1e72c21d225cc0b52439d3411a4f51b09b5aed
--rw-r--r--@ 1   500 Nov  8 12:12 83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f
--rw-r--r--@ 1   500 Nov  8 12:12 887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d
--rw-r--r--@ 1   500 Nov  8 12:12 af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185
--rw-r--r--@ 1   500 Nov  8 12:12 b2180a827443e3329fe3863656312ccf1978d212b49975e41499f908d39b9704
--rw-r--r--@ 1   472 Nov  8 12:12 c5fad240d7641fee6160bc52ddba6d90da92d44fe49267d1cc58bc3abe6a2784
--rw-r--r--@ 1   500 Nov  8 12:12 d246d972b2fe993556041a27d1244a3fe3122105927aaed587448083247d9d4a
--rw-r--r--@ 1   500 Nov  8 12:12 d7bc2a27eb1c1bf08c31f1de582f7c49acccddee141058ccac5a41988f7d4a6c
--rw-r--r--@ 1   500 Nov  8 12:12 d9a71da31961aa48e32e5a6b0b3784204984cd1e5a4471226bcd6a32f42c4fe8
--rw-r--r--@ 1   500 Nov  8 12:12 dfd5474165928f5c87717674fb5f76cf39241a9ea8842ea009870827890dfc59
--rw-r--r--@ 1   472 Nov  8 12:12 e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1
--rw-r--r--@ 1   500 Nov  8 12:12 e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527
--rw-r--r--@ 1   500 Nov  8 12:12 e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1
--rw-r--r--@ 1   350 Nov  8 12:12 e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7
--rw-r--r--@ 1   500 Nov  8 12:12 f68375a22c5654f1f180c12dc040e8a94cc7aae5edaebfd7ab02a3a92094a47d
+-rw-r--r--@ 1   500 Nov 10 11:51 0c48afc336dfbc04aae31b1c20f159c53ba5d212160ae48015358bcfe1d223fd
+-rw-r--r--@ 1   500 Nov 10 11:51 0f5043db4c988440d9803c71e6d4daf47867cdba56e182ccc2e830231a8178fb
+-rw-r--r--@ 1   500 Nov 10 11:51 125fae41a28989145d34ab188fe2190caa4b97011e69446dfe49f5232d609b3b
+-rw-r--r--@ 1   500 Nov 10 11:51 166fc57cad5de9584c3ebdac85a1db968ae41b2d59112ac4818ac3242bf2ff4a
+-rw-r--r--@ 1   500 Nov 10 11:51 1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4
+-rw-r--r--@ 1   324 Nov 10 11:51 249b13c4a21062eaba0e2a4e1170b6f7a3a003d260b6fcab3566d4c82cd5cb10
+-rw-r--r--@ 1   361 Nov 10 11:51 28df0ce6953593d4f869a0a1a45682c52752303329628daf7263dcc3fa8afa4d
+-rw-r--r--@ 1   500 Nov 10 11:51 2b293564ccc0ba4f8f85e8e5a4ef90bb58c429a7a0b388a441b086488a288427
+-rw-r--r--@ 1   500 Nov 10 11:51 31065331e00e3eb32fee93c9f2f6339e788d041c32bd242444892c6249e08e90
+-rw-r--r--@ 1   500 Nov 10 11:51 4d2f184d12c10e103898277348a756e1c5bdb592eeb6e2f12cd0dcceed905bac
+-rw-r--r--@ 1   500 Nov 10 11:51 64d8aaebd9f402b833d4c3c64b0b4fed40101f3388a1fa1e0d8eedef4ae23617
+-rw-r--r--@ 1   500 Nov 10 11:51 6698535f4847008068589a117bdb410c17d8d04bf6b91ba5bfcbd43ec49e5f5e
+-rw-r--r--@ 1   500 Nov 10 11:51 67cbb9b8b5ddee8d98311bbcdb792c0adc14171785aca5b1777dd8b2b4a70ed8
+-rw-r--r--@ 1   500 Nov 10 11:51 6d0e16c90c3d8188f7befdd8ce1e72c21d225cc0b52439d3411a4f51b09b5aed
+-rw-r--r--@ 1   468 Nov 10 11:51 6db7a2edef022949ad96e58945930ed7ceb4593d1b23dffee90a018154cefd42
+-rw-r--r--@ 1   343 Nov 10 11:51 72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8
+-rw-r--r--@ 1   500 Nov 10 11:51 83ae6c02983fc75e0eb756d8b6780f3b8ac54bfe46f2886013ea1ec8262a517f
+-rw-r--r--@ 1   500 Nov 10 11:51 887335c9ad28820c8c7ea6fdc1a958161e3c853c246038a90787876843cc4f5d
+-rw-r--r--@ 1   500 Nov 10 11:51 af182acb54e102a5dd1ea4e944a2b0bc04d89aaac5b7d22d860a9cc970d88185
+-rw-r--r--@ 1   500 Nov 10 11:51 b2180a827443e3329fe3863656312ccf1978d212b49975e41499f908d39b9704
+-rw-r--r--@ 1   500 Nov 10 11:51 d246d972b2fe993556041a27d1244a3fe3122105927aaed587448083247d9d4a
+-rw-r--r--@ 1   500 Nov 10 11:51 d7bc2a27eb1c1bf08c31f1de582f7c49acccddee141058ccac5a41988f7d4a6c
+-rw-r--r--@ 1   500 Nov 10 11:51 d9a71da31961aa48e32e5a6b0b3784204984cd1e5a4471226bcd6a32f42c4fe8
+-rw-r--r--@ 1   500 Nov 10 11:51 dfd5474165928f5c87717674fb5f76cf39241a9ea8842ea009870827890dfc59
+-rw-r--r--@ 1   500 Nov 10 11:51 e3df9814e3f6e030fa90d512b519693f9d87a1e1f893efe4e3a7c2238e966527
+-rw-r--r--@ 1   500 Nov 10 11:51 e6743bcfb3fbb12daa2bc9f4bbad14e8ec620e82c6b929506167bd324ecaa9f1
+-rw-r--r--@ 1   468 Nov 10 11:51 e8230daf3502a6e120300d1e9d3565769f34026a65023a9ab85b5e421ab593f3
+-rw-r--r--@ 1   500 Nov 10 11:51 f68375a22c5654f1f180c12dc040e8a94cc7aae5edaebfd7ab02a3a92094a47d
+-rw-r--r--@ 1   239 Nov 10 11:51 link_0000001500010007666f6f2e636f6d000100066f626a656374
+```
+
+One special file is `link_0000001500010007666f6f2e636f6d000100066f626a656374`.  It was generated
+by the `--link` CLI option.  In this first packet decode, we see it is a Content Object that
+has a payload type of LINK.  The payload is a Link TLV with the name `ccnx:/foo.com/object` and
+a hash restriction of `72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8`.
+That is the same hash of the root manifest written out above by `manifest_writer`.
+We will see how it is used in just a bit below.
+
+Note in the validation algorithm, we have an RSA SHA256 signature, which is validated by `test_key.pub`.
+The hash shown in the `RsaSha256Verifier` is the public key ID.  You can verify this on the CLI with:
+```openssl rsa -pubin -in test_key.pub -outform DER | openssl sha256```.
+
+```bash
+poetry run packet_reader \
+                --pretty \
+                -i output \
+                -k test_key.pub \
+                link_0000001500010007666f6f2e636f6d000100066f626a656374
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 239,
+         flds: '000000',
+         hlen: 8
+      },
+      CO: {
+         NAME: [Name = b 'foo.com', Name = b 'object'],
+         None,
+         PLDTYP: 'LINK',
+         Link(NAME: [Name = b 'foo.com', Name = b 'object'], None, HashValue: {
+            alg: 'SHA256',
+            val: '72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8'
+         }),
+         None
+      },
+      RsaSha256: {
+         keyid: HashValue: {
+            alg: 'SHA256',
+            val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'
+         },
+         pk: None,
+         keylink: None,
+         'SignatureTime': '2024-11-10T19:51:45.477000+00:00'
+      },
+      ValPld: 'cbd2478893b2019918d3eb0ba03ad4a343dc68e00bdb564a1069f3ce7515ecaedb60946bea9edf5c78ae3556700de107f016827e6e17106fee08899b1d56273e'
+   }
+}
+
+Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
 ```
 
 We can look into each of these packets.  First, look at the root manifest, whose hash-based name was in the
@@ -232,48 +307,47 @@ output of `manifest_writer`.  `packet_reader` can use either a private key or pu
 signature on a CCNx packet.  We show the usage with a public key, but the syntax is the same for a private key.
 Note that after displaying the content object, it shows "Packet validation success..." before the decrypted packet.
 
-The hash showin the `RsaSha256Verifier` is the public key ID.  You can verify this on the CLI with:
-```openssl rsa -pubin -in test_key.pub -outform DER | openssl sha256```.
+The CLI arguments for `packet_reader` are largely the same as `manifest_writer`.  The difference is `--pretty` controls
+if a verbose structured output is used, or a more compact format otherwise.  The filename is what to read, not what
+to encode.  In this example, we use the root manfiest content object hash, as that is the filename in
+the output directory we want to read.  
+
+If the AES encryption parametes are not given, `packet_reader` will only
+display the ContentObject, but cannot decode the embedded manifest.  We see in the `Packet {...}` section, the 
+Content Object `CO {...}` has a payload type of "MANIFEST" and it shows what it can.  In this case, the manifest
+is encrypted so it can only show the preshared key information, the encrypted node bytes, and the AEAD 
+authentication tag.  Note that the nonce is only 8 bytes, not 12, because we added a 4-byte salt.
 
 ```bash
-ccnpy$ openssl rsa -pubout -in test_key.pem -out test_key.pub
 ccnpy$ poetry run packet_reader \
-                --pretty \
-                -i output \
-                --enc-key 0102030405060708090a0b0c0d0e0f10 \
-                --key-num 22 \
-                -k test_key.pub \
-                e88e4a595e8e16f3e4a3c9452e4f0e184a7b2a73605a5f0bf624930e6c7718d7
-
+  --pretty \                
+  -i output \
+  --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+  -k test_key.pub \
+  72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8
+  
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
 {
    Packet: {
       FH: {
          ver: 1,
          pt: 1,
-         plen: 350,
+         plen: 343,
          flds: '000000',
          hlen: 8
       },
       CO: {
-         NAME: [TLV: {
-            T: 1,
-            L: 11,
-            V: b 'example.com'
-         }, TLV: {
-            T: 1,
-            L: 8,
-            V: b 'manifest'
-         }],
+         NAME: [Name = b 'foo.com', Name = b 'object'],
          None,
          PLDTYP: 'MANIFEST',
          Manifest: {
             PSK: {
-               kn: 22,
-               iv: '511bcb41bfc00297e87e713e',
-               mode: 'AES-GCM-128'
+               kn: 1,
+               iv: 'fb12ad1400d2c6a9',
+               mode: 'AES-CCM-128'
             },
-            EncNode: '74c41a189faeac83824a7bb889f1690b31c3929e56238d66eb06846ff1898dffab5b8289140c35c533141c93a52d41cc54c5bc8feb7049efe8394999018590846471ff269c6a3e42443472cfc1276ff65087cc1206e9e1b2dfc19174dfcc612dfa63f295ec88581c81409d5a7604be28',
-            AuthTag: '7c6ddd29728212f1498d24e2cdca87a8'
+            EncNode: 'b7b44763e6b670743d4dfc03e471555141af4da4ca28254d349b2ef879a0ccc9080d6627ea7ebd87220e283ef0b826f4c1f79a6f71ea73cfe62c26bbf6bca7413aba1fe1a721ef4bd201a702264f0929d364e97d5e916e3293ccc701ee1c488cf31c81372a9346f856b7ec2c66bae782096006',
+            AuthTag: '0a1ba6ab91530089c42cbbea52858fd8'
          },
          None
       },
@@ -284,14 +358,14 @@ ccnpy$ poetry run packet_reader \
          },
          pk: None,
          keylink: None,
-         'SignatureTime': '2024-11-08T20:12:40.102000+00:00'
+         'SignatureTime': '2024-11-10T19:51:45.474000+00:00'
       },
-      ValPld: '9d098374bc183441394b5dbce5a97c44b3434ae558635c4da12554fac0882413a4a83cfbce148d7d01402945c4766be9c73ff28503f4fd543d99bb4850c07a21'
+      ValPld: 'be6eb21a8c37af22bfed341aa81fdd4a02e4d6d03c4bc6b91d76ca40f247c56b879b6d5e88c56637888c66983e569fdf1e3b6f3876051a9592e842b4e8574f00'
    }
 }
 
 Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
-Decryption successful
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
 Manifest: {
    None,
    Node: {
@@ -299,23 +373,24 @@ Manifest: {
          SubtreeSize: 11357,
          None,
          None,
-         [NCDEF: (NCID: 1, HS: Locators: [Locator: Link(NAME: [TLV: {
-            T: 1,
-            L: 11,
-            V: b 'example.com'
-         }, TLV: {
-            T: 1,
-            L: 8,
-            V: b 'manifest'
-         }], None, None)], None)],
+         [NCDEF: (NCID: 1, HS: Locators: [Locator: Link(NAME: [Name =
+            b 'foo.com', Name = b 'object'
+         ], None, None)], None)],
          None
       },
       1,
       [HashGroup: {
-         None,
+         GroupData: {
+            None,
+            None,
+            None,
+            None,
+            NCID: 1,
+            None
+         },
          Ptrs: [HashValue: {
             alg: 'SHA256',
-            val: 'e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1'
+            val: 'e8230daf3502a6e120300d1e9d3565769f34026a65023a9ab85b5e421ab593f3'
          }]
       }]
    },
@@ -323,14 +398,10 @@ Manifest: {
 }
 ```
 
-This is the root manifest from above.  The packet dump shows it is a `PLDTYP('MANIFEST')` so the contents of the
-Payload field are a serialized manifest.  The manifest shown is encrypted, so all we can see here is the pre-shared
-key context (PSK(...)) that identifies the decryption key, the encrypted node, and the authentication tag.  The 
-manifest's content object also has an RsaSha256 validation alg and validation payload.
-
 Because we provided the correct decryption key and key number on the command-line, `PacketReader` also decrypted
-the manifest.  This shows there is a Node with NodeData and a subtree size of 11,357 bytes (the filesize of LICENSE).
-There is 1 HashGroup with one pointer, as is normal for the named and signed root manifest.
+the manifest.  This shows there is a Node with NodeData and a subtree size of 11,357 bytes (the file size of LICENSE).
+There is 1 HashGroup with one pointer, as is normal for the named and signed root manifest.  The hash group
+uses NCID 1, which was defined in the NodeData.
 
 The `NodeData` has one name constructor definition, with a locator of `ccnx:/example.com/manifest`.  That is the same
 name as the root manifest, as we only provided the `--name` flag.  See below for an example with
@@ -345,17 +416,18 @@ are always last due to the post order traversal).
 
 ```bash
 ccnpy$ poetry run packet_reader \
-                    --pretty \
-                    -i output \
-                    --enc-key 0102030405060708090a0b0c0d0e0f10 \
-                    --key-num 22 \
-                    e3285eba81a97943219e9364201b8c74ece86a89b8f121fb1501f1b6faf249c1
+  --pretty \                
+  -i output \
+  --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+  -k test_key.pub \
+  e8230daf3502a6e120300d1e9d3565769f34026a65023a9ab85b5e421ab593f3
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
 {
    Packet: {
       FH: {
          ver: 1,
          pt: 1,
-         plen: 472,
+         plen: 468,
          flds: '000000',
          hlen: 8
       },
@@ -365,12 +437,12 @@ ccnpy$ poetry run packet_reader \
          PLDTYP: 'MANIFEST',
          Manifest: {
             PSK: {
-               kn: 22,
-               iv: 'c533a506acce6b43843ae8bd',
-               mode: 'AES-GCM-128'
+               kn: 1,
+               iv: '321d47ac0fd0284c',
+               mode: 'AES-CCM-128'
             },
-            EncNode: 'dd848460cd05d030da1c0b5c8b75c2ac3b5abc7572e0a601c1e1b7b29c369552f106f9dc04d4eb2a66b64ce8c7373fe8963892d374fd857ac6b03fc048a9ea956b2ecbaa341910af68e2161a3318a6acb8a32f0a6e71772296f5c9e10a9030c9e486a7dcab010e3bdbc5d47bae48477411416854323b9142430dd03d95630a6dbc7e015f001a1aafbfc616985799c0dde3a4d2376e0a6b1559e857afe9cffd02c054425a5ec47e96d4b49907e371773a48d96af914557e9d7b4a3b8d4282b3a4b949c417d5734c1202a68d00b82621f8f62031f2a81885bba6b1d9eac8ad7714df30befcd0e00e33ce9e76cf4f58a18aa9e5dabe02e229d3090dd2e3c7563f347991ff11f0b7c45f01cdd35b7090453fbba1081849cadecb51db8991e6a31fd6513854ebc47f6bcf7ed7e8793003a0269575a26277641dcc8482a248c209b585238e802a30ae68155bd07bf69373428119b8b94443a8bb42f87ab9f050b4014163689839cef833f653ddd028e205cacf0ccf6d1dda8577a751cb1fb82a45cfe3ecb598cd19fcca3935',
-            AuthTag: '1db8fa20372a9e00d529fed4e91be487'
+            EncNode: 'a05ee07e5ca3b1dc4900f85db61e33a844079e8aa4eb8ba6ee11a53e0b48cc9c5953d2832a4678bdfd844c2cca511718909774aa1fdc110cd46e645dc97dde2cfe34b3a7bc66ecfc62c5f560d49b354820367c1c8ffc10ccb8e3a7343e6f472952c256b099b1e77d07ed9e6d46cd61bfda42f34e9663d94f302388459d6388eaca2e906a8d4750d00b18f2bd5eda863c8e385ab0e6183fb54c7323531fa07e05642f2eb96b2157aa9cd739c7ee7f5386e2711c8e73a084f5c6456b08b0c05fd71609a102c5745b80a0c2e0f98f2e99a3f2e08d93566273d678d8dea4398bb85dac356badba6f5be9a5561c55ffdbd7fb832a02446ca9d21694bbaf871b83f8cf1ae9be9fbe2d79d3715079264bca49e911273bac31bcfd32af75d30c516b8429580b6ebba20e866b86ab7f44250ca63954c0faae3f035c88cbddbc2d3ef8f9a63f0c38c57f5af6bba0c7047ba6cca5d460b01c077090ee8e8a5041d2ede8982e2ee3f14fda25627bb693815cd4da125aa83ffbf8b31d1dc861cb7f24e70e96eeb94b9e8c141fa3659d',
+            AuthTag: 'ee905d3a8c427763f06d3820df55662c'
          },
          None
       },
@@ -379,7 +451,7 @@ ccnpy$ poetry run packet_reader \
    }
 }
 
-Decryption successful
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
 Manifest: {
    None,
    Node: {
@@ -426,17 +498,103 @@ Manifest: {
             val: '1da52e06097ebf55200640b24e065976943d661133bbe7376801e10f45c2d1f4'
          }, HashValue: {
             alg: 'SHA256',
-            val: '6a55fec71d85f32f69dda3fd85f454600639636a77a72c474611fccdb4ece8b6'
+            val: '249b13c4a21062eaba0e2a4e1170b6f7a3a003d260b6fcab3566d4c82cd5cb10'
          }, HashValue: {
             alg: 'SHA256',
-            val: 'c5fad240d7641fee6160bc52ddba6d90da92d44fe49267d1cc58bc3abe6a2784'
+            val: '6db7a2edef022949ad96e58945930ed7ceb4593d1b23dffee90a018154cefd42'
          }]
       }]
    },
    None
 }
-
 ```
+
+The `--link` option is useful if you will use `manifest_reader` on the directory.  In that case, it can
+quickly find the root manifest by name alone rather than have to search for it.
+
+The link filename is always of the form `link_{serialized_name}`, where `serialized_name` is the
+hex encoding of the Name TLV.  In the example below, this parses as:
+
+```text
+0000 0015      ; Name TLV (type = 0, length = 21)
+0001 0007      ; Name Component TLV (type = 1, length = 7)
+666f6f2e636f6d ; hex for 'foo.com'
+0001 0006      ; Name Component TLV (type = 1, length = 7)
+6f626a656374   ; hex for 'object'
+```
+
+```bash
+ccnpy$ poetry run packet_reader -i output --pretty -k test_key.pem -p '' link_0000001500010007666f6f2e636f6d000100066f626a656374
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 239,
+         flds: '000000',
+         hlen: 8
+      },
+      CO: {
+         NAME: [Name = b 'foo.com', Name = b 'object'],
+         None,
+         PLDTYP: 'LINK',
+         Link(NAME: [Name = b 'foo.com', Name = b 'object'], None, HashValue: {
+            alg: 'SHA256',
+            val: '72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8'
+         }),
+         None
+      },
+      RsaSha256: {
+         keyid: HashValue: {
+            alg: 'SHA256',
+            val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'
+         },
+         pk: None,
+         keylink: None,
+         'SignatureTime': '2024-11-10T19:51:45.477000+00:00'
+      },
+      ValPld: 'cbd2478893b2019918d3eb0ba03ad4a343dc68e00bdb564a1069f3ce7515ecaedb60946bea9edf5c78ae3556700de107f016827e6e17106fee08899b1d56273e'
+   }
+}
+
+Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
+```
+
+### Using `manifest_reader`
+
+The utility `manifest_reader` reads what `manifest_writer` produces.  In this example, we ask it to read `ccnx:/foo.com/object`, which 
+is the name we used above in `manifest_writer`.  Because we include `--link`, the reader uses that to find the hash
+value of the root manifest and reads that in.  It discovers the first NcDef and learns about NcId 1.  Each `NcCache` has
+an instance (`inst`) identifier, because name definitions can change as we traverse a manifest.  Anytime there
+is a new NcDef in the manifest tree, the reader copies the current NcCache and adds or udpates the definitions for
+that branch.
+
+The read bytes, in `flic.txt` are exactly the same as the original file `LICENSE`.
+
+```bash
+ccnpy$ run manifest_reader  \
+   -i output \
+   --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+   -k test_key.pub \
+   --name ccnx:/foo.com/object \
+   --output flic.txt
+Dereferenced link link_0000001500010007666f6f2e636f6d000100066f626a656374 to load packet HashValue: {alg: 'SHA256', val: '72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8'}
+Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
+AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
+NcCache[inst=2][ncid=1] = HS: Locators: [Locator: Link(NAME: [Name=b'foo.com', Name=b'object'], None, None)], None
+
+Finished traversal, 28 objects procssed
+
+ccnpy$ ls -l flic.txt LICENSE
+-rwxr-xr-x@ 1 marc  staff  11357 Oct  1 20:52 LICENSE
+-rw-r--r--@ 1 marc  staff  11357 Nov 10 12:28 flic.txt
+ccnpy$ diff flic.txt LICENSE; echo $?
+0
+```
+
+### An example using Segmented names
+
+TBD
 
 ### Large Degree Tree
 
@@ -445,6 +603,7 @@ create only one or two nameless data objects, then a tree with many pointers to 
 
 ```bash
 ccnpy$ dd if=/dev/zero of=zeros bs=1000 count=1000
+ccnpy$ mkdir out2
 ccnpy$ poetry run manifest_writer  \
                    --name ccnx:/example.com/manifest \
                    --manifest-locator ccnx:/manifest \
@@ -492,8 +651,10 @@ total 176
 -rw-r--r--+ 1 mmosko  1987151510   490 Jul  1 22:32 f74a2dd53446f597a4659d160945186b31e87f2c43f632dac54a1da033fbe147
 ```
 
+
 Packet `44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f` is:
 
+```bash
     {
        Packet: {
           FH: {
@@ -513,12 +674,16 @@ Packet `44b8f04d36f09a6295447c47c6e0501cbe83382776140e0039d7fe48d3a2c74f` is:
           None
        }
     }
+```
 
 If we did not use encryption, then the output would be even more compressed.  That is because most of the manifest
 nodes look just like the other manifest nodes, so we get data de-duplication of manifest nodes.  With encryption,
 each manifest node is unique due to different IVs.
 
-```
+In this example without encryption, the entire 1 MB `zeros` file and manifest tree fit in just 7 objects with a total
+wire-format size of 7173 bytes.
+
+```bash
 ccnpy$ python3 -m ccnpy.apps.manifest_writer  \
                    -n ccnx:/example.com/manifest \
                    -k test_key.pem \
@@ -543,109 +708,16 @@ total 56
 
 # FLIC Manifests
 
-A FLIC manifest is a way of organizing hash pointers to hash-named data objects.
-
-Terminology:
-* Data Object: A CCNx nameless Content Object that usually only has Payload.  It might also have an ExpiryTime to
-try a limit the lifetime of the data.
-* Direct Pointer: Borrowed from inode terminology, it is a CCNx link using a content object hash restriction and a
-locator name to point to a Data Object.
-* Indirect Pointer: Borrowed from inode terminology, it is a CCNx link using a content object hash restriction and
-a locator name to point to a manifest content object.
-* Manifest: A CCNx ContentObject with PayloadType 'Manifest' and a Payload of the encoded manifest.  A leaf manifest
-only has direct pointers.  An internal manifest has a mixture of direct and indirect manifests.
-* Leaf Manifest: all pointers are direct pointers.
-* Internal Manifest: some pointers are direct and some pointers are indirect.  The order and number of each is up to
-the manifest builder.  Typically, all the direct manifests come first, then the indirect.
-* Manifest Waste: a metric used to measure the amount of waste in a manifest tree.  Waste is the number of unused
-pointers.  For example, a leaf manifest might be able to hold 40 direct pointers, but only 30 of them are used, so
-the waste of this node is 10.  Manifest tree waste is the sum of waste over all manifests in a tree.
-* Root Manifest: A signed, named, manifest that points to nameless manifest nodes.  This structure means that the
-internal tree structure of internal and leaf manifests have no names and thus may be put located anywhere, while
-the root manifest has a name to fetch it by.  
-
-
-## Grammar (ABNF)
-
-    TYPE = INTEGER ; As per TLV encoding
-    LENGTH = INTEGER ; As per TLV encoding
-    
-    Manifest = TYPE LENGTH [SecurityCtx] (EncryptedNode / Node) [AuthTag]
-
-    SecurityCtx = TYPE LENGTH AlgorithmCtx
-    AlgorithmCtx = PresharedKeyCtx /     
-    AuthTag = TYPE LENGTH *OCTET ; e.g. AEAD authentication tag
-    EncryptedNode = TYPE LENGTH *OCTET ; Encrypted Node
-
-    Node = TYPE LENGTH [NodeData] 1*HashGroup
-    NodeData = TYPE LENGTH [SubtreeSize] [SubtreeDigest] [Locators] [NSDef]
-    SubtreeSize = TYPE LENGTH INTEGER
-    SubtreeDigest = TYPE LENGTH HashValue
-    NSDef = TYPE LENGTH NsId NsSchema
-    NsId = TYPE LENGTH INTEGER
-    NsSchema = HashSchema / SinglePrefixSchema / SegmentedPrefixSchema
-    HashSchema = TYPE 0
-    SinglePrefixSchema = TYPE LENGTH Name
-    SegmentedPrefixSchema = TYPE LENGTH Name
-    
-    Locators = TYPE LENGTH 1*Link
-    HashValue = TYPE LENGTH *OCTET ; See RFC 8506 or NDN ImplicitSha256DigestComponent
-    Link = TYPE LENGTH *OCTET ; See RFC 8506 Link or NDN Delegation (from Link Object)
-     
-    HashGroup = TYPE LENGTH [GroupData] (Ptrs / AnnotatedPtrs)
-    Ptrs = TYPE LENGTH *HashValue
-    AnnotatedPtrs = TYPE LENGTH *PointerBlock
-    PointerBlock = TYPE LENGTH *Annotation Ptr
-    Ptr = TYPE LENGTH HashValue
-    Annotation = SizeAnnotation / Vendor
-
-    GroupData = TYPE LENGTH [LeafSize] [LeafDigest] [SubtreeSize] [SubtreeDigest] [NsId]
-    LeafSize = TYPE LENGTH INTEGER
-    LeafDigest = TYPE LENGTH HashValue
-    
-    PresharedKeyCtx = 1 LENGTH PresharedKeyData
-    PresharedKeyData = KeyNum IV Mode
-    KeyNum = TYPE LENGTH INTEGER
-    IV = TYPE LENGTH 1*OCTET
-    Mode = TYPE LENGTH (AES-GCM-128 / AES-GCM-256)
-    
-    RsaKemCtx = 2 LENGTH RsaKemData
-    RsaKemData = KeyId IV Mode WrappedKey LocatorPrefix
-    KeyId = TYPE LENGTH HashValue 
-    WrappedKey = TYPE LENGTH 1*OCTET    
-    LocatorPrefix = TYPE LENGTH Link
+See the IRTF draft on [FLIC](https://datatracker.ietf.org/doc/draft-irtf-icnrg-flic/) for a description of the CCNx objects and grammar.  Below, we provide some
+examples to help show how `manifest_writer` works.
 
 A Manifest is embedded inside a CCNx Content Object:
 
     ManifestContentObject = TYPE LENGTH [Name] [ExpiryTime] PayloadType Payload
     Name = TYPE LENGTH *OCTET ; As per RFC8569
     ExpiryTime = TYPE LENGTH *OCTET ; As per RFC8569
-    PayloadType = TYPE LENGTH T_PYLDTYPE_MANIFEST ; Value TBD
+    PayloadType = TYPE LENGTH T_PYLDTYPE_MANIFEST
     Payload : TYPE LENGTH *OCTET ; the serialized Manifest object
-    
-    
-## Grammar Description
-
-* Name: The optional ContentObject name
-* SecurityCtx: Information about how to decrypt an EncryptedNode. The structure will depend on the specific encryption algorithm.
-* AlgorithmId: The ID of the encryption method (e.g. preshared key, a broadcast encryption scheme, etc.)
-* AlgorithmData: The context for the encryption algorithm.
-* EncryptedNode: An opaque octet string with an optional authentication tag (i.e. for AEAD authentication tag)
-* Node: A plain-text manifest node. The structure allows for in-place encryption/decryption.
-* NodeData: the metadata about the Manifest node
-* SubtreeSize: The size of all application data at and below the Node
-* SubtreeDigest: The cryptographic digest of all application data at and below the Node
-* Locators: An array of routing hints to find the manifest components
-* Final: A flag that prevents Locators from being superseded by a child Manifest Node
-* HashGroup: A set of child pointers and associated metadata
-* Ptrs: A list of one or more Hash Values
-* GroupData: Metadata that applies to a HashGroup
-* LeafSize: Size of all application data immediately under the Group (i.e. without recursion through other Manifests)
-* LeafDigest: Digest of all application data immediately under the Group
-* SubtreeSize: Size of all application data under the Group (i.e., with recursion)
-* SubtreeDigest: Digest of all application data under the Group (i.e. with recursion)
-* Ptr: The ContentObjectHash of a child, which may be a data ContentObject (i.e. with Payload) or another Manifest Node.
-* PresharedKey related fields are described below under Preshared Key Algorithm
 
 ## Manifest Examples
 
@@ -745,23 +817,23 @@ and change AuthTag to PAD and overwrite the value with zeros.
         )
     )
 
-## PresharedKey Algorithm
+## AEAD Encryption Algorithm
 
-    PresharedKeyData := KeyNum IV Mode
+    AeadData := KeyNum Nonce Mode
     KeyNum := INTEGER
-    IV := OCTET+
-    Mode := AES-GCM-128 AES-GCM-256
+    Nonce := OCTET+
+    Mode := AES-GCM-128 AES-GCM-256 AES-CCM-128 AES-CCM-256
 
 The KeyNum identifies a key on the receiver. The key must be of the correct length of the Mode used. If the key is
-longer, use the left bits. Many receivers many have the same key with the same KeyId.
+longer, use the left bits. Many receivers many have the same key with the same KeyNum.
 A publisher creates a signed root manifest with a security context. A consumer must ensure that 
 the root manifest signer is the expected publisher for use with the pre-shared key, which may be shared with 
 many other consumers. The publisher may use either method 8.2.1 (deterministic IV) or 8.2.2 (RBG-based IV) 
-[NIST 800-38D] for creating the IV.
+[NIST 800-38D] for creating the Nonce.  It is also recommended that the publisher and consumers share
+a 4-byte salt, which is not transmitted in-band.
 
 Each encrypted manifest node (root manifest or internal manifest) has a full security
-
-context (KeyNum, IV, Mode). The AES-GCM decryption is independent for each manifest so Manifest objects can be 
+context (KeyNum, Nonce, Mode). The AES-GCM decryption is independent for each manifest so Manifest objects can be 
 fetched and decrypted in any order. This design also ensures that if a manifest tree points to the same subtree 
 repeatedly, such as for deduplication, the decryptions are all idempotent.
 
@@ -788,94 +860,6 @@ If doing in-place decryption, the cipher text C will be enclosed in an Encrypted
 change the TLV type to Node. The length should be the same. After decryption the AuthTag is no longer needed. The 
 TLV type should be changed to T_PAD and the value zeroed. The SecurityCtx could be changed to T_PAD and zeroed or 
 left as-is.
-
-
-## RSA/EC Key Wrapping Method
-
-Similar to Key Encapsulation, but use something like RSA-PSS or RSA-OAEP or EC-KEM 
-[NIST Special Publication 800-56A Rev 3] or EC-MQV.  We could also look at existing
-IETF work, e.g. Cryptographic Message Syntax (CMS).
-
-## RSA Key Encapsulation Method
-
-* See also RFC 5990
-* See also NIST SP 800-56B Rev. 2
-* See also https://lists.w3.org/Archives/Public/public-xmlsec/2009May/att-0032/Key_Encapsulation.pdf
-
-In this system, a key manager (KM) (which could be the publisher) creates a Content
-Encryption Key (CEK) and a key wrapping pair with a Key Encryption Key (KEK) and Key Decryption Key (KDK). 
-Each publisher and consumer has its own public/private key pair, and the KM knows each publisher’s and consumer’s 
-identity and its public key (PK_x).
-
-We do not describe the publisher-key manager protocol to request a CEK. The publisher will obtain the 
-(CEK, E_KEK(Z), KeyId, Locator), where each element is: the content encryption key, the CEK precursor, Z, 
-encrypted with the KEK (an RSA operation), and the KeyId of the corresponding KDK, and the Locator is the CCNx 
-name prefix to fetch the KDK (see below). The precursor Z is chosen randomly z < n-1, where n is KEK’s public modulus. 
-Note that CEK = KDF(Z). Note that the publisher does not see KEK or Z.
-
-We use HKDF (RFC 5869) for the KDF. CEK = HKDF-Expand(HKDF-Extract(0, Z), ‘CEK’, KeyLen), where KenLen is usually 
-32 bytes (256 bits).
-
-    RsaKemData := KeyId IV Mode WrappedKey LocatorPrefix
-    KeyId := HashValue
-    IV := OCTET+
-    Mode := AES-GCM-128 AES-GCM-256
-    WrappedKey := OCTET+
-    LocatorPrefix := Link
-    KeyId: the ID of the KDK
-    IV: The initialization vector for AES-GCM
-    Mode: The encryption mode for the Manifest’s EncryptedNode value
-    WrappedKey: E_KEK(Z)
-    LocatorPrefix: Link with name = KM prefix, KeyId = KM KeyId
-
-To fetch the KDK, a consumer with public key PK_c constructs an Interest with name 
-`/LocatorPrefix/<KeyId>/<PK_c keyid>` and a KeyIdRestriction of the KM’s KeyId 
-(from the LocatorPrefix Link). It should receive back a signed Content Object with the KDK wrapped for the 
-consumer, or a NAK from the KM. The payload of the ContentObject will be RsaKemWrap(PK, KDK). The signed 
-ContentObject must have a KeyLocator to the KM’s public key. The consumer will trust the KM’s public key because 
-the publisher, whom the consumer trusts, relayed that KeyId inside its own signed Manifest.
-
-The signed Content Object should have an ExpiryTime, which may be shorter than the Manifest’s, but should not 
-be substantially longer than the Manifest’s ExpiryTime. The KM may decide how to handle the Recommended Cache Time, 
-or if caching of the response is even permissible. The KM may require on-line fetching of the response via a 
-CCNxKE encrypted transport tunnel.
-
-    RsaKemWrap(PK, K, KeyLen = 256):    
-        choose a z < n-1, where n is PK’s public modulus
-        encrypt c = z^e mod n
-        prk = HKDF-Extract(0, Z)
-        kek = HKDF-Expand(prk, ‘RsaKemWrap’, KeyLen)
-        wrap WK = E_KEK(K) [AES-WRAP, RFC 3394]
-        output (c, WK)
-
-A consumer must verify the signed content object’s signature against the Key Manager’s public key. The consumer 
-then unwraps the KDK from the Content Object’s payload using RsaKemUnwrap(). The KeyLen is taken from the WrapMode 
-parameter.
-
-    RsaKemUnwrap(SK, c, WK, KeyLen = 256):
-        Using the consumers private key SK, decrypt Z from c.
-        prk = HKDF-Extract(0, Z)
-        kek = HKDF-Expand(prk, ‘RsaKemWrap’, KeyLen)
-        K = D_KEK(WK) [AES-UNWRAP, RFC 33940]
-        output K
-
-The consumer then unwraps the CEK precursor by using the KDK to decrypt Z. It then derives CEK as above.
-
-Manifest encryption and decryption proceed as with PresharedKey, but using the CEK.
-
-##  Broadcast Encryption Method
-
-WORK IN PROGRESS
-
-* See Boneh, Dan, Craig Gentry, and Brent Waters. "Collusion resistant broadcast encryption with short ciphertexts 
-and private keys." In Annual International Cryptology Conference, pp. 258-275. Springer, Berlin, Heidelberg, 2005.
-
-The Key Manager (KM) knows all consumers and each consumers RSA/EC public key. Each consumer has an ID
-
-The publisher requests a key from the KM for a set of consumers identities or pre-defined groups, and receives 
-(HDR, K, KeyId(PK), S, LocatorPrefix).
-
-    BEMData := KeyId IV Mode HDR S LocatorPrefix
 
 # Implementation notes
 

@@ -13,15 +13,11 @@
 #  limitations under the License.
 
 import argparse
+import sys
 from abc import ABC, abstractmethod
-from pathlib import PurePath
 
-from ccnpy.apps.packet_utils import validate_packet, decrypt_manifest
 from ccnpy.core.Name import Name
-from ccnpy.core.Packet import Packet
-from ccnpy.crypto.DecryptionError import DecryptionError
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
-from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 from .cli_utils import add_encryption_cli_args, fixup_key_password, create_keystore
@@ -40,6 +36,23 @@ class ManifestReader(ABC):
         pass
 
 
+class StdOutWrapper:
+    def __init__(self):
+        self._out = sys.stdout
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._out is not None:
+            # do not actually close stdout
+            self._out = None
+
+    def write(self, value):
+        if not isinstance(value, str):
+            value = value.tobytes().decode('utf-8', errors='ignore')
+        self._out.write(value)
+
 class ManifestNetworkReader(ManifestReader):
     pass
 
@@ -51,55 +64,52 @@ class ManifestDirectoryReader(ManifestReader):
     def __init__(self, args, keystore: InsecureKeystore):
         """
 
-        :param args:
+        :param args: the CLI arguments
         :param packet_writer: In testing, we pass our own packet writer, otherwise create one for the directory
         """
         super().__init__()
-        self._root_name = args.name
+        self._root_name = Name.from_uri(args.name)
         self._root_hash = args.hash_restriction
         self._dir = args.in_dir
-        self._prettify = args.prettify
         self._keystore = keystore
         self._decryptors = {}
         self._reader = TreeIO.PacketDirectoryReader(self._dir)
+        self._writer = self._create_writer(args)
         self.debug = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def close(self):
+        if self._writer is not None:
+            self._writer.close()
+            self._writer = None
+
+    @staticmethod
+    def _create_writer(args):
+        if args.output_file_name is None:
+            # dup so we do not close stdout
+            return StdOutWrapper()
+
+        return open(args.output_file_name, 'wb')
 
     def read(self):
         """
         """
-        traverser = Traversal(packet_input=self._reader, data_writer=None, keystore=self._keystore, debug=self.debug)
+        with self._writer:
+            traverser = Traversal(packet_input=self._reader,
+                                  data_writer=self._writer,
+                                  keystore=self._keystore,
+                                  debug=self.debug)
+            # this will walk the manifest tree and write the app data to `data_writer`.
+            traverser.traverse(root_name=self._root_name, hash_restriction=self._root_hash)
 
-        # this will walk the manifest tree and write the app data to `data_writer`.
-        traverser.traverse(root_name=self._root_name, hash_restriction=self._root_hash)
-
-    def read_by_name(self, name: Name, hash_restriction):
-
-    def traverse(self, packet: Packet):
-        try:
-            validate_packet(keystore=self._keystore, packet=packet)
-        except RuntimeError as e:
-            print(e)
-            exit(-2)
-
-        if not packet.body().is_manifest():
-            raise RuntimeError('Traverse can only handle manifest packets')
-
-        manifest = Manifest.from_content_object(packet.body())
-        manifest = decrypt_manifest(keystore=self._keystore, manifest=manifest)
-
-        if manifest.is_encrypted():
-            if self._decryptor is not None:
-                try:
-                    plaintext = self._decryptor.decrypt_manifest(manifest)
-                    print("Decryption successful")
-                    self._output(plaintext)
-                except DecryptionError as e:
-                    print(f"Failed decryption: {e}")
-            else:
-                print("No decryption key provided")
-
-
-
+        print()
+        print()
+        print(f'Finished traversal, {traverser.count()} objects procssed')
 
 
 def run():
