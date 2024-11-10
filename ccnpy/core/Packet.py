@@ -14,15 +14,17 @@
 import abc
 import array
 import hashlib
-from typing import Iterable
+from typing import Iterable, Optional
 
 from .ContentObject import ContentObject
 from .FixedHeader import FixedHeader
 from .HashValue import HashValue
 from .Interest import Interest
+from .Name import Name
 from .Tlv import Tlv
 from .ValidationAlg import ValidationAlg
 from .ValidationPayload import ValidationPayload
+from ..flic.tlvs.Locators import Locators
 
 
 class Packet:
@@ -160,9 +162,9 @@ class Packet:
         tlv = HashValue.create_sha256(array.array("B", digest))
         return tlv
 
-class PacketReader(abc.ABC, Iterable):
+class PacketReader(abc.ABC):
     @abc.abstractmethod
-    def get(self, hash_value) -> Packet:
+    def get(self, name: Name, hash_restriction: HashValue, locators: Optional[Locators] = None) -> Packet:
         pass
 
     def close(self):

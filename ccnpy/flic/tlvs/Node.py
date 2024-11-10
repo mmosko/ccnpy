@@ -11,14 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import Optional, List, Iterator
 
 from ccnpy.flic.tlvs.HashGroup import HashGroup
+from tests.flic.tlvs.test_NcId import NcIdTest
 from .NodeData import NodeData
 from ccnpy.exceptions.CannotParseError import CannotParseError
 from ccnpy.exceptions.ParseError import ParseError
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ...core.HashValue import HashValue
 
 
 class Node(TlvType):
@@ -31,6 +34,39 @@ class Node(TlvType):
     ```
     """
     __type = 0x0002
+
+    @dataclass
+    class HashIteratorValue:
+        nc_id: int
+        hash_value: HashValue
+        segment_id: Optional[int]
+
+    class NodeIterator(Iterator):
+        def __init__(self, hash_groups: List[HashGroup]):
+            self._groups = hash_groups
+            self._group_index = 0
+            self._ptr_index = 0
+
+        def __next__(self):
+            if self._group_index >= len(self._groups):
+                raise StopIteration
+            hg = self._groups[self._group_index]
+            if self._ptr_index >= len(hg.pointers()):
+                self._ptr_index = 0
+                self._group_index += 1
+                return self.__next__()
+            value = hg.pointers()[self._ptr_index]
+            result = Node.HashIteratorValue(nc_id=hg.group_data().nc_id().id(),
+                                            hash_value=value,
+                                            segment_id=self._get_segment_id(hg, self._ptr_index))
+            self._ptr_index += 1
+            return result
+
+        def _get_segment_id(self, hg: HashGroup, offset: int) -> Optional[int]:
+            gd = hg.group_data()
+            if gd is not None and gd.start_segment_id() is not None:
+                return gd.start_segment_id().value() + offset
+            return None
 
     @classmethod
     def class_type(cls):
@@ -68,6 +104,9 @@ class Node(TlvType):
     def __repr__(self):
         hash_values_len = len(self.hash_values())
         return "Node: {%r, %r, %r}" % (self._node_data, hash_values_len, self._hash_groups)
+
+    def __iter__(self):
+        return Node.NodeIterator(self._hash_groups)
 
     def has_node_data(self) -> bool:
         return self._node_data is not None

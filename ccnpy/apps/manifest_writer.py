@@ -30,6 +30,9 @@ from .cli_utils import add_encryption_cli_args, rsa_signer_from_cli_args, aead_e
 
 class ManifestWriter:
     """
+    A swiss-army-knife utility for creating FLIC manifests.
+
+    TODO: should convert to using keystore rather than raw keys
     """
 
     def __init__(self, args, packet_writer: PacketWriter):

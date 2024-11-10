@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import getpass
+from typing import Optional
 
 from ccnpy.crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
+from ccnpy.crypto.InsecureKeystore import InsecureKeystore
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer, RsaSha256Verifier
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
@@ -34,7 +36,10 @@ def add_encryption_cli_args(parser):
     parser.add_argument('--salt', dest="salt", type=int, default=None,
                         help="Upto a 4-byte salt to include in the IV with the nonce.")
 
-def aes_key_from_cli_args(args) -> AeadKey:
+def aes_key_from_cli_args(args) -> Optional[AeadKey]:
+    if args.enc_key is None:
+        return None
+
     key_bytes = bytearray.fromhex(args.enc_key)
     if args.aes_mode == 'GCM':
         return AeadGcm(key=key_bytes)
@@ -76,3 +81,14 @@ def fixup_key_password(args, ask_for_pass: bool = True):
 
     if len(args.key_pass) == 0:
         args.key_pass = None
+
+def create_keystore(args):
+    keystore = InsecureKeystore()
+    aes_key = aes_key_from_cli_args(args)
+    if aes_key is not None:
+        keystore.add_aes_key(args.key_num, aes_key, args.salt)
+
+    if args.key_file is not None:
+        keystore.add_rsa_key(name='default', key=RsaKey.load_pem_key(args.key_file, args.key_pass))
+
+    return keystore

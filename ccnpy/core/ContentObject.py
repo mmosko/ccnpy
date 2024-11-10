@@ -28,6 +28,8 @@ from .TlvType import TlvType
 class ContentObject(TlvType):
     __T_OBJECT = 0x0002
 
+    USE_BRIEF_OUTPUT = False
+
     @classmethod
     def class_type(cls):
         return cls.__T_OBJECT
@@ -120,7 +122,10 @@ class ContentObject(TlvType):
             from ccnpy.flic.tlvs.Manifest import Manifest
             payload = Manifest.deserialize(self._payload.value())
         else:
-            payload = self.payload()
+            if self.USE_BRIEF_OUTPUT:
+                payload = f'(payload {len(self._payload)} bytes)'
+            else:
+                payload = self.payload()
 
         return "CO: {%r, %r, %r, %r, %r}" % (self.name(), self.expiry_time(), self.payload_type(), payload, self._final_chunk_id)
 

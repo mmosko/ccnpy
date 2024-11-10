@@ -39,6 +39,12 @@ class NcDef(TlvType):
         self._schema = schema
         self._tlv = Tlv(self.class_type(), [self._nc_id, self._schema])
 
+    def nc_id(self) -> NcId:
+        return self._nc_id
+
+    def schema(self) -> NcSchema:
+        return self._schema
+
     def __len__(self):
         return len(self._tlv)
 

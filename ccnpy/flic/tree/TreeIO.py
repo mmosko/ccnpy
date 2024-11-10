@@ -16,9 +16,13 @@ import os
 import socket
 from array import array
 from pathlib import PurePath
+from typing import Optional, Dict
 
 from .SizedPointer import SizedPointer
+from ..tlvs.Locators import Locators
 from ...core.ContentObject import ContentObject
+from ...core.HashValue import HashValue
+from ...core.Name import Name
 from ...core.Packet import Packet, PacketWriter, PacketReader
 from ...core.Payload import Payload
 
@@ -56,7 +60,7 @@ class TreeIO:
         def __init__(self, packets):
             if isinstance(packets, TreeIO.PacketMemoryWriter):
                 self.packets = packets.packets
-                self.by_hash = packets.by_hash
+                self.by_hash: Dict[str, Packet] = packets.by_hash
             else:
                 self.packets = packets
                 self.by_hash = {}
@@ -64,8 +68,13 @@ class TreeIO:
                     # print("PacketInput: add key %r" % packet.content_object_hash())
                     self.by_hash[packet.content_object_hash()] = packet
 
-        def get(self, hash_value) -> Packet:
-            return self.by_hash[hash_value]
+        def get(self, name: Name, hash_restriction: HashValue, forwarding_hints: Optional[Locators] = None) -> Packet:
+            # ccnx does not use forwarding hint
+            p = self.by_hash[hash_restriction]
+            if p.body().name() is not None:
+                if name != p.body().name():
+                    raise ValueError(f'Found packet hash {hash_restriction}, but request name {name} does not match packet {p.body().name()}')
+            return p
 
         def close(self):
             pass
@@ -136,11 +145,15 @@ class TreeIO:
                 raise RuntimeError("directory does not exist: %r" % directory)
             self._directory = directory
 
-        def get(self, hash_value) -> Packet:
-            ptr = SizedPointer(content_object_hash=hash_value, length=0)
+        def get(self, name: Name, hash_restriction: HashValue, forwarding_hints: Optional[Locators] = None) -> Packet:
+            # ccnx does not use forwarding hint
+            ptr = SizedPointer(content_object_hash=hash_restriction, length=0)
             path = PurePath(self._directory, ptr.file_name())
-            packet = Packet.load(path)
-            return packet
+            p = Packet.load(path)
+            if p.body().name() is not None:
+                if name != p.body().name():
+                    raise ValueError(f'Found packet hash {hash_restriction}, but request name {name} does not match packet {p.body().name()}')
+            return p
 
         def close(self):
             pass

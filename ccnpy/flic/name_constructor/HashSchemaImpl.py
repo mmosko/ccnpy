@@ -29,7 +29,6 @@ class HashSchemaImpl(SchemaImpl):
     """
     def __init__(self, nc_id: NcId, schema: HashSchema, tree_options: ManifestTreeOptions):
         super().__init__(nc_id=nc_id, schema=schema, tree_options=tree_options)
-        assert tree_options.schema_type == SchemaType.HASHED
         assert isinstance(self._schema, HashSchema)
         assert self._schema.count() == 1
 

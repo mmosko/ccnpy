@@ -16,11 +16,13 @@ from typing import Optional
 from ccnpy.flic.tlvs.NcId import NcId
 from ccnpy.flic.tlvs.NcSchema import HashSchema, NcSchema, PrefixSchema, SegmentedSchema
 from .PrefixSchemaImpl import PrefixSchemaImpl
+from .SchemaImpl import SchemaImpl
 from .SchemaType import SchemaType
 from .SegmentedSchemaImpl import SegmentedSchemaImpl
 from ..ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ..tlvs.Locators import Locators
+from ..tlvs.NcDef import NcDef
 from ...core.Name import Name
 
 
@@ -47,7 +49,7 @@ class SchemaImplFactory:
         return next_nc_id
 
     @classmethod
-    def create(cls, tree_options: ManifestTreeOptions, locators: Optional[Locators] = None, name: Optional[Name] = None):
+    def create(cls, tree_options: ManifestTreeOptions, locators: Optional[Locators] = None, name: Optional[Name] = None) -> SchemaImpl:
         """
         Creates a schema with the next available NCID and its implementation.
         """
@@ -63,3 +65,14 @@ class SchemaImplFactory:
 
         raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")
 
+    @classmethod
+    def from_ncdef(cls, nc_def: NcDef) -> SchemaImpl:
+        # tree_options=None means we cannot use "chunk_data", but this use-case is for traversing a manifest
+        schema=nc_def.schema()
+        if isinstance(schema, HashSchema):
+            return HashSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=None)
+        if isinstance(schema, SegmentedSchema):
+            return SegmentedSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=None)
+        if isinstance(schema, PrefixSchema):
+            return PrefixSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=None)
+        raise ValueError(f"Unsupported Schema: {nc_def}")

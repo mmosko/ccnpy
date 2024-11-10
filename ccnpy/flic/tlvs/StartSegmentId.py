@@ -30,22 +30,22 @@ class StartSegmentId(TlvType):
     def class_type(cls):
         return cls.__type
 
-    def __init__(self, size):
+    def __init__(self, value):
         TlvType.__init__(self)
-        self._size = size
-        self._tlv = Tlv.create_varint(self.class_type(), self._size)
+        self._value = value
+        self._tlv = Tlv.create_varint(self.class_type(), self._value)
 
     def __len__(self):
         return len(self._tlv)
 
     def __repr__(self):
-        return "StartSegmentId: %r" % self._size
+        return "StartSegmentId: %r" % self._value
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def size(self):
-        return self._size
+    def value(self):
+        return self._value
 
     @classmethod
     def parse(cls, tlv):

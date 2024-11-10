@@ -15,15 +15,12 @@
 import argparse
 from pathlib import PurePath
 
+from ccnpy.apps.packet_utils import validate_packet, decrypt_manifest
+from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Packet import Packet
-from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c, ValidationAlg_RsaSha256
-from ccnpy.crypto.Crc32c import Crc32cVerifier
-from ccnpy.crypto.DecryptionError import DecryptionError
-from ccnpy.crypto.RsaSha256 import RsaSha256Verifier
 from ccnpy.flic.tlvs.Manifest import Manifest
-from .cli_utils import add_encryption_cli_args, aead_decryptor_from_cli_args, rsa_verifier_from_cli_args, \
-    fixup_key_password
+from .cli_utils import add_encryption_cli_args, aead_decryptor_from_cli_args, fixup_key_password, create_keystore
 
 
 class PacketReader:
@@ -38,14 +35,14 @@ class PacketReader:
         """
         self._path = PurePath(args.in_dir, args.filename)
         self._prettify = args.prettify
-
+        self._keystore = create_keystore(args)
         self._decryptor=aead_decryptor_from_cli_args(args)
-        self._verifier = rsa_verifier_from_cli_args(args)
 
     def _output(self, value):
         if self._prettify:
             print(DisplayFormatter.prettify(value))
         else:
+            ContentObject.USE_BRIEF_OUTPUT = True
             print(value)
 
     def read(self):
@@ -55,47 +52,17 @@ class PacketReader:
         self._output(packet)
 
         try:
-            self._validate_packet(packet)
+            validate_packet(keystore=self._keystore, packet=packet)
         except RuntimeError as e:
             print(e)
             return
 
         if packet.body().is_manifest():
             manifest = Manifest.from_content_object(packet.body())
+            # if manifest is not encrypted, we already output in the packet dump, no need to repeat
             if manifest.is_encrypted():
-                if self._decryptor is not None:
-                    try:
-                        plaintext = self._decryptor.decrypt_manifest(manifest)
-                        print("Decryption successful")
-                        self._output(plaintext)
-                    except DecryptionError as e:
-                        print(f"Failed decryption: {e}")
-                else:
-                    print("No decryption key provided")
-
-    def _validate_packet(self, packet):
-        alg = packet.validation_alg()
-        if alg is None:
-            print("Packet has no validation algorithm, not validating")
-            return
-
-        if isinstance(alg, ValidationAlg_Crc32c):
-            verifier = Crc32cVerifier()
-        elif isinstance(alg, ValidationAlg_RsaSha256):
-            if self._verifier is None:
-                print("Packet requires RsaSha256 verifier, but no keyfile specified on CLI.  Not validating.")
-                return
-
-            verifier = self._verifier
-        else:
-            raise ValueError(f'Validation alg {alg} not supported.')
-
-        result = verifier.verify(packet.body().serialize(), alg.serialize(),
-                                 validation_payload=packet.validation_payload())
-        if not result:
-            raise ValueError(f'Packet fails validation')
-        print(f"Packet validation success with {verifier}")
-        return
+                manifest = decrypt_manifest(keystore=self._keystore, manifest=manifest)
+                self._output(manifest)
 
 
 def run():
@@ -109,7 +76,6 @@ def run():
 
     args = parser.parse_args()
     fixup_key_password(args, ask_for_pass=False)
-
     reader = PacketReader(args)
     reader.read()
 

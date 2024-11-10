@@ -40,6 +40,13 @@ class NameComponent(Tlv):
     def __init__(self, tlv_type, value):
         Tlv.__init__(self, tlv_type=tlv_type, value=value)
 
+    def __repr__(self):
+        t = self.type()
+        if t == NameComponent.__T_CHUNKID:
+            return f'ChunkId={Tlv.array_to_number(self.value())}'
+        if t == NameComponent.__T_NAMESEGMENT:
+            return f'Name={self.value()}'
+        return super().__repr__()
 
 class Name(TlvType):
     __T_NAME = 0x0000

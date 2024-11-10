@@ -108,7 +108,7 @@ class Manifest:
     def security_ctx(self):
         return self._security_ctx
 
-    def node(self):
+    def node(self) -> Node:
         """
 
         :return: a Node or EncryptedNode
@@ -132,7 +132,7 @@ class Manifest:
         packet = Packet.create_content_object(body=self.content_object(name, expiry_time))
         return packet
 
-    def hash_values(self):
+    def hash_values(self) -> Node.NodeIterator:
         """
         An in-order list of pointer hashes from this Manifest's Node.
 
@@ -141,7 +141,7 @@ class Manifest:
         if not isinstance(self._node, Node):
             raise TypeError("Manifest Node is not supported type: %r" % self._node)
 
-        return self._node.hash_values()
+        return iter(self._node)
 
     def interest_list(self, locator=None, final=False):
         """

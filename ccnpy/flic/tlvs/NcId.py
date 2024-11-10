@@ -29,6 +29,9 @@ class NcId(TlvType):
         self._nc_id = nc_id
         self._tlv = Tlv(self.class_type(), Tlv.number_to_array(self._nc_id))
 
+    def id(self) -> int:
+        return self._nc_id
+
     def __len__(self):
         return len(self._tlv)
 
