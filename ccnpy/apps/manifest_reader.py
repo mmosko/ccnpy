@@ -62,13 +62,15 @@ class ManifestDirectoryReader(ManifestReader):
         self._keystore = keystore
         self._decryptors = {}
         self._reader = TreeIO.PacketDirectoryReader(self._dir)
+        self.debug = False
 
     def read(self):
         """
         """
-        root_packet = self._reader.get(name=self._root_name, hash_restriction=self._root_hash)
-        traverer = Traversal(packet_input=self._reader)
-        self.traverse(packet)
+        traverser = Traversal(packet_input=self._reader, data_writer=None, keystore=self._keystore, debug=self.debug)
+
+        # this will walk the manifest tree and write the app data to `data_writer`.
+        traverser.traverse(root_name=self._root_name, hash_restriction=self._root_hash)
 
     def read_by_name(self, name: Name, hash_restriction):
 

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from typing import Optional, Dict, List
 
 from ..aeadctx.AeadDecryptor import AeadDecryptor
@@ -19,11 +20,11 @@ from ..name_constructor.SchemaImplFactory import SchemaImplFactory
 from ..tlvs.AeadCtx import AeadCtx
 from ..tlvs.Manifest import Manifest
 from ..tlvs.NcDef import NcDef
-from ..tlvs.NcSchema import NcSchema
 from ...core.ContentObject import ContentObject
 from ...core.HashValue import HashValue
 from ...core.Name import Name
 from ...core.Packet import Packet, PacketReader
+from ...core.PacketValidator import PacketValidator
 from ...crypto.InsecureKeystore import InsecureKeystore
 
 
@@ -55,6 +56,7 @@ class Traversal:
         self._data_writer = data_writer
         self._keystore = keystore
         self._count = 0
+        self._validator = PacketValidator(keystore=self._keystore)
         self.debug = debug
 
     def reset_count(self):
@@ -63,11 +65,13 @@ class Traversal:
     def count(self):
         return self._count
 
-    def traverse(self, root_name: Name, nc_cache: NameConstructorCache, hash_restriction: Optional[HashValue] = None):
+    def traverse(self, root_name: Name, hash_restriction: Optional[HashValue] = None):
         """
         Traverse the manifest rooted at `name`.
         """
+        nc_cache = Traversal.NameConstructorCache()
         root_packet = self._packet_input.get(name=root_name, hash_restriction=hash_restriction)
+        self._validator.validate_packet(packet=root_packet)
         self.preorder(packet=root_packet, nc_cache=nc_cache)
 
     def preorder(self, packet: Packet, nc_cache: NameConstructorCache):
@@ -124,6 +128,7 @@ class Traversal:
                                         segment_id=hash_iterator_value.segment_id)
             if packet is None:
                 raise ValueError("Failed to get packet for: %r" % hash_iterator_value)
+            self._validator.validate_packet(packet=packet)
             self.preorder(packet=packet, nc_cache=nc_cache)
 
     def _manifest_from_content_object(self, content_object):
@@ -136,6 +141,7 @@ class Traversal:
 
         security_ctx = manifest.security_ctx()
         if isinstance(security_ctx, AeadCtx):
+            # TODO: cache the decryptor
             key = self._keystore.get_aes_key(security_ctx.key_number())
             salt = self._keystore.get_aes_salt(security_ctx.key_number())
             decryptor = AeadDecryptor(key, security_ctx.key_number(), salt=salt)
