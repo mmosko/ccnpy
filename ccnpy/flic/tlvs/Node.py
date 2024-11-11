@@ -14,14 +14,13 @@
 from dataclasses import dataclass
 from typing import Optional, List, Iterator
 
-from ccnpy.flic.tlvs.HashGroup import HashGroup
-from tests.flic.tlvs.test_NcId import NcIdTest
+from .HashGroup import HashGroup
 from .NodeData import NodeData
-from ccnpy.exceptions.CannotParseError import CannotParseError
-from ccnpy.exceptions.ParseError import ParseError
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
 from ...core.HashValue import HashValue
+from ...core.Tlv import Tlv
+from ...core.TlvType import TlvType
+from ...exceptions.CannotParseError import CannotParseError
+from ...exceptions.ParseError import ParseError
 
 
 class Node(TlvType):
@@ -34,7 +33,7 @@ class Node(TlvType):
     ```
     """
     __type = 0x0002
-    DEBUG = True
+    DEBUG = False
 
     @dataclass
     class HashIteratorValue:

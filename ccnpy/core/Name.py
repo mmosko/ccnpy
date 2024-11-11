@@ -24,6 +24,7 @@ class NameComponent(Tlv):
     __T_NAMESEGMENT=0x0001
     __T_IPID=0x0002
     __T_CHUNKID=0x0005
+    __T_MANIFESTID=0x0010
 
     @classmethod
     def create_name_segment(cls, value):
@@ -37,6 +38,10 @@ class NameComponent(Tlv):
     def create_chunk_segment(cls, value: int):
         return cls(cls.__T_CHUNKID, Tlv.number_to_array(value))
 
+    @classmethod
+    def create_manifest_id(cls, value: int):
+        return cls(cls.__T_MANIFESTID, Tlv.number_to_array(value))
+
     def __init__(self, tlv_type, value):
         Tlv.__init__(self, tlv_type=tlv_type, value=value)
 
@@ -46,6 +51,10 @@ class NameComponent(Tlv):
             return f'ChunkId={Tlv.array_to_number(self.value())}'
         if t == NameComponent.__T_NAMESEGMENT:
             return f'Name={self.value()}'
+        if t == NameComponent.__T_MANIFESTID:
+            return f'ManifestId={self.value()}'
+        if t == NameComponent.__T_IPID:
+            return f'IPID={self.value()}'
         return super().__repr__()
 
 class Name(TlvType):
@@ -100,6 +109,12 @@ class Name(TlvType):
         A convenience function to append a ChunkId name segment
         """
         return self.append(NameComponent.create_chunk_segment(chunk_id))
+
+    def append_manifest_id(self, manifest_id: int):
+        """
+        A convenience function to append a ChunkId name segment
+        """
+        return self.append(NameComponent.create_manifest_id(manifest_id))
 
     def serialize(self):
         return self._tlv.serialize()

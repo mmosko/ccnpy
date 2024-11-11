@@ -32,7 +32,7 @@ class GroupData(TlvType):
     __type = 0x0001
     __subtree_digest_type = 0x0002
 
-    DEBUG = True
+    DEBUG = False
 
     @classmethod
     def class_type(cls):

@@ -80,7 +80,7 @@ class NameConstructorContext:
                        data_schema_impl=SchemaImplFactory.create(locators=data_locator, tree_options=tree_options))
 
     @classmethod
-    def _create_named(cls, tree_options: ManifestTreeOptions, manifest_prefix: Name, data_prefix: Name):
+    def _create_named(cls, tree_options: ManifestTreeOptions, manifest_prefix: Name, data_prefix: Name, use_chunk_id: bool = False):
         """
         Prefix and segmented have the same structure, but different rules about which names could be the same
         as other names.
@@ -98,7 +98,8 @@ class NameConstructorContext:
                                                                      tree_options=tree_options),
                        data_schema_impl=SchemaImplFactory.create(name=data_prefix,
                                                                  locators=None,
-                                                                 tree_options=tree_options))
+                                                                 tree_options=tree_options,
+                                                                 use_chunk_id=use_chunk_id))
 
     @classmethod
     def _create_prefix(cls, tree_options: ManifestTreeOptions):
@@ -116,7 +117,7 @@ class NameConstructorContext:
         data_prefix = root_name if tree_options.data_prefix is None else tree_options.data_prefix
         if manifest_prefix == data_prefix:
             raise ValueError(f'Manifest prefix {manifest_prefix} must be distinct from data prefix {data_prefix}')
-        return cls._create_named(tree_options=tree_options, manifest_prefix=manifest_prefix, data_prefix=data_prefix)
+        return cls._create_named(tree_options=tree_options, manifest_prefix=manifest_prefix, data_prefix=data_prefix, use_chunk_id=True)
 
     def export_schemas(self) -> Dict[int, SchemaImpl]:
         """This is the structure used by `Traversal.NameConstructorCache`"""

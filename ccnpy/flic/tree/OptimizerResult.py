@@ -39,6 +39,8 @@ class OptimizerResult:
         self._num_internal_nodes = num_internal_nodes
         self._waste = waste
         self._num_leaf_nodes = self._calculate_num_leaf_nodes()
+        # we might be asked for this many times, so cacheit
+        self._tree_height = self._calculate_tree_height()
         self._sanity_check()
 
     def __repr__(self):
@@ -51,6 +53,11 @@ class OptimizerResult:
             self._num_leaf_nodes,
             self._waste
         )
+
+    def _calculate_tree_height(self):
+        if self._indirect_per_node == 1:
+            return self.total_nodes()
+        return int(math.ceil(math.log(self.total_nodes(),self._indirect_per_node)))
 
     def _calculate_num_leaf_nodes(self):
         num_internal_direct = self._num_internal_nodes * self._direct_per_node
@@ -108,3 +115,11 @@ class OptimizerResult:
         :return:
         """
         return self._waste
+
+    def tree_height(self) -> int:
+        """
+        The total tree height, including leaf nodes.
+        """
+        # Internal nodes are limited to `internal_indirect_per_node()` indirect pointers, so that is the tree
+        # degree.  leaf nodes only point to data, so do not add to the tree height below them.
+        return self._tree_height

@@ -14,13 +14,14 @@
 
 from typing import Optional, Dict, List
 
-from ..aeadctx.AeadDecryptor import AeadDecryptor
+from .DecryptorCache import DecryptorCache
 from ..name_constructor.SchemaImpl import SchemaImpl
 from ..name_constructor.SchemaImplFactory import SchemaImplFactory
 from ..tlvs.AeadCtx import AeadCtx
 from ..tlvs.Manifest import Manifest
 from ..tlvs.NcDef import NcDef
 from ...core.ContentObject import ContentObject
+from ...core.DisplayFormatter import DisplayFormatter
 from ...core.HashValue import HashValue
 from ...core.Name import Name
 from ...core.Packet import Packet, PacketReader
@@ -57,6 +58,7 @@ class Traversal:
         self._keystore = keystore
         self._count = 0
         self._validator = PacketValidator(keystore=self._keystore)
+        self._decryptor_cache = DecryptorCache(self._keystore)
         self.debug = debug
 
     def reset_count(self):
@@ -87,7 +89,7 @@ class Traversal:
         :return:
         """
         if self.debug:
-            print(f'Preorder {packet}')
+            print(f'Preorder {packet.content_object_hash()} => {packet}')
 
         if nc_cache is None:
             nc_cache = Traversal.NameConstructorCache()
@@ -107,7 +109,7 @@ class Traversal:
 
             nc_cache = self._update_nc_cache(nc_cache=nc_cache, manifest=manifest)
             try:
-                self._visit_children(manifest=manifest, nc_cache=nc_cache)
+                self._visit_children(parent_packet=packet, manifest=manifest, nc_cache=nc_cache)
             except Exception as e:
                 print(f'Error {e} processing {manifest}')
                 raise
@@ -126,7 +128,7 @@ class Traversal:
                 print(f'Traversal save {len(payload.value())} bytes')
             self._data_writer.write(payload.value())
 
-    def _visit_children(self, manifest: Manifest, nc_cache: NameConstructorCache):
+    def _visit_children(self, parent_packet: Packet, manifest: Manifest, nc_cache: NameConstructorCache):
         """
         A child may be a direct pointer to local data or an indirect pointer to another
         manifest.  In the pre-order traversal, we do not distinguish (nor can we) between these.
@@ -136,7 +138,10 @@ class Traversal:
         :param nc_cache: name constructor cache for the current branch
         :return:
         """
+        children = []
         for hash_iterator_value in manifest.hash_values():
+            if self.debug:
+                children.append(DisplayFormatter.hexlify(hash_iterator_value.hash_value.value()))
             packet = self._fetch_packet(nc_cache=nc_cache,
                                         nc_id=hash_iterator_value.nc_id,
                                         hash_value=hash_iterator_value.hash_value,
@@ -144,10 +149,14 @@ class Traversal:
             if packet is None:
                 raise ValueError("Failed to get packet for: %r" % hash_iterator_value)
             if self.debug:
-                print(f'visit_children: {packet}')
+                print(f'visit_children: child {packet}')
 
             self._validator.validate_packet(packet=packet)
             self.preorder(packet=packet, nc_cache=nc_cache)
+
+        if self.debug:
+            packet_id = DisplayFormatter.hexlify(parent_packet.content_object_hash().value())
+            print(f'parent {packet_id} : children: {children}')
 
     def _manifest_from_content_object(self, content_object):
         manifest = Manifest.from_content_object(content_object)
@@ -159,11 +168,7 @@ class Traversal:
 
         security_ctx = manifest.security_ctx()
         if isinstance(security_ctx, AeadCtx):
-            # TODO: cache the decryptor
-            key = self._keystore.get_aes_key(security_ctx.key_number())
-            salt = self._keystore.get_aes_salt(security_ctx.key_number())
-            decryptor = AeadDecryptor(key, security_ctx.key_number(), salt=salt)
-
+            decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
             # may raise DecryptionError
             return decryptor.decrypt_manifest(manifest)
         else:

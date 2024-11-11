@@ -25,7 +25,7 @@ class HashGroupBuilderPair:
     Uses one or two has group builders, as needed.  Provides a facade of HashGroupBuilder, so the usage
     is just like HashGroupBuilder.
     """
-    DEBUG = True
+    DEBUG = False
 
     def __init__(self, name_ctx: NameConstructorContext, max_direct: int, max_indirect: int):
         self._name_ctx = name_ctx
@@ -63,7 +63,7 @@ class HashGroupBuilderPair:
                     direct_start_segment_id: Optional[StartSegmentId]=None,
                     indirect_start_segment_id: Optional[StartSegmentId]=None) -> List[HashGroup]:
         if self.DEBUG:
-            print(f"build hash group (direct_seg_id={direct_start_segment_id}, ind_seg_id={indirect_start_segment_id}")
+            print(f"build hash group (direct_seg_id={direct_start_segment_id}, ind_seg_id={indirect_start_segment_id})")
         if self._name_ctx.hash_group_count() == 1:
             # we cannot have segmented names if there's only one builder
             assert direct_start_segment_id is None

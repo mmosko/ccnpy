@@ -151,7 +151,7 @@ class NameConstructorContextTest(unittest.TestCase):
         # There should be different NcIDs
         self.assertNotEqual(ctx.manifest_schema_impl.nc_id(), ctx.data_schema_impl.nc_id())
 
-        self.assertEqual(self.manifest_name.append_chunk_id(1), ctx.manifest_schema_impl.get_name(1))
+        self.assertEqual(self.manifest_name.append_manifest_id(1), ctx.manifest_schema_impl.get_name(1))
         self.assertEqual(self.root_name.append_chunk_id(2), ctx.data_schema_impl.get_name(2))
 
     def test_segmented_data_prefix(self):
@@ -164,7 +164,7 @@ class NameConstructorContextTest(unittest.TestCase):
         # There should be different NcIDs
         self.assertNotEqual(ctx.manifest_schema_impl.nc_id(), ctx.data_schema_impl.nc_id())
 
-        self.assertEqual(self.root_name.append_chunk_id(1), ctx.manifest_schema_impl.get_name(1))
+        self.assertEqual(self.root_name.append_manifest_id(1), ctx.manifest_schema_impl.get_name(1))
         self.assertEqual(self.data_name.append_chunk_id(2), ctx.data_schema_impl.get_name(2))
 
     def test_segmented_both_prefix(self):
@@ -178,5 +178,5 @@ class NameConstructorContextTest(unittest.TestCase):
         # There should be different NcIDs
         self.assertNotEqual(ctx.manifest_schema_impl.nc_id(), ctx.data_schema_impl.nc_id())
 
-        self.assertEqual(self.manifest_name.append_chunk_id(1), ctx.manifest_schema_impl.get_name(1))
+        self.assertEqual(self.manifest_name.append_manifest_id(1), ctx.manifest_schema_impl.get_name(1))
         self.assertEqual(self.data_name.append_chunk_id(2), ctx.data_schema_impl.get_name(2))

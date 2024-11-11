@@ -25,7 +25,6 @@ from ...core.HashValue import HashValue
 from ...core.Link import Link
 from ...core.Name import Name
 from ...core.Packet import Packet, PacketWriter, PacketReader
-from ...core.Payload import Payload
 from ...crypto.Crc32c import Crc32cSigner
 from ...crypto.Signer import Signer
 

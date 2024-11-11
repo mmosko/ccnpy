@@ -29,22 +29,28 @@ class SegmentedSchemaImpl(SchemaImpl):
     SegmentedSchema.
     """
 
-    def __init__(self, nc_id: NcId, schema: SegmentedSchema, tree_options: ManifestTreeOptions):
+    def __init__(self, nc_id: NcId, schema: SegmentedSchema, tree_options: ManifestTreeOptions, use_chunk_id: bool):
         """
         The `name` is what we will use for the name constructor.  You must derive this name from the
         `tree_options` before calling this.  See `NameConstructorContext` for examples.
+
+        :param use_chunk_id: If true, uses ChunkId and FinalChunkId fields.  if false, uses only manifest_id in name.
         """
         super().__init__(nc_id=nc_id, schema=schema, tree_options=tree_options)
         assert isinstance(self._schema, SegmentedSchema)
         if schema.count() > 0:
             raise ValueError("CCNx does not support locators for SegmentedSchema")
         self._name = schema.name()
+        self._use_chunk_id = use_chunk_id
 
     def get_name(self, chunk_id) -> Optional[Name]:
         """
         HashSchema always uses nameless objects
         """
-        return self._name.append(NameComponent.create_chunk_segment(chunk_id))
+        if self._use_chunk_id:
+            return self._name.append(NameComponent.create_chunk_segment(chunk_id))
+        else:
+            return self._name.append(NameComponent.create_manifest_id(chunk_id))
 
     def nc_id(self) -> NcId:
         return self._nc_id
@@ -53,5 +59,8 @@ class SegmentedSchemaImpl(SchemaImpl):
         return None
 
     @staticmethod
-    def uses_final_chunk_id() -> bool:
+    def uses_name_id() -> bool:
         return True
+
+    def uses_final_chunk_id(self) -> bool:
+        return self._use_chunk_id

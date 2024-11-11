@@ -42,7 +42,8 @@ class TreeBuilderTest(unittest.TestCase):
                                    name=Name.from_uri('ccnx:/a'),
                                    schema_type=SchemaType.HASHED,
                                    signer=None,
-                                   manifest_encryptor=encryptor)
+                                   manifest_encryptor=encryptor,
+                                   debug=False)
 
     def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None) -> TreeBuilder:
         tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
@@ -59,7 +60,7 @@ class TreeBuilderTest(unittest.TestCase):
     def test_binary_0_2_15(self):
         """
         A binary (0, 2) tree with 15 direct pointers.  Note there is no storage at internal nodes, so
-        this tree should be height 3.
+        this tree should be height 4.  There are 15 manifest nodes.
 
         :return:
         """
@@ -78,14 +79,16 @@ class TreeBuilderTest(unittest.TestCase):
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        top_manifest = tb.build()
+        top_packet = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
-        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
+
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, debug=False)
+        traversal.preorder(packet=top_packet, nc_cache=Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 15 manifest nodes and 15 data nodes
         self.assertEqual(30, traversal.count())
+        self.assertEqual(4, solution.tree_height())
 
     def test_binary_1_2_15(self):
         """
@@ -112,12 +115,14 @@ class TreeBuilderTest(unittest.TestCase):
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
         top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, debug=False)
         traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 7 manifest nodes and 15 data nodes
         self.assertEqual(22, traversal.count())
+        # ceil(log_2(7)) = 3
+        self.assertEqual(3, solution.tree_height())
 
     def test_nary_4_3_61(self):
         """
@@ -161,6 +166,8 @@ class TreeBuilderTest(unittest.TestCase):
 
         # 10 manifest nodes and 61 data nodes
         self.assertEqual(71, traversal.count())
+        # degree 3 with 10 manifests => ceil(log_3(10)) = 3
+        self.assertEqual(3, solution.tree_height())
 
     def test_large_optimized(self):
         """
@@ -195,6 +202,9 @@ class TreeBuilderTest(unittest.TestCase):
 
         # 126 manifest nodes and 5000 data nodes
         self.assertEqual(5126, traversal.count())
+
+        # 4-ary tree with 126 manifests => ceil(log_4(126)) = 4
+        self.assertEqual(4, solution.tree_height())
 
     def test_encrypted_0_2_15(self):
         """

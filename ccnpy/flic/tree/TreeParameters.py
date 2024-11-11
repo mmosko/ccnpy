@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import math
 from typing import Optional
 
+from .HashGroupBuilderPair import HashGroupBuilderPair
 from .OptimizerResult import OptimizerResult
 from .TreeOptimizer import TreeOptimizer
 from ..HashGroupBuilder import HashGroupBuilder
@@ -21,6 +23,7 @@ from ccnpy.flic.tlvs.Pointers import Pointers
 from ..name_constructor.FileMetadata import FileMetadata
 from ..name_constructor.NameConstructorContext import NameConstructorContext
 from ..name_constructor.SchemaImpl import SchemaImpl
+from ..tlvs.StartSegmentId import StartSegmentId
 from ...core.HashValue import HashValue
 
 
@@ -32,6 +35,8 @@ class TreeParameters:
 
     Usually, one calls `create_optimized_tree` to calculate these parameters.
     """
+    __MAX_MANIFEST_ID = 0xFFFFFF
+
     @classmethod
     def create_optimized_tree(cls,
                               file_metadata: FileMetadata,
@@ -116,6 +121,12 @@ class TreeParameters:
         """
         return self._solution.total_nodes()
 
+    def tree_height(self) -> int:
+        """
+        The total tree height, including leaf nodes.
+        """
+        return self._solution.tree_height()
+
     @classmethod
     def _build_single_hash_group(cls, manifest_factory, indirect_ptrs, direct_ptrs, nc_id, total_bytes):
         # We use total bytes for the subtree size and leaf size.  This might end up reserving one one more byte
@@ -133,19 +144,29 @@ class TreeParameters:
 
     @classmethod
     def _build_manifest_packet(cls, manifest_factory, num_hashes, hv, name_ctx, total_bytes):
-        # We need to make some direct and some indirect to get both a leaf_size and subtree_size with values.
-        direct_ptrs = Pointers(hash_values=(num_hashes -1) * [hv])
-        indirect_ptrs = Pointers(hash_values=[hv])
+        # Arbitrary choise, we put n-1 into direct and 1 into indirect
+        hgb = HashGroupBuilderPair(name_ctx=name_ctx, max_direct = num_hashes -1, max_indirect=1)
 
-        if name_ctx.hash_group_count() == 1:
-            hg1 = cls._build_single_hash_group(manifest_factory, indirect_ptrs, direct_ptrs, name_ctx.manifest_schema_impl.nc_id(), total_bytes)
-            groups = [hg1]
+        for hv in (num_hashes -1) * [hv]:
+            hgb.prepend_direct(hv)
+        hgb.prepend_indirect(hv)
+        if name_ctx.manifest_schema_impl.uses_name_id():
+            indirect_start_segment_id = StartSegmentId(cls.__MAX_MANIFEST_ID)
         else:
-            hg1 = cls._build_single_hash_group(manifest_factory, indirect_ptrs, [], name_ctx.manifest_schema_impl.nc_id(), total_bytes)
-            hg2 = cls._build_single_hash_group(manifest_factory, [], direct_ptrs, name_ctx.data_schema_impl.nc_id(), total_bytes)
-            groups = [hg1, hg2]
+            indirect_start_segment_id = None
 
-        packet = manifest_factory.build_packet(source=groups, node_subtree_size=total_bytes)
+        if name_ctx.data_schema_impl.uses_name_id():
+            direct_start_segment_id = StartSegmentId(SchemaImpl._MAX_CHUNK_ID)
+        else:
+            direct_start_segment_id = None
+
+        # include_leaf_size and include_subtree_size might reserve too much space if we do not use those.
+        hash_groups = hgb.hash_groups(include_leaf_size=True,
+                                      include_subtree_size=True,
+                                      indirect_start_segment_id=indirect_start_segment_id,
+                                      direct_start_segment_id=direct_start_segment_id)
+
+        packet = manifest_factory.build_packet(source=hash_groups, node_subtree_size=total_bytes)
 
         return packet
 

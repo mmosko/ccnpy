@@ -34,7 +34,7 @@ class SchemaImpl(ABC):
     classes implement the schemas.
     """
     # This is to reserve up to 3 bytes for the chunk ID.  See the to-do below.
-    __MAX_CHUNK_ID = 0xFFFFFF
+    _MAX_CHUNK_ID = 0xFFFFFF
 
     def __init__(self, nc_id: NcId, schema: NcSchema, tree_options: ManifestTreeOptions):
         self._next_chunk_id = 0
@@ -75,8 +75,15 @@ class SchemaImpl(ABC):
         pass
 
     @staticmethod
-    def uses_final_chunk_id() -> bool:
+    def uses_name_id() -> bool:
+        """Does this schema include an ID in a name component?"""
         return False
+
+    @staticmethod
+    def uses_final_chunk_id() -> bool:
+        """Does this schema include FinalChunkId field in the content object?"""
+        return False
+
 
     def chunk_data(self, data_input, packet_output: PacketWriter) -> FileMetadata:
         """
@@ -92,8 +99,8 @@ class SchemaImpl(ABC):
         while len(payload_value) > 0:
             total_file_bytes += len(payload_value)
             chunk_id = self._get_and_increment_next_chunk_id()
-            if chunk_id > self.__MAX_CHUNK_ID:
-                raise ValueError(f"Implementation is limited to {self.__MAX_CHUNK_ID} chunks.  Bytes processed so far: {total_file_bytes}")
+            if chunk_id > self._MAX_CHUNK_ID:
+                raise ValueError(f"Implementation is limited to {self._MAX_CHUNK_ID} chunks.  Bytes processed so far: {total_file_bytes}")
 
             chunk_name = self.get_name(chunk_id)
 
@@ -124,12 +131,12 @@ class SchemaImpl(ABC):
 
         # TODO: We need to loop on this to make sure that the size of the name can fit the number
         # of data chunks.  Right now, we just reserve 3 bytes.  Same for final chunk id.
-        if self.uses_final_chunk_id():
-            fcid = FinalChunkId(self.__MAX_CHUNK_ID)
+        if self.uses_name_id():
+            fcid = FinalChunkId(self._MAX_CHUNK_ID)
         else:
             fcid = None
 
-        named = ContentObject.create_data(name=self.get_name(self.__MAX_CHUNK_ID),
+        named = ContentObject.create_data(name=self.get_name(self._MAX_CHUNK_ID),
                                           expiry_time=self._tree_options.data_expiry_time,
                                           payload=Payload([]),
                                           final_chunk_id=fcid)

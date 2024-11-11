@@ -87,7 +87,7 @@ class ManifestTree:
         ptr = Pointers([top_manifest_packet.content_object_hash()])
 
         # if the top manifest is SegmentedSchema, we need to include the fact that the chunk_id is 0
-        if self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
+        if self._name_ctx.manifest_schema_impl.uses_name_id():
             start_segment_id=StartSegmentId(0)
         else:
             start_segment_id=None
