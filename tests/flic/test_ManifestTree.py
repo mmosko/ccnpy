@@ -24,6 +24,7 @@ from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.name_constructor.SchemaImplFactory import SchemaImplFactory
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.GroupData import GroupData
@@ -32,7 +33,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import SegmentedSchema
+from ccnpy.flic.tlvs.NcSchema import SegmentedSchema, HashSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
@@ -97,7 +98,7 @@ YwIDAQAB
                                           signer=self.root_signer,
                                           max_packet_size=max_packet_size,
                                           max_tree_degree=3,
-                                          debug=False)
+                                          debug=True)
         else:
             return ManifestTreeOptions(name=Name.from_uri("ccnx:/example.com/manifest"),
                                           schema_type=schema_type,
@@ -106,7 +107,7 @@ YwIDAQAB
                                           signer=self.root_signer,
                                           max_packet_size=max_packet_size,
                                           max_tree_degree=3,
-                                          debug=False)
+                                          debug=True)
 
     def test_nary_1_2_14(self):
         """
@@ -125,8 +126,8 @@ YwIDAQAB
 
         expected = array("B", self.private_key)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=self.packet_buffer, data_buffer=actual_data, decryptor=None)
-        traversal.preorder(root_manifest)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer)
+        traversal.preorder(root_manifest, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
 
         # We have 1674 bytes.  We can fit 159 bytes in a data content object, so we need 11 data object.
         # With 3 pointers per node, we need 3 leaf manifests and 2 interior manifests.
@@ -152,9 +153,9 @@ YwIDAQAB
 
         expected = array("B", self.private_key)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=self.packet_buffer, data_buffer=actual_data, decryptor=None)
-        traversal.preorder(root_manifest)
 
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer)
+        traversal.preorder(root_manifest, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
         # We have 1674 bytes.  5 data objects plus 1 leaf manifests and 1 interior manifest
 
         self.assertEqual(expected, actual_data.buffer)
@@ -221,8 +222,8 @@ YwIDAQAB
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=self.packet_buffer, data_buffer=actual_data, decryptor=None)
-        traversal.preorder(root_manifest_packet)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=True)
+        traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
 
         self.assertEqual(expected, actual_data.buffer)
 

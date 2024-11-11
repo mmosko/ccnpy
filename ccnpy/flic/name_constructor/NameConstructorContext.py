@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 from .SchemaImpl import SchemaImpl
 from .SchemaImplFactory import SchemaImplFactory
@@ -110,8 +110,17 @@ class NameConstructorContext:
     @classmethod
     def _create_segmented(cls, tree_options: ManifestTreeOptions):
         root_name = tree_options.name
+        if root_name is None:
+            raise ValueError('For SegmentedSchema, the --name must not be None')
         manifest_prefix = root_name if tree_options.manifest_prefix is None else tree_options.manifest_prefix
         data_prefix = root_name if tree_options.data_prefix is None else tree_options.data_prefix
         if manifest_prefix == data_prefix:
-            raise ValueError(f'Manifest prefix {manifest_prefix} must be distince from data prefix {data_prefix}')
+            raise ValueError(f'Manifest prefix {manifest_prefix} must be distinct from data prefix {data_prefix}')
         return cls._create_named(tree_options=tree_options, manifest_prefix=manifest_prefix, data_prefix=data_prefix)
+
+    def export_schemas(self) -> Dict[int, SchemaImpl]:
+        """This is the structure used by `Traversal.NameConstructorCache`"""
+        d = {self.manifest_schema_impl.nc_id().id(): self.manifest_schema_impl}
+        if self.hash_group_count == 2:
+            d[self.data_schema_impl.nc_id().id()] = self.data_schema_impl
+        return d

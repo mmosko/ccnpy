@@ -25,6 +25,7 @@ from ccnpy.core.PayloadType import PayloadType
 from ccnpy.core.Tlv import Tlv
 from ...core.ExpiryTime import ExpiryTime
 from ...core.Name import Name
+from ...exceptions.ParseError import ParseError
 
 
 class Manifest:
@@ -40,7 +41,11 @@ class Manifest:
         if not content_object.payload_type().is_manifest():
             raise ValueError("Payload is not of type Manifest")
 
-        return cls.deserialize(content_object.payload().value())
+        try:
+            return cls.deserialize(content_object.payload().value())
+        except ParseError as e:
+            print(f'Error parsing payload of content object: {e}')
+            raise
 
     def __init__(self, security_ctx=None, node=None, auth_tag=None):
         """

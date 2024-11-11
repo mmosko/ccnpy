@@ -93,14 +93,18 @@ class HashGroupBuilderPairTest(unittest.TestCase):
 
         self._add_pointers(builders)
 
-        actual = builders.hash_groups(include_leaf_size=True, include_subtree_size=True, start_segment_id=StartSegmentId(1))
+        actual = builders.hash_groups(include_leaf_size=True,
+                                      include_subtree_size=True,
+                                      direct_start_segment_id=StartSegmentId(1),
+                                      indirect_start_segment_id=StartSegmentId(2))
 
         self.assertEqual(2, len(actual))
         actual_direct = actual[0]
         expected_direct = HashGroup(
             # leaf size = 0 + 1 + 2 + 3 + 4 + 5 + 6 = 21
             # subtree size = 21
-            group_data=GroupData(subtree_size=SubtreeSize(21), leaf_size=LeafSize(21),
+            group_data=GroupData(subtree_size=SubtreeSize(21),
+                                 leaf_size=LeafSize(21),
                                  start_segment_id=StartSegmentId(1),
                                  nc_id=name_ctx.data_schema_impl.nc_id()),
             pointers=Pointers([HashValue.create_sha256([i]) for i in range(0,7)])
@@ -111,7 +115,10 @@ class HashGroupBuilderPairTest(unittest.TestCase):
         expected_indirect = HashGroup(
             # leaf size = 0
             # subtree size = 7 + 6 = 13
-            group_data=GroupData(subtree_size=SubtreeSize(13), leaf_size=LeafSize(0), nc_id=name_ctx.manifest_schema_impl.nc_id()),
+            group_data=GroupData(subtree_size=SubtreeSize(13),
+                                 leaf_size=LeafSize(0),
+                                 start_segment_id=StartSegmentId(2),
+                                 nc_id=name_ctx.manifest_schema_impl.nc_id()),
             pointers=Pointers([HashValue.create_sha256([i]) for i in range(7,9)])
         )
         self.assertEqual(expected_indirect, actual_indirect)

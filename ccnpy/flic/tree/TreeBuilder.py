@@ -224,6 +224,10 @@ class TreeBuilder:
         self._manifest_count = 0
         self._leaf_count = 0
         self._internal_count = 0
+        self._last_manifest_chunk_id = None
+
+    def name_context(self) -> NameConstructorContext:
+        return self._name_ctx
 
     def leaf_count(self):
         return self._leaf_count
@@ -271,6 +275,7 @@ class TreeBuilder:
         if manifest_chunk_id < 0:
             raise ValueError(f"Created negative chunk id for manifest #{self._manifest_count}")
         self._manifest_count += 1
+        self._last_manifest_chunk_id = manifest_chunk_id
         return self._name_ctx.manifest_schema_impl.get_name(manifest_chunk_id)
 
     def _write_packet(self, packet):
@@ -280,7 +285,7 @@ class TreeBuilder:
         if self._packet_output is not None:
             self._packet_output.put(packet)
 
-    def _bottom_up_preorder(self, segment, level, right_most_child=None):
+    def _bottom_up_preorder(self, segment, level, right_most_child: Packet = None) -> ReturnValue:
         """
 
         :param segment:
@@ -300,16 +305,15 @@ class TreeBuilder:
                 return_value = self._leaf_manifest(segment=segment)
             else:
                 return_value = self._interior_manifest(segment=segment, level=level, right_most_child=right_most_child)
-
         return return_value
 
-    def _get_start_segment_id(self, head) -> Optional[StartSegmentId]:
+    def _get_start_segment_id(self, head: int) -> Optional[StartSegmentId]:
         if self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
             return StartSegmentId(self._file_metadata[head].chunk_number)
         else:
             return None
 
-    def _build_leaf_packet(self, head, tail):
+    def _build_leaf_packet(self, head: int, tail: int):
         """
         A leaf packet is a direct-pointer only manifest.  That is, it has no sub-manifests.
         """
@@ -340,7 +344,7 @@ class TreeBuilder:
         self._leaf_count += 1
         return return_value
 
-    def _leaf_manifest(self, segment):
+    def _leaf_manifest(self, segment: Segment):
         count = self._params.num_pointers_per_node()
         # At most count items, but never go before the head
         start = max(segment.head(), segment.tail() - count)
@@ -353,7 +357,7 @@ class TreeBuilder:
         self._write_packet(return_value.packet)
         return return_value
 
-    def _interior_add_right_most_child(self, builders: HashGroupBuilderPair, right_most_child):
+    def _interior_add_right_most_child(self, builders: HashGroupBuilderPair, right_most_child: Packet):
         if right_most_child is not None:
             if not isinstance(right_most_child, TreeBuilder.ReturnValue):
                 raise TypeError("right_most_child must be TreeBuilder.ReturnValue")
@@ -370,7 +374,7 @@ class TreeBuilder:
         while not builders.is_indirect_full() and not segment.empty():
             child = self._bottom_up_preorder(segment, level - 1)
             builders.prepend_indirect(hash_value=child.packet.content_object_hash(),
-                                     subtree_size=self._get_optional_subtree_size(child.node.node_data()))
+                                      subtree_size=self._get_optional_subtree_size(child.node.node_data()))
 
         # Pull back our reservation and put those pointers in our direct children
         segment.decrement_head(reserve_count)
@@ -388,13 +392,21 @@ class TreeBuilder:
         # we did not execute the while loop
         return None
 
-    def _interior_packet(self, builders: HashGroupBuilderPair, start_segment_id: Optional[StartSegmentId]):
+    def _interior_packet(self, builders: HashGroupBuilderPair,
+                         direct_start_segment_id: Optional[StartSegmentId]) -> ReturnValue:
+
         if not self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
-            start_segment_id = None
+            indirect_start_segment_id = None
+        else:
+            indirect_start_segment_id = StartSegmentId(self._last_manifest_chunk_id)
+
+        if not self._name_ctx.data_schema_impl.uses_final_chunk_id():
+            direct_start_segment_id = None
 
         hgs = builders.hash_groups(include_leaf_size=self._tree_options.add_group_leaf_size,
                                    include_subtree_size=self._tree_options.add_group_subtree_size,
-                                   start_segment_id=start_segment_id)
+                                   direct_start_segment_id=direct_start_segment_id,
+                                   indirect_start_segment_id=indirect_start_segment_id)
 
         if self._tree_options.add_node_subtree_size:
             node_size = builders.direct_size() + builders.indirect_size()
@@ -408,16 +420,17 @@ class TreeBuilder:
         return_value = TreeBuilder.ReturnValue(packet=packet, manifest=manifest, node=node)
         return return_value
 
-    def _interior_manifest(self, segment, level, right_most_child=None):
+    def _interior_manifest(self, segment, level, right_most_child: Packet = None) -> ReturnValue:
         builders = HashGroupBuilderPair(name_ctx=self._name_ctx,
                                         max_direct=self._params.internal_direct_per_node(),
                                         max_indirect=self._params.internal_indirect_per_node())
 
         self._interior_add_right_most_child(builders, right_most_child)
         self._interior_add_indirect(builders, segment, level)
-        start_segment_id = self._interior_add_direct(builders, segment)
+        direct_start_segment_id = self._interior_add_direct(builders, segment)
 
-        return_value = self._interior_packet(builders, start_segment_id)
+        return_value = self._interior_packet(builders=builders,
+                                             direct_start_segment_id=direct_start_segment_id)
 
         if self._tree_options.debug:
             print(f"node_manifest: {return_value}")

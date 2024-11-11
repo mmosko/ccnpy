@@ -36,7 +36,7 @@ class NcId(TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return f"NCID: {self._nc_id}"
+        return f"NCID ({self._nc_id})"
 
     def __eq__(self, other):
         if not isinstance(other, NcId):

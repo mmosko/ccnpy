@@ -34,6 +34,7 @@ class Node(TlvType):
     ```
     """
     __type = 0x0002
+    DEBUG = True
 
     @dataclass
     class HashIteratorValue:
@@ -56,6 +57,9 @@ class Node(TlvType):
                 self._group_index += 1
                 return self.__next__()
             value = hg.pointers()[self._ptr_index]
+            if hg.group_data() is None or hg.group_data().nc_id() is None:
+                raise ValueError("Every hash group must have a group data and NcId")
+
             result = Node.HashIteratorValue(nc_id=hg.group_data().nc_id().id(),
                                             hash_value=value,
                                             segment_id=self._get_segment_id(hg, self._ptr_index))
@@ -158,6 +162,9 @@ class Node(TlvType):
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
+
+        if cls.DEBUG:
+            print(f'Node parsing Tlv: {tlv}')
 
         node_data = None
         hash_groups = []

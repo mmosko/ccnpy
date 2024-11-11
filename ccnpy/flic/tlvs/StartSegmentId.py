@@ -39,7 +39,7 @@ class StartSegmentId(TlvType):
         return len(self._tlv)
 
     def __repr__(self):
-        return "StartSegmentId: %r" % self._value
+        return "StartSegmentId (%r)" % self._value
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

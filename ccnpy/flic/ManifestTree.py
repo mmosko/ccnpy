@@ -17,6 +17,7 @@ from .ManifestTreeOptions import ManifestTreeOptions
 from .name_constructor.FileMetadata import FileMetadata
 from .name_constructor.NameConstructorContext import NameConstructorContext
 from .tlvs.Pointers import Pointers
+from .tlvs.StartSegmentId import StartSegmentId
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
 from ..core.Packet import Packet, PacketWriter
@@ -43,6 +44,9 @@ class ManifestTree:
         self._packet_output = packet_output
         self._tree_options = tree_options
         self._name_ctx = NameConstructorContext.create(self._tree_options)
+
+    def name_context(self):
+        return self._name_ctx
 
     def build(self) -> Packet:
         """
@@ -81,11 +85,19 @@ class ManifestTree:
         :return:
         """
         ptr = Pointers([top_manifest_packet.content_object_hash()])
+
+        # if the top manifest is SegmentedSchema, we need to include the fact that the chunk_id is 0
+        if self._name_ctx.manifest_schema_impl.uses_final_chunk_id():
+            start_segment_id=StartSegmentId(0)
+        else:
+            start_segment_id=None
+
         root_manifest = manifest_factory.build(source=ptr,
                                                nc_defs=self._name_ctx.nc_def(),
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes,
-                                               nc_id=self._name_ctx.manifest_schema_impl.nc_id())
+                                               nc_id=self._name_ctx.manifest_schema_impl.nc_id(),
+                                               start_segment_id=start_segment_id)
 
         body = root_manifest.content_object(name=self._tree_options.name,
                                              expiry_time=self._tree_options.root_expiry_time)
@@ -94,6 +106,9 @@ class ManifestTree:
         validation_payload = self._tree_options.signer.sign(body.serialize(), validation_alg.serialize())
 
         root_packet = Packet.create_signed_content_object(body, validation_alg, validation_payload)
+        if self._tree_options.debug:
+            print(f"Root packet: {root_packet}")
+
         if len(root_packet) > self._tree_options.max_packet_size:
             # should be logged as a warning?  This only really happens when we set a small MTU in
             # unit tests.

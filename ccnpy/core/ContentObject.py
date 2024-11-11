@@ -24,6 +24,7 @@ from .Payload import Payload
 from .PayloadType import PayloadType
 from .Tlv import Tlv
 from .TlvType import TlvType
+from ..exceptions.ParseError import ParseError
 
 
 class ContentObject(TlvType):
@@ -147,7 +148,11 @@ class ContentObject(TlvType):
     def __repr__(self):
         if self.is_manifest():
             from ccnpy.flic.tlvs.Manifest import Manifest
-            payload = Manifest.deserialize(self._payload.value())
+            try:
+                payload = Manifest.deserialize(self._payload.value())
+            except ParseError as e:
+                payload = self._payload.value()
+
         elif self.is_link():
             payload = Link.deserialize(self._payload.value())
         else:

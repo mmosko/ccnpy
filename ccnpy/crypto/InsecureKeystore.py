@@ -30,10 +30,12 @@ class InsecureKeystore:
     def add_rsa_key(self, name, key: RsaKey):
         self._asymmetric_by_name[name] = key
         self._asymmetric_by_keyid[key.keyid()] = key
+        return self
 
     def add_aes_key(self, key_num, key: AeadKey, salt):
         self._symmetric_by_keynum[key_num] = key
         self._salt_by_keynum[key_num] = salt
+        return self
 
     def get_aes_key(self, key_num) -> AeadKey:
         return self._symmetric_by_keynum[key_num]

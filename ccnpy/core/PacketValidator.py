@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
 from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c, ValidationAlg_RsaSha256
 from ccnpy.crypto.Crc32c import Crc32cVerifier
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
@@ -20,7 +22,7 @@ from ccnpy.crypto.RsaSha256 import RsaSha256Verifier
 class PacketValidator:
     __static_crc32c_verifier = Crc32cVerifier()
 
-    def __init__(self, keystore: InsecureKeystore ):
+    def __init__(self, keystore: Optional[InsecureKeystore]):
         self._keystore = keystore
 
     def validate_packet(self, packet):
@@ -33,6 +35,10 @@ class PacketValidator:
             verifier = self.__static_crc32c_verifier
 
         elif isinstance(alg, ValidationAlg_RsaSha256):
+            if self._keystore is None:
+                print(f"Cannot verify packet, no RSA keys.")
+                return
+
             rsa_pub_key = self._keystore.get_rsa(alg.keyid())
             if rsa_pub_key is None:
                 print(f"Packet requires RsaSha256 verifier, but no key matching keyid {alg.keyid} found.")

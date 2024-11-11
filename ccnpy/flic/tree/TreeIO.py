@@ -53,6 +53,10 @@ class TreeIO:
             self.count += 1
             self.buffer.extend(data)
 
+        def write(self, data):
+            self.count += 1
+            self.buffer.extend(data)
+
     class PacketMemoryReader(PacketReader):
         """
         An in-memory cache of packets that can be fetch by their content object hash

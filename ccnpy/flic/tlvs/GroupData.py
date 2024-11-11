@@ -32,6 +32,8 @@ class GroupData(TlvType):
     __type = 0x0001
     __subtree_digest_type = 0x0002
 
+    DEBUG = True
+
     @classmethod
     def class_type(cls):
         return cls.__type
@@ -110,7 +112,7 @@ class GroupData(TlvType):
     def auto_parse(cls, tlv, name_class_pairs):
         """
         `name_class_pairs` is a list of (str, class) pairs.  The string is the argument name for the
-        class constructor and the class is the corresponding TlvType.  `auto_parse` will go through the
+         class constructor and the class is the corresponding TlvType.  `auto_parse` will go through the
         `tlv` nesting and extract out the available classes.  it will then return a dictionary
         `Dict[str, tlvtype]` that is used to initalize the class.
         """
@@ -120,7 +122,12 @@ class GroupData(TlvType):
 
         offset = 0
         while offset < tlv.length():
-            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+            try:
+                inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+            except ParseError as e:
+                print(f'Error parsing {tlv.value()} at offset {offset}: {e}')
+                raise
+
             offset += len(inner_tlv)
 
             try:
@@ -137,6 +144,9 @@ class GroupData(TlvType):
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
+
+        if cls.DEBUG:
+            print(f'GroupData parsing Tlv: {tlv}')
 
         classes = [ ('subtree_size', SubtreeSize),
                    ('subtree_digest', SubtreeDigest),

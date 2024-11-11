@@ -15,6 +15,7 @@
 import array
 
 from .TlvType import TlvType
+from ..exceptions.ParseError import ParseError
 
 
 class Tlv:
@@ -92,14 +93,14 @@ class Tlv:
     @classmethod
     def deserialize(cls, buffer):
         if len(buffer) < 4:
-            raise RuntimeError("buffer length %r must be at least 4" % len(buffer))
+            raise ParseError("buffer length %r must be at least 4" % len(buffer))
 
         tlv_type = cls.array_to_number(buffer[0:2])
         length = cls.array_to_number(buffer[2:4])
         value = buffer[4:length + 4]
 
         if length != len(value):
-            raise ValueError(f'TLV length {length} does not match the value length {len(value)}')
+            raise ParseError(f'TLV length {length} does not match the value length {len(value)}')
 
         return cls(tlv_type, value)
 

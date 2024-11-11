@@ -46,11 +46,11 @@ class Traversal:
                 print(f'NcCache[inst={self._cache_id}][ncid={nc_def.nc_id().id()}] = {nc_def.schema()}')
                 self.cache[nc_def.nc_id().id()] = SchemaImplFactory.from_ncdef(nc_def)
 
-    def __init__(self, packet_input: PacketReader, data_writer, keystore: InsecureKeystore, debug=False):
+    def __init__(self, packet_input: PacketReader, data_writer, keystore: Optional[InsecureKeystore] = None, debug=False):
         """
         :param packet_input: A reader that we can fetch objects from via '.get'
         :param data_writer: A writer we can append application data to for output (needs to support `.write(bytes)`).
-        :param kestore: Used to verify packets and decrypt manifests
+        :param kestore: Used to verify packets and decrypt manifests (if none, no packet verification or decryption)
         """
         self._packet_input = packet_input
         self._data_writer = data_writer
@@ -77,7 +77,7 @@ class Traversal:
         self._validator.validate_packet(packet=root_packet)
         self.preorder(packet=root_packet, nc_cache=nc_cache)
 
-    def preorder(self, packet: Packet, nc_cache: NameConstructorCache):
+    def preorder(self, packet: Packet, nc_cache: Optional[NameConstructorCache] = None):
         """
         Pre-order traversal of a Manifest tree.  The packet may be a Data content object
         or a Manifest content object.  If it is Data, the payload is appended to the data_buffer array.
@@ -86,6 +86,12 @@ class Traversal:
         :param nc_cache: The name constructor cache.  It may be modified as we traverse down branches.
         :return:
         """
+        if self.debug:
+            print(f'Preorder {packet}')
+
+        if nc_cache is None:
+            nc_cache = Traversal.NameConstructorCache()
+
         if not isinstance(packet, Packet):
             raise TypeError("node must be ccnpy.Packet")
 
@@ -97,7 +103,7 @@ class Traversal:
         if body.payload_type().is_manifest():
             manifest = self._manifest_from_content_object(body)
             if self.debug:
-                print("Traversal: %r" % manifest)
+                print("Preorder: %r" % manifest)
 
             nc_cache = self._update_nc_cache(nc_cache=nc_cache, manifest=manifest)
             try:
@@ -137,6 +143,9 @@ class Traversal:
                                         segment_id=hash_iterator_value.segment_id)
             if packet is None:
                 raise ValueError("Failed to get packet for: %r" % hash_iterator_value)
+            if self.debug:
+                print(f'visit_children: {packet}')
+
             self._validator.validate_packet(packet=packet)
             self.preorder(packet=packet, nc_cache=nc_cache)
 
@@ -180,4 +189,6 @@ class Traversal:
     def _fetch_packet(self, nc_cache: NameConstructorCache, nc_id: int, hash_value: HashValue, segment_id: Optional[int]):
         schema_impl = nc_cache.cache[nc_id]
         interest_name = schema_impl.get_name(segment_id)
+        if self.debug:
+            print(f'fetch_packet: {interest_name}, {hash_value}')
         return self._packet_input.get(name=interest_name, hash_restriction=hash_value)

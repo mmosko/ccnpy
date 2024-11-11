@@ -25,6 +25,7 @@ class HashGroupBuilderPair:
     Uses one or two has group builders, as needed.  Provides a facade of HashGroupBuilder, so the usage
     is just like HashGroupBuilder.
     """
+    DEBUG = True
 
     def __init__(self, name_ctx: NameConstructorContext, max_direct: int, max_indirect: int):
         self._name_ctx = name_ctx
@@ -59,22 +60,29 @@ class HashGroupBuilderPair:
         return self.indirect_builder.indirect_size()
 
     def hash_groups(self, include_leaf_size: bool, include_subtree_size: bool,
-                    start_segment_id: Optional[StartSegmentId]=None) -> List[HashGroup]:
-
+                    direct_start_segment_id: Optional[StartSegmentId]=None,
+                    indirect_start_segment_id: Optional[StartSegmentId]=None) -> List[HashGroup]:
+        if self.DEBUG:
+            print(f"build hash group (direct_seg_id={direct_start_segment_id}, ind_seg_id={indirect_start_segment_id}")
         if self._name_ctx.hash_group_count() == 1:
+            # we cannot have segmented names if there's only one builder
+            assert direct_start_segment_id is None
+            assert indirect_start_segment_id is None
             return [self.direct_builder.hash_group(include_leaf_size=include_leaf_size,
                                                    include_subtree_size=include_subtree_size,
-                                                   start_segment_id=start_segment_id,
                                                    nc_id=self._name_ctx.manifest_schema_impl.nc_id())]
         else:
+            assert direct_start_segment_id is None or isinstance(direct_start_segment_id, StartSegmentId)
+            assert indirect_start_segment_id is None or isinstance(indirect_start_segment_id, StartSegmentId)
             # for proper traversal order, direct must come before indirect.  In preorder, we visit the current
             # node before the children.
             return [
                 self.direct_builder.hash_group(include_leaf_size=include_leaf_size,
                                                include_subtree_size=include_subtree_size,
                                                nc_id=self._name_ctx.data_schema_impl.nc_id(),
-                                               start_segment_id=start_segment_id),
+                                               start_segment_id=direct_start_segment_id),
                 self.indirect_builder.hash_group(include_leaf_size=include_leaf_size,
                                                  include_subtree_size=include_subtree_size,
-                                                 nc_id=self._name_ctx.manifest_schema_impl.nc_id())
+                                                 nc_id=self._name_ctx.manifest_schema_impl.nc_id(),
+                                                 start_segment_id=indirect_start_segment_id)
             ]

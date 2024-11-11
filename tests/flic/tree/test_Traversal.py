@@ -21,12 +21,17 @@ from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.Packet import Packet, PacketReader
 from ccnpy.core.Payload import Payload
 from ccnpy.crypto.AeadKey import AeadGcm
+from ccnpy.crypto.InsecureKeystore import InsecureKeystore
 from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.Locators import Locators
+from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.NcSchema import HashSchema
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
@@ -37,6 +42,9 @@ from tests.MockChunker import create_file_chunks
 
 class TraversalTest(unittest.TestCase):
     # TODO: This test does not iterate over internal manifests, it only tests leafs.
+
+    def setUp(self):
+        self.hash_schema = HashSchemaImpl(nc_id=NcId(1), schema=HashSchema(locators=Locators.from_uri('ccnx:/a')), tree_options=None)
 
     @staticmethod
     def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor] = None):
@@ -69,7 +77,7 @@ class TraversalTest(unittest.TestCase):
         pointers = []
         for packet in packets:
             pointers.append(packet.content_object_hash())
-        manifest = ManifestFactory(tree_options=tree_options).build(Pointers(pointers))
+        manifest = ManifestFactory(tree_options=tree_options).build(Pointers(pointers), nc_id=NcId(1))
         return manifest
 
     def test_data_node(self):
@@ -81,8 +89,8 @@ class TraversalTest(unittest.TestCase):
         packet = self._create_data_packet(expected)
 
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=buffer, packet_input=None)
-        traversal.preorder(packet)
+        traversal = Traversal(data_writer=buffer, packet_input=None)
+        traversal.preorder(packet, nc_cache=Traversal.NameConstructorCache(copy={1: self.hash_schema}))
         self.assertEqual(expected, buffer.buffer)
 
     def test_leaf_manifest(self):
@@ -101,8 +109,8 @@ class TraversalTest(unittest.TestCase):
 
         # The reconstructed application data
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=buffer, packet_input=packet_buffer)
-        traversal.preorder(root)
+        traversal = Traversal(data_writer=buffer, packet_input=packet_buffer)
+        traversal.preorder(root, nc_cache=Traversal.NameConstructorCache(copy={1: self.hash_schema}))
         self.assertEqual(expected, buffer.buffer)
 
     def test_encrypted_leaf_manifest(self):
@@ -122,8 +130,9 @@ class TraversalTest(unittest.TestCase):
 
         # The reconstructed application data
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=buffer, packet_input=packet_buffer, decryptor=decryptor)
-        traversal.preorder(root)
+        keystore = InsecureKeystore().add_aes_key(key_num=77, key=key, salt=None)
+        traversal = Traversal(data_writer=buffer, packet_input=packet_buffer, keystore=keystore)
+        traversal.preorder(root, nc_cache=Traversal.NameConstructorCache(copy={1: self.hash_schema}))
         self.assertEqual(expected, buffer.buffer)
 
 

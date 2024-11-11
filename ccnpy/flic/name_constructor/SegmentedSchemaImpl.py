@@ -35,7 +35,6 @@ class SegmentedSchemaImpl(SchemaImpl):
         `tree_options` before calling this.  See `NameConstructorContext` for examples.
         """
         super().__init__(nc_id=nc_id, schema=schema, tree_options=tree_options)
-        assert tree_options.schema_type == SchemaType.SEGMENTED
         assert isinstance(self._schema, SegmentedSchema)
         if schema.count() > 0:
             raise ValueError("CCNx does not support locators for SegmentedSchema")

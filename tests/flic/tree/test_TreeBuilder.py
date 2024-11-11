@@ -19,10 +19,10 @@ from typing import Optional
 
 from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadCcm
+from ccnpy.crypto.InsecureKeystore import InsecureKeystore
 from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
@@ -44,7 +44,7 @@ class TreeBuilderTest(unittest.TestCase):
                                    signer=None,
                                    manifest_encryptor=encryptor)
 
-    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None):
+    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None) -> TreeBuilder:
         tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
         params = TreeParameters(file_metadata=metadata, max_packet_size=tree_options.max_packet_size, solution=solution)
         factory = ManifestFactory(tree_options=tree_options)
@@ -78,10 +78,10 @@ class TreeBuilderTest(unittest.TestCase):
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        root = tb.build()
+        top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
-        traversal.preorder(root)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 15 manifest nodes and 15 data nodes
@@ -110,11 +110,10 @@ class TreeBuilderTest(unittest.TestCase):
                                    waste=0)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
-
-        root = tb.build()
+        top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
-        traversal.preorder(root)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 7 manifest nodes and 15 data nodes
@@ -154,10 +153,10 @@ class TreeBuilderTest(unittest.TestCase):
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        root = tb.build()
+        top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
-        traversal.preorder(root)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 10 manifest nodes and 61 data nodes
@@ -188,10 +187,10 @@ class TreeBuilderTest(unittest.TestCase):
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
-        root = tb.build()
+        top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer)
-        traversal.preorder(root)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 126 manifest nodes and 5000 data nodes
@@ -218,14 +217,15 @@ class TreeBuilderTest(unittest.TestCase):
 
         key = AeadCcm.generate(bits=256)
         encryptor = AeadEncryptor(key=key, key_number=1234)
-        decryptor = AeadDecryptor(key=key, key_number=1234)
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer, encryptor=encryptor)
 
-        root = tb.build()
+        top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_buffer=data_buffer, packet_input=packet_buffer, decryptor=decryptor)
-        traversal.preorder(root)
+        keystore = InsecureKeystore()
+        keystore.add_aes_key(key_num=1234, key=key, salt=None)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, keystore=keystore)
+        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 15 manifest nodes and 15 data nodes
