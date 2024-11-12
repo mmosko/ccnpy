@@ -41,7 +41,7 @@ class ManifestIdFactory:
     def get_next_id(self, height) -> int:
         next_id = self._next_ids[height]
         if next_id < 0:
-            raise OverflowError(f"Too many IDs retrieved from height {height}")
+            raise OverflowError(f"Too many IDs retrieved from height {height}: {self._next_ids}")
 
         self._next_ids[height] = next_id - 1
         return next_id

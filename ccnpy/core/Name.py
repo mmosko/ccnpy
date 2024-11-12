@@ -27,6 +27,14 @@ class NameComponent(Tlv):
     __T_MANIFESTID=0x0010
 
     @classmethod
+    def chunk_id_type(cls):
+        return cls.__T_CHUNKID
+
+    @classmethod
+    def manifest_id_type(cls):
+        return cls.__T_MANIFESTID
+
+    @classmethod
     def create_name_segment(cls, value):
         return cls(cls.__T_NAMESEGMENT, value)
 

@@ -128,6 +128,20 @@ class TreeOptimizer:
         #print("Min k    : best solutions: %r" % best_solutions)
         return best_solutions
 
+    def minimize_waste_min_height(self) -> OptimizerResult:
+        """
+        A minimum waste solution of minimum height
+        """
+        solutions = self.minimize_waste()
+        min_height = 0xFFFFFFFF
+        min_solution = None
+        for s in solutions:
+            if s.tree_height() < min_height:
+                min_height = s.tree_height()
+                min_solution = s
+        assert min_solution is not None
+        return min_solution
+
     def minimize_waste(self):
         """
         Determine the (d, m) that minimizes k.

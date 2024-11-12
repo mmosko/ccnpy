@@ -24,7 +24,6 @@ from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer
 from ccnpy.flic.ManifestTree import ManifestTree
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
-from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.name_constructor.SchemaImplFactory import SchemaImplFactory
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.GroupData import GroupData
@@ -33,7 +32,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import SegmentedSchema, HashSchema
+from ccnpy.flic.tlvs.NcSchema import SegmentedSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
@@ -111,7 +110,7 @@ YwIDAQAB
 
     def test_nary_1_2_14(self):
         """
-        3-way tree with 1 direct and 2 indirect and 14 file chunks
+        3-way tree with 2 direct and 1 indirect per node.
 
         :return:
         """
@@ -120,22 +119,21 @@ YwIDAQAB
 
         tree = ManifestTree(data_input=data_input,
                             packet_output=self.packet_buffer,
-                            tree_options=self._create_options(175))
+                            tree_options=self._create_options(250))
 
         root_manifest = tree.build()
 
         expected = array("B", self.private_key)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=False)
         traversal.preorder(root_manifest, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
-
-        # We have 1674 bytes.  We can fit 159 bytes in a data content object, so we need 11 data object.
-        # With 3 pointers per node, we need 3 leaf manifests and 2 interior manifests.
+        # traversal.get_graph().save('tree.dot')
 
         self.assertEqual(expected, actual_data.buffer)
-        self.assertEqual(11, actual_data.count)
-        # 11 data nodes plus 3 leaf manifests plus 1 interior manifests plus 1 root manifest
-        self.assertEqual(17, len(self.packet_buffer))
+        self.assertEqual(8, actual_data.count)
+
+        # 13 = 8 data objects + 1 top + 3 interior + 1 leaf
+        self.assertEqual(13, len(self.packet_buffer))
 
     def test_max_tree_degree(self):
         """
@@ -167,12 +165,13 @@ YwIDAQAB
         expected_root_manifest = Manifest(
             node=Node(
                 node_data=NodeData(nc_defs=[
-                    NcDef(NcId(1), SegmentedSchema(Name.from_uri('ccnx:/manifest'))),
-                    NcDef(NcId(2), SegmentedSchema(Name.from_uri('ccnx:/data'))),
+                    NcDef(NcId(1), SegmentedSchema.create_for_manifest(Name.from_uri('ccnx:/manifest'))),
+                    NcDef(NcId(2), SegmentedSchema.create_for_data(Name.from_uri('ccnx:/data'))),
                 ]),
                 hash_groups=[
-                    HashGroup(pointers=Pointers([HashValue.create_sha256(
-                        unhexlify('960a9c7859ac5f6c64212fe1f8fef71c475f39807b12380da183467d9d03a4ac'))]))
+                    HashGroup(
+                        group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(0)),
+                        pointers=Pointers([HashValue.create_sha256(unhexlify('445eaea33112ddf0d21cf3762cb49c29c28c97ab9da3917356f16884136614c1'))]))
                 ]
             )
         )
@@ -192,23 +191,32 @@ YwIDAQAB
                                 unhexlify('eb96aebb6f998228f6d7060f50385d6378121522b9e13cfe98e1a39ebff3f4cc')),
                         ])),
                     HashGroup(
-                        group_data=GroupData(nc_id=NcId(1)),
+                        group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(1)),
                         pointers=Pointers([
                             HashValue.create_sha256(
-                                unhexlify('b1d9f624e58ba6c8066749c05c0856101df14ece1227cd6233ce391087af736e')),
+                                unhexlify('64a6960798d558159cd666820cf2b0081506fd3f589447ce68a54cb92e9a92b8')),
                             HashValue.create_sha256(
-                                unhexlify('e7563a7d23b2da1088563f32cc4cfaa2cb9b2843e58c469fff9d1aa92269a8ae')),
+                                unhexlify('de4301ebb864bf1f9ebada9fc47da014dc44f9f3f8d118ce685323c9b91a7cc7')),
                         ])),
                 ]
             )
         )
-        expected_top_packet = expected_top_manifest.packet(name=manifest_prefix.append_chunk_id(0))
+        expected_top_packet = expected_top_manifest.packet(name=manifest_prefix.append_manifest_id(0))
         print(expected_top_packet)
         self.assertEqual(expected_top_packet, actual_top_manifest_packet)
 
     def test_segmented_tree(self):
         """
         Use a large packet size, but limit the tree degree to 3.
+
+        solution={OptResult n=23, p=3, dir=1, ind=2, int=5, leaf=6, w=0, h=4}
+
+                     top
+                A           B
+             C            u   v
+          G   H
+         z x y w
+
         :return:
         """
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
@@ -222,8 +230,9 @@ YwIDAQAB
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=True)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=False, build_graph=True)
         traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
+        traversal.get_graph().plot()
 
         self.assertEqual(expected, actual_data.buffer)
 

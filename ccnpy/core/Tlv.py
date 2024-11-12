@@ -41,6 +41,17 @@ class Tlv:
         return cls(tlv_type, Tlv.number_to_array(value))
 
     @classmethod
+    def create_uint16(cls, tlv_type, value):
+        """
+
+        :param tlv_type:
+        :param value: A uint8
+        :return:
+        """
+        assert 0 <= value <= 0xFFFF
+        return cls(tlv_type, Tlv.uint16_to_array(value))
+
+    @classmethod
     def create_varint(cls, tlv_type, value):
         """
         Variable length integer.
@@ -235,8 +246,21 @@ class Tlv:
         return array.array("B", byte_array)
 
     @staticmethod
+    def uint16_to_array(n):
+        """
+        Treat n like an 2-byte number
+
+        :param n:
+        :return:
+        """
+        assert 0 <= n <= 0xFFFF
+        byte_array = [n >> 8, n & 0xFF]
+        return array.array("B", byte_array)
+
+    @staticmethod
     def array_to_number(a):
         n = 0
         for b in a:
             n = (n << 8) | b
         return n
+

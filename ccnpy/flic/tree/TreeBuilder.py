@@ -17,6 +17,7 @@ from typing import Optional
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from .HashGroupBuilderPair import HashGroupBuilderPair
+from .ManifestGraph import ManifestGraph
 from .ManifestIdFactory import ManifestIdFactory
 from .TreeParameters import TreeParameters
 from ..HashGroupBuilder import HashGroupBuilder
@@ -203,7 +204,7 @@ class TreeBuilder:
 
     def __init__(self, file_metadata: FileMetadata, tree_parameters: TreeParameters,
                 manifest_factory: ManifestFactory, packet_output: PacketWriter, tree_options: ManifestTreeOptions,
-                name_ctx: NameConstructorContext):
+                name_ctx: NameConstructorContext, manifest_graph: Optional[ManifestGraph] = None):
         """
 
         :param file_metadata: Info about the file chunks
@@ -212,6 +213,7 @@ class TreeBuilder:
         :param packet_output: A class that has a `put(packet)` method
         :param tree_options: The user arguments to the program
         :param name_ctx: The name constructors for manifests and data
+        :param manifest_graph: If not null, will fill in with data as we build the tree
 
         """
         self._file_metadata = file_metadata
@@ -220,6 +222,7 @@ class TreeBuilder:
         self._tree_options = tree_options
         self._packet_output = packet_output
         self._name_ctx = name_ctx
+        self._manifest_graph = manifest_graph
 
         # a counter of the number of manifests created
         self._manifest_count = 0
@@ -270,10 +273,12 @@ class TreeBuilder:
         name = packet.body().name()
         if name is not None:
             name = str(name)
-        print(f"packet: {packet.content_object_hash()}, {name}")
+        print(f"packet: hash={packet.content_object_hash()}, name={name}")
 
     def _get_height(self, level):
-        return self._params.tree_height() - level
+        h = self._params.tree_height() - level
+        assert 0 <= h
+        return h
 
     def _get_next_manifest_name(self, level) -> Name:
         """
@@ -363,7 +368,7 @@ class TreeBuilder:
 
         segment.decrement_tail(segment.tail() - start)
         if self._tree_options.debug:
-            print("leaf_manifest: %r" % return_value)
+            print(f"leaf_manifest (level={level}): {return_value}")
 
         self._write_packet(return_value.packet)
         return return_value
@@ -444,7 +449,7 @@ class TreeBuilder:
                                              level=level)
 
         if self._tree_options.debug:
-            print(f"node_manifest: {return_value}")
+            print(f"node_manifest (level={level}): {return_value}")
 
         self._write_packet(return_value.packet)
         self._internal_count += 1

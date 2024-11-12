@@ -17,6 +17,8 @@ import unittest
 from array import array
 from typing import Optional
 
+from fontTools.mtiLib import build
+
 from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadCcm
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
@@ -30,6 +32,7 @@ from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 from ccnpy.flic.tree.TreeIO import TreeIO
+from ccnpy.flic.tree.TreeOptimizer import TreeOptimizer
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 from tests.MockChunker import create_file_chunks
 
@@ -43,7 +46,7 @@ class TreeBuilderTest(unittest.TestCase):
                                    schema_type=SchemaType.HASHED,
                                    signer=None,
                                    manifest_encryptor=encryptor,
-                                   debug=False)
+                                   debug=True)
 
     def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None) -> TreeBuilder:
         tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
@@ -178,33 +181,23 @@ class TreeBuilderTest(unittest.TestCase):
         expected = array("B", [x % 256 for x in range(0, 5000)])
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        solution = OptimizerResult(num_data_objects=len(metadata),
-                                   num_pointers=41,
-                                   direct_per_node=37,
-                                   indirect_per_node=4,
-                                   # 5000 data objects.
-                                   # 33 internal * 37 = 1221
-                                   # 93 leaf * 41 = 3813
-                                   # capacity = 5034
-                                   # A 4-ary tree needs height 3 to accomodate up to 256 pointers
-                                   # 1 + 4 + 16 + 12 internal => (16*4 - 12 + 12*4) = 100 available leaf manifest pointers,
-                                   # so the tree is feasible (100 >= 93).
-                                   num_internal_nodes=33,
-                                   waste=34)
-
+        opt = TreeOptimizer(num_direct_nodes=len(metadata),num_pointers=41)
+        solution = opt.minimize_waste_min_height()
+        print(solution)
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
 
         top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, build_graph=True)
         traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
+        # traversal.get_graph().plot()
         self.assertEqual(expected, data_buffer.buffer)
 
         # 126 manifest nodes and 5000 data nodes
         self.assertEqual(5126, traversal.count())
 
         # 4-ary tree with 126 manifests => ceil(log_4(126)) = 4
-        self.assertEqual(4, solution.tree_height())
+        self.assertEqual(2, solution.tree_height())
 
     def test_encrypted_0_2_15(self):
         """

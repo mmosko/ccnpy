@@ -77,4 +77,3 @@ class TlvTest(unittest.TestCase):
                                      2, 3, 4,
                                      0, 5, 0, 2, 6, 7])
         self.assertEqual(expected, actual)
-

@@ -29,7 +29,7 @@ class SegmentedSchemaImpl(SchemaImpl):
     SegmentedSchema.
     """
 
-    def __init__(self, nc_id: NcId, schema: SegmentedSchema, tree_options: ManifestTreeOptions, use_chunk_id: bool):
+    def __init__(self, nc_id: NcId, schema: SegmentedSchema, tree_options: ManifestTreeOptions):
         """
         The `name` is what we will use for the name constructor.  You must derive this name from the
         `tree_options` before calling this.  See `NameConstructorContext` for examples.
@@ -41,16 +41,13 @@ class SegmentedSchemaImpl(SchemaImpl):
         if schema.count() > 0:
             raise ValueError("CCNx does not support locators for SegmentedSchema")
         self._name = schema.name()
-        self._use_chunk_id = use_chunk_id
+        self._suffix_type = schema.suffix_type()
 
-    def get_name(self, chunk_id) -> Optional[Name]:
+    def get_name(self, suffix_id) -> Optional[Name]:
         """
         HashSchema always uses nameless objects
         """
-        if self._use_chunk_id:
-            return self._name.append(NameComponent.create_chunk_segment(chunk_id))
-        else:
-            return self._name.append(NameComponent.create_manifest_id(chunk_id))
+        return self._name.append(self._suffix_type.create_name_component(suffix_id))
 
     def nc_id(self) -> NcId:
         return self._nc_id
@@ -63,4 +60,4 @@ class SegmentedSchemaImpl(SchemaImpl):
         return True
 
     def uses_final_chunk_id(self) -> bool:
-        return self._use_chunk_id
+        return self._suffix_type.value() == NameComponent.chunk_id_type()

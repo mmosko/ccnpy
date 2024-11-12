@@ -22,7 +22,8 @@ from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
 from ccnpy.exceptions.ParseError import ParseError
-from ...core.Name import Name
+from .SuffixComponentType import SuffixComponentType
+from ...core.Name import Name, NameComponent
 
 
 class NcSchema(TlvType, ABC):
@@ -224,12 +225,49 @@ class SegmentedSchema(NamedSchema):
     def class_type(cls):
         return cls.__T_SEGMENTED_SCHEMA
 
-    def __init__(self, name: Name, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
+    @classmethod
+    def create_for_manifest(cls, name: Name, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
+        return cls(name=name, locators=locators, flags=flags, suffix_type=SuffixComponentType(NameComponent.manifest_id_type()))
+
+    @classmethod
+    def create_for_data(cls, name: Name, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
+        return cls(name=name, locators=locators, flags=flags, suffix_type=SuffixComponentType(NameComponent.chunk_id_type()))
+
+    def __init__(self, name: Name, suffix_type: SuffixComponentType, locators: Optional[Locators] = None, flags: Optional[ProtocolFlags] = None):
         super().__init__(name=name, locators=locators, flags=flags)
+        self._suffix_type = suffix_type
+        self._tlv = Tlv(self.class_type(), [self._name, self._suffix_type , self._locators, self._flags])
+
 
     def __repr__(self):
-        return f"SS: {self._name}, {self._locators}, {self._flags}"
+        return f"(SS: {self._name}, {self._suffix_type}, {self._locators}, {self._flags})"
 
+    def suffix_type(self) -> SuffixComponentType:
+        return self._suffix_type
+
+    @classmethod
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv)
+
+        flags = locators = name = suffix_type = None
+        offset = 0
+        while offset < tlv.length():
+            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+            offset += len(inner_tlv)
+
+            if inner_tlv.type() == ProtocolFlags.class_type():
+                flags = ProtocolFlags.parse(inner_tlv)
+            elif inner_tlv.type() == Locators.class_type():
+                locators = Locators.parse(inner_tlv)
+            elif inner_tlv.type() == Name.class_type():
+                name = Name.parse(inner_tlv)
+            elif inner_tlv.type() == SuffixComponentType.class_type():
+                suffix_type = SuffixComponentType.parse(inner_tlv)
+            else:
+                raise ParseError(f'Unsupported tlv: {inner_tlv}')
+
+        return cls(name=name, suffix_type=suffix_type, locators=locators, flags=flags)
 
 class HashSchema(LocatorSchema):
     """

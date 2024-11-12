@@ -49,7 +49,7 @@ class SchemaImplFactory:
         return next_nc_id
 
     @classmethod
-    def create(cls, tree_options: ManifestTreeOptions, locators: Optional[Locators] = None, name: Optional[Name] = None, use_chunk_id: bool = False) -> SchemaImpl:
+    def create(cls, tree_options: ManifestTreeOptions, locators: Optional[Locators] = None, name: Optional[Name] = None, for_manifest: bool = False) -> SchemaImpl:
         """
         Creates a schema with the next available NCID and its implementation.
         """
@@ -61,7 +61,11 @@ class SchemaImplFactory:
             return PrefixSchemaImpl(nc_id=nc_id, schema=PrefixSchema(name=name), tree_options=tree_options)
 
         if tree_options.schema_type == SchemaType.SEGMENTED:
-            return SegmentedSchemaImpl(nc_id=nc_id, schema=SegmentedSchema(name=name), tree_options=tree_options, use_chunk_id=use_chunk_id)
+            if for_manifest:
+                return SegmentedSchemaImpl(nc_id=nc_id, schema=SegmentedSchema.create_for_manifest(name=name), tree_options=tree_options)
+            else:
+                return SegmentedSchemaImpl(nc_id=nc_id, schema=SegmentedSchema.create_for_data(name=name), tree_options=tree_options)
+
 
         raise ValueError(f"Unsupported SchemaType: {tree_options.schema_type}")
 

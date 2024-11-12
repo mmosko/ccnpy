@@ -18,6 +18,7 @@ from .name_constructor.FileMetadata import FileMetadata
 from .name_constructor.NameConstructorContext import NameConstructorContext
 from .tlvs.Pointers import Pointers
 from .tlvs.StartSegmentId import StartSegmentId
+from .tree.ManifestGraph import ManifestGraph
 from .tree.TreeBuilder import TreeBuilder
 from .tree.TreeParameters import TreeParameters
 from ..core.Packet import Packet, PacketWriter
@@ -28,7 +29,7 @@ class ManifestTree:
     Builds a manifest tree.
     """
 
-    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions):
+    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions, build_graph: bool = False):
         """
         The `tree_options` must specify the name and schema.  Creates an optimized manifest tree, packing some data
         into the internal nodes.  it will minimize the tree height within the `tree_options.max_tree_degree`.
@@ -44,6 +45,7 @@ class ManifestTree:
         self._packet_output = packet_output
         self._tree_options = tree_options
         self._name_ctx = NameConstructorContext.create(self._tree_options)
+        self._manifest_graph = ManifestGraph() if build_graph else None
 
     def name_context(self):
         return self._name_ctx
@@ -121,7 +123,8 @@ class ManifestTree:
                                    manifest_factory=manifest_factory,
                                    packet_output=self._packet_output,
                                    tree_options=self._tree_options,
-                                   name_ctx=self._name_ctx)
+                                   name_ctx=self._name_ctx,
+                                   manifest_graph=self._manifest_graph)
         return tree_builder.build()
 
     def _calculate_optimal_tree(self, file_metadata: FileMetadata, manifest_factory: ManifestFactory) -> TreeParameters:

@@ -84,8 +84,8 @@ class HashGroupBuilderPairTest(unittest.TestCase):
         data_prefix=Name.from_uri('ccnx:/h')
         options = self._create_options(1500, schema_type=SchemaType.SEGMENTED)
         name_ctx = NameConstructorContext(
-            manifest_schema_impl=SegmentedSchemaImpl(nc_id=NcId(3), schema=SegmentedSchema(manifest_prefix), tree_options=options, use_chunk_id=False),
-            data_schema_impl=SegmentedSchemaImpl(nc_id=NcId(4), schema=SegmentedSchema(data_prefix), tree_options=options, use_chunk_id=True)
+            manifest_schema_impl=SegmentedSchemaImpl(nc_id=NcId(3), schema=SegmentedSchema.create_for_manifest(manifest_prefix), tree_options=options),
+            data_schema_impl=SegmentedSchemaImpl(nc_id=NcId(4), schema=SegmentedSchema.create_for_data(data_prefix), tree_options=options)
         )
 
         builders = HashGroupBuilderPair(name_ctx=name_ctx, max_direct=10, max_indirect=10)

@@ -44,14 +44,15 @@ class OptimizerResult:
         self._sanity_check()
 
     def __repr__(self):
-        return "{OptResult n=%r, p=%r, d=%r, m=%r, k=%r, l=%r, w=%r}" % (
+        return "{OptResult n=%r, p=%r, dir=%r, ind=%r, int=%r, leaf=%r, w=%r, h=%r}" % (
             self._num_data_objects,
             self._num_pointers,
             self._direct_per_node,
             self._indirect_per_node,
             self._num_internal_nodes,
             self._num_leaf_nodes,
-            self._waste
+            self._waste,
+            self._tree_height
         )
 
     def _calculate_tree_height(self):

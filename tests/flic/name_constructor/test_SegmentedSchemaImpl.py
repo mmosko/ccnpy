@@ -44,12 +44,12 @@ class SegmentedSchemaImplTest(unittest.TestCase):
         self.tree_options = ManifestTreeOptions(name=Name.from_uri('ccnx:/other/name'),
                                                 schema_type=SchemaType.SEGMENTED,
                                                 signer=signer)
-        self.schema = SegmentedSchema(name=self.root_name)
+        self.schema = SegmentedSchema.create_for_data(name=self.root_name)
         self.impl = SegmentedSchemaImpl(nc_id=self.nc_id, schema=self.schema, tree_options=self.tree_options)
 
     def test_get_name(self):
         actual = self.impl.get_name(7)
-        expected = self.root_name.append_manifest_id(7)
+        expected = self.root_name.append_chunk_id(7)
         self.assertEqual(expected, actual)
 
     def test_chunk_data(self):
@@ -63,12 +63,12 @@ class SegmentedSchemaImplTest(unittest.TestCase):
         expected_packets.put(
             Packet.create_content_object(
                 ContentObject.create_data(
-                    name=self.root_name.append_manifest_id(0),
+                    name=self.root_name.append_chunk_id(0),
                     payload=Payload(application_data[0:1447]))))
         expected_packets.put(
             Packet.create_content_object(
                 ContentObject.create_data(
-                    name=self.root_name.append_manifest_id(1),
+                    name=self.root_name.append_chunk_id(1),
                     payload=Payload(application_data[1447:2000]),
                     final_chunk_id=FinalChunkId(1))))
         self.assertEqual(expected_packets, packet_buffer)

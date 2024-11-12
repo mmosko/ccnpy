@@ -52,8 +52,14 @@ class NcSchemaTest(unittest.TestCase):
         self.assertEqual(s, decoded)
 
     def test_segmented_schema_no_flags(self):
-        s = SegmentedSchema(name=Name.from_uri('ccnx:/abc'))
-        expected = array.array("B", [0, 4, 0, 11, 0, 0, 0, 7, 0, 1, 0, 3, 97, 98, 99])
+        s = SegmentedSchema.create_for_data(name=Name.from_uri('ccnx:/abc'))
+        expected = array.array("B", [
+            0, 4, 0, 17,
+                # name
+                0, 0, 0, 7,
+                    0, 1, 0, 3, 97, 98, 99,
+                # suffix type (5)
+                0, 20, 0, 2, 0, 5])
         wire_format = s.serialize()
         self.assertEqual(expected, wire_format)
         decoded = SegmentedSchema.parse(Tlv.deserialize(wire_format))

@@ -11,15 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
-from typing import Optional
 
 from .HashGroupBuilderPair import HashGroupBuilderPair
 from .OptimizerResult import OptimizerResult
 from .TreeOptimizer import TreeOptimizer
 from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
-from ccnpy.flic.tlvs.Pointers import Pointers
 from ..name_constructor.FileMetadata import FileMetadata
 from ..name_constructor.NameConstructorContext import NameConstructorContext
 from ..name_constructor.SchemaImpl import SchemaImpl

@@ -15,6 +15,7 @@
 from typing import Optional, Dict, List
 
 from .DecryptorCache import DecryptorCache
+from .ManifestGraph import ManifestGraph
 from ..name_constructor.SchemaImpl import SchemaImpl
 from ..name_constructor.SchemaImplFactory import SchemaImplFactory
 from ..tlvs.AeadCtx import AeadCtx
@@ -47,7 +48,8 @@ class Traversal:
                 print(f'NcCache[inst={self._cache_id}][ncid={nc_def.nc_id().id()}] = {nc_def.schema()}')
                 self.cache[nc_def.nc_id().id()] = SchemaImplFactory.from_ncdef(nc_def)
 
-    def __init__(self, packet_input: PacketReader, data_writer, keystore: Optional[InsecureKeystore] = None, debug=False):
+    def __init__(self, packet_input: PacketReader, data_writer, keystore: Optional[InsecureKeystore] = None,
+                 debug=False, build_graph: bool = False):
         """
         :param packet_input: A reader that we can fetch objects from via '.get'
         :param data_writer: A writer we can append application data to for output (needs to support `.write(bytes)`).
@@ -59,7 +61,13 @@ class Traversal:
         self._count = 0
         self._validator = PacketValidator(keystore=self._keystore)
         self._decryptor_cache = DecryptorCache(self._keystore)
+        self._build_graph = build_graph
+        self._manifest_graph = ManifestGraph()
         self.debug = debug
+
+    def get_graph(self):
+        """Will only be built if `build_graph` is true in construfctor"""
+        return self._manifest_graph
 
     def reset_count(self):
         self._count = 0
@@ -104,6 +112,8 @@ class Traversal:
 
         if body.payload_type().is_manifest():
             manifest = self._manifest_from_content_object(body)
+            if self._build_graph:
+                self._manifest_graph.add_manifest(hash_value=packet.content_object_hash(), node=manifest.node(), name=packet.body().name())
             if self.debug:
                 print("Preorder: %r" % manifest)
 
@@ -117,6 +127,9 @@ class Traversal:
         elif body.payload_type().is_data():
             if self.debug:
                 print("Traversal: %r" % body)
+            if self._build_graph:
+                self._manifest_graph.add_data(data_hash=packet.content_object_hash())
+
             self._write_data(body.payload())
 
         else:
