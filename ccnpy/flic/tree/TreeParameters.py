@@ -21,6 +21,7 @@ from ..name_constructor.FileMetadata import FileMetadata
 from ..name_constructor.NameConstructorContext import NameConstructorContext
 from ..name_constructor.SchemaImpl import SchemaImpl
 from ..tlvs.StartSegmentId import StartSegmentId
+from ...core.ExpiryTime import ExpiryTime
 from ...core.HashValue import HashValue
 
 
@@ -163,7 +164,8 @@ class TreeParameters:
                                       indirect_start_segment_id=indirect_start_segment_id,
                                       direct_start_segment_id=direct_start_segment_id)
 
-        packet = manifest_factory.build_packet(source=hash_groups, node_subtree_size=total_bytes)
+        packet = manifest_factory.build_packet(source=hash_groups,
+                                               node_subtree_size=total_bytes)
 
         return packet
 
@@ -213,7 +215,4 @@ class TreeParameters:
     def _optimize_tree(total_direct_nodes:int , num_pointers_per_node: int) -> OptimizerResult:
         to = TreeOptimizer(num_direct_nodes=total_direct_nodes,
                            num_pointers=num_pointers_per_node)
-        solutions = to.minimize_waste()
-        # the results are sorted by m (number of indirect pointers per node), so pick something in the middle
-        middle_solution = solutions[int(len(solutions) / 2)]
-        return middle_solution
+        return to.minimize_waste_min_height()

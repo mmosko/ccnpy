@@ -38,7 +38,7 @@ class NodeData(TlvType):
         return cls.__type
 
     def __init__(self,
-                 subtree_size: Optional[SubtreeSize] = None,
+                 subtree_size: Optional[SubtreeSize | int] = None,
                  subtree_digest: Optional[SubtreeDigest] = None,
                  locators: Optional[Locators] = None,
                  vendors: Optional[List[Vendor]] = None,

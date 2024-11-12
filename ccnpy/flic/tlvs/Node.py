@@ -106,7 +106,7 @@ class Node(TlvType):
 
     def __repr__(self):
         hash_values_len = len(self.hash_values())
-        return "Node: {%r, %r, %r}" % (self._node_data, hash_values_len, self._hash_groups)
+        return "Node: {data=%r, len=%r, hashes=%r}" % (self._node_data, hash_values_len, self._hash_groups)
 
     def __iter__(self):
         return Node.NodeIterator(self._hash_groups)

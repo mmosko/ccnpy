@@ -123,6 +123,6 @@ class NameConstructorContext:
     def export_schemas(self) -> Dict[int, SchemaImpl]:
         """This is the structure used by `Traversal.NameConstructorCache`"""
         d = {self.manifest_schema_impl.nc_id().id(): self.manifest_schema_impl}
-        if self.hash_group_count == 2:
+        if self.hash_group_count() == 2:
             d[self.data_schema_impl.nc_id().id()] = self.data_schema_impl
         return d

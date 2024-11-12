@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from array import array
 from pathlib import PurePath
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -99,7 +99,11 @@ class Name(TlvType):
         :param index: Name component value as a UTF-8 string
         :return:
         """
-        return self._components[index].value().decode('utf-8')
+        v = self._components[index].value()
+        if isinstance(v, array):
+            return v
+        else:
+            return v.decode('UTF-8')
 
     def append(self, component: NameComponent):
         """

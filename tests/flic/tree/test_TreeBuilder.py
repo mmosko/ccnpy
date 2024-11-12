@@ -17,8 +17,6 @@ import unittest
 from array import array
 from typing import Optional
 
-from fontTools.mtiLib import build
-
 from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadCcm
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
@@ -28,13 +26,14 @@ from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tree.ManifestGraph import ManifestGraph
 from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeBuilder import TreeBuilder
 from ccnpy.flic.tree.TreeIO import TreeIO
-from ccnpy.flic.tree.TreeOptimizer import TreeOptimizer
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 from tests.MockChunker import create_file_chunks
+from tests.MockReader import MockReader
 
 
 class TreeBuilderTest(unittest.TestCase):
@@ -46,9 +45,9 @@ class TreeBuilderTest(unittest.TestCase):
                                    schema_type=SchemaType.HASHED,
                                    signer=None,
                                    manifest_encryptor=encryptor,
-                                   debug=True)
+                                   debug=False)
 
-    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None) -> TreeBuilder:
+    def _create_tree_builder(self, metadata, solution, packet_buffer, encryptor=None, graph=None) -> TreeBuilder:
         tree_options = self._create_options(max_packet_size=1500, encryptor=encryptor)
         params = TreeParameters(file_metadata=metadata, max_packet_size=tree_options.max_packet_size, solution=solution)
         factory = ManifestFactory(tree_options=tree_options)
@@ -58,7 +57,8 @@ class TreeBuilderTest(unittest.TestCase):
                            manifest_factory=factory,
                            packet_output=packet_buffer,
                            tree_options=tree_options,
-                           name_ctx=NameConstructorContext.create(tree_options=tree_options))
+                           name_ctx=NameConstructorContext.create(tree_options=tree_options),
+                           manifest_graph=graph)
 
     def test_binary_0_2_15(self):
         """
@@ -86,12 +86,13 @@ class TreeBuilderTest(unittest.TestCase):
         data_buffer = TreeIO.DataBuffer()
 
         traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, debug=False)
-        traversal.preorder(packet=top_packet, nc_cache=Traversal.NameConstructorCache(tb.name_context().export_schemas()))
+        traversal.preorder(packet=top_packet,
+                           nc_cache=Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
         # 15 manifest nodes and 15 data nodes
         self.assertEqual(30, traversal.count())
-        self.assertEqual(4, solution.tree_height())
+        self.assertEqual(3, solution.tree_height())
 
     def test_binary_1_2_15(self):
         """
@@ -124,8 +125,7 @@ class TreeBuilderTest(unittest.TestCase):
 
         # 7 manifest nodes and 15 data nodes
         self.assertEqual(22, traversal.count())
-        # ceil(log_2(7)) = 3
-        self.assertEqual(3, solution.tree_height())
+        self.assertEqual(2, solution.tree_height())
 
     def test_nary_4_3_61(self):
         """
@@ -169,35 +169,172 @@ class TreeBuilderTest(unittest.TestCase):
 
         # 10 manifest nodes and 61 data nodes
         self.assertEqual(71, traversal.count())
-        # degree 3 with 10 manifests => ceil(log_3(10)) = 3
-        self.assertEqual(3, solution.tree_height())
+        self.assertEqual(2, solution.tree_height())
+
+    def test_less_large_optimized_segmented(self):
+        """
+        A larger example using an optimized tree to minimize the tree waste
+        :return:
+        """
+        packet_buffer = TreeIO.PacketMemoryWriter()
+        expected = array("B", [x % 256 for x in range(0, 1000)])
+        metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
+
+        tree_options = ManifestTreeOptions(max_packet_size=1500,
+                                           name=Name.from_uri('ccnx:/a'),
+                                           schema_type=SchemaType.SEGMENTED,
+                                           signer=None,
+                                           manifest_encryptor=None,
+                                           manifest_prefix=Name.from_uri('ccnx:/a'),
+                                           data_prefix=Name.from_uri('ccnx:/b'),
+                                           debug=False)
+
+        factory = ManifestFactory(tree_options=tree_options)
+        name_ctx = NameConstructorContext.create(tree_options)
+        params = TreeParameters.create_optimized_tree(file_metadata=metadata, manifest_factory=factory, name_ctx=name_ctx)
+        print(params)
+
+        g = ManifestGraph()
+        tb = TreeBuilder(file_metadata=metadata,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer,
+                         tree_options=tree_options,
+                         name_ctx=name_ctx,
+                         manifest_graph=g)
+        top_packet = tb.build()
+        g.save('midtree.dot')
+
+        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(0)
+        self.assertEqual(expected_top_name, top_packet.body().name())
+
+        print(name_ctx)
+
+        data_buffer = TreeIO.DataBuffer()
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, build_graph=True)
+        traversal.preorder(top_packet, Traversal.NameConstructorCache(name_ctx.export_schemas()))
+        # traversal.get_graph().plot()
+        self.assertEqual(expected, data_buffer.buffer)
+
+        # 27 manifest plus 1000 data objects
+        self.assertEqual(1027, traversal.count())
+
+        # 13-ary tree with 28 manifests is max height 1 (i.e. top + next level)
+        self.assertEqual(1, params.tree_height())
+
+    def test_segmented_tree(self):
+        """
+        Use a large packet size, but limit the tree degree to 3.
+
+        solution={OptResult n=23, p=3, dir=1, ind=2, int=5, leaf=6, w=0, h=4}
+        :return:
+        """
+        # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
+        packet_buffer = TreeIO.PacketMemoryWriter()
+        data_input = MockReader(data=array("B", [x % 256 for x in range(0, 8000)]))
+        max_packet_size=400
+
+        tree_options = ManifestTreeOptions(name=Name.from_uri("ccnx:/example.com/manifest"),
+                                          schema_type=SchemaType.SEGMENTED,
+                                          manifest_prefix=Name.from_uri('ccnx:/manifest'),
+                                          data_prefix=Name.from_uri('ccnx:/data'),
+                                          signer=None,
+                                          max_packet_size=max_packet_size,
+                                          max_tree_degree=3,
+                                          debug=False)
+
+        factory = ManifestFactory(tree_options=tree_options)
+        name_ctx = NameConstructorContext.create(tree_options)
+        metadata = name_ctx.data_schema_impl.chunk_data(data_input, packet_buffer)
+
+        params = TreeParameters.create_optimized_tree(file_metadata=metadata, manifest_factory=factory, name_ctx=name_ctx)
+        print(params)
+
+        g = ManifestGraph()
+        tb = TreeBuilder(file_metadata=metadata,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer,
+                         tree_options=tree_options,
+                         name_ctx=name_ctx,
+                         manifest_graph=g)
+        top_packet = tb.build()
+        g.save('segmentedtree.dot')
+
+        expected_top_name = Name.from_uri('ccnx:/manifest').append_manifest_id(0)
+        self.assertEqual(expected_top_name, top_packet.body().name())
+
+        expected = data_input.data
+        actual_data = TreeIO.DataBuffer()
+        traversal = Traversal(data_writer=actual_data, packet_input=packet_buffer, debug=False, build_graph=False)
+        traversal.preorder(top_packet, nc_cache=Traversal.NameConstructorCache(copy=name_ctx.export_schemas()))
+
+        self.assertEqual(expected, actual_data.buffer)
+
+        # We have 8000 bytes of data.
+        # We get 353 bytes of data per data object, so there's 23 data objects.
+        # We get 3 pointers per manifest, so we need leaf 8 manifests, plus the root, plus 3 internal
+        # root -> top -> {m1, m2, m3} -> {leaf1, ..., leaf8}
+        self.assertEqual(23, actual_data.count)
+
+        # 23 data  + top + 3 internal + 8 leaf = 35
+        self.assertEqual(35, len(packet_buffer))
+
+        # self._test_root_manifest(top_packet)
+        # self._test_top_manifest(self.packet_buffer.packets[-2])
 
     def test_large_optimized(self):
         """
         A larger example using an optimized tree to minimize the tree waste
+
+        solution={OptResult n=5000, p=38, dir=23, ind=15, int=9, leaf=127, w=33, h=2}
+
         :return:
         """
         packet_buffer = TreeIO.PacketMemoryWriter()
         expected = array("B", [x % 256 for x in range(0, 5000)])
         metadata = create_file_chunks(data=expected, packet_buffer=packet_buffer, max_chunk_size=1)
 
-        opt = TreeOptimizer(num_direct_nodes=len(metadata),num_pointers=41)
-        solution = opt.minimize_waste_min_height()
-        print(solution)
-        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
+        tree_options = ManifestTreeOptions(max_packet_size=1500,
+                                           name=Name.from_uri('ccnx:/a'),
+                                           schema_type=SchemaType.SEGMENTED,
+                                           signer=None,
+                                           manifest_encryptor=None,
+                                           manifest_prefix=Name.from_uri('ccnx:/a'),
+                                           data_prefix=Name.from_uri('ccnx:/b'),
+                                           debug=False)
 
-        top_manifest = tb.build()
+        factory = ManifestFactory(tree_options=tree_options)
+        name_ctx = NameConstructorContext.create(tree_options)
+        params = TreeParameters.create_optimized_tree(file_metadata=metadata, manifest_factory=factory, name_ctx=name_ctx)
+        print(params)
+
+        g = ManifestGraph()
+        tb = TreeBuilder(file_metadata=metadata,
+                         tree_parameters=params,
+                         manifest_factory=factory,
+                         packet_output=packet_buffer,
+                         tree_options=tree_options,
+                         name_ctx=name_ctx,
+                         manifest_graph=g)
+        top_packet = tb.build()
+        g.save('largetree.dot')
+
+        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(0)
+        self.assertEqual(expected_top_name, top_packet.body().name())
+        print(name_ctx)
+
         data_buffer = TreeIO.DataBuffer()
         traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, build_graph=True)
-        traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
+        traversal.preorder(top_packet, Traversal.NameConstructorCache(name_ctx.export_schemas()))
         # traversal.get_graph().plot()
         self.assertEqual(expected, data_buffer.buffer)
 
-        # 126 manifest nodes and 5000 data nodes
-        self.assertEqual(5126, traversal.count())
+        # 136 manifest nodes and 5000 data nodes
+        self.assertEqual(5136, traversal.count())
 
-        # 4-ary tree with 126 manifests => ceil(log_4(126)) = 4
-        self.assertEqual(2, solution.tree_height())
+        # 15-ary tree with 136 manifests => ceil(log_13(136)) = 2
+        self.assertEqual(2, params.tree_height())
 
     def test_encrypted_0_2_15(self):
         """
@@ -221,7 +358,8 @@ class TreeBuilderTest(unittest.TestCase):
         key = AeadCcm.generate(bits=256)
         encryptor = AeadEncryptor(key=key, key_number=1234)
 
-        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer, encryptor=encryptor)
+        tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer,
+                                       encryptor=encryptor)
 
         top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()

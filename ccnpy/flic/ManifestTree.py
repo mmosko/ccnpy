@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
 from .ManifestFactory import ManifestFactory
 from .ManifestTreeOptions import ManifestTreeOptions
@@ -29,7 +30,7 @@ class ManifestTree:
     Builds a manifest tree.
     """
 
-    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions, build_graph: bool = False):
+    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions, manifest_graph: Optional[ManifestGraph] = None):
         """
         The `tree_options` must specify the name and schema.  Creates an optimized manifest tree, packing some data
         into the internal nodes.  it will minimize the tree height within the `tree_options.max_tree_degree`.
@@ -40,12 +41,13 @@ class ManifestTree:
         :param data_input: Something we can call read() on that returns byte arrays, e.g. open(filename, 'rb')
         :param packet_output: Something we can call put(ccnpy.Packet) on to output packets (see .tree.TreeIO)
         :param tree_options:
+        :param manifest_graph: If not None, will be filled in as we build the tree
         """
         self._data_input = data_input
         self._packet_output = packet_output
         self._tree_options = tree_options
         self._name_ctx = NameConstructorContext.create(self._tree_options)
-        self._manifest_graph = ManifestGraph() if build_graph else None
+        self._manifest_graph = manifest_graph
 
     def name_context(self):
         return self._name_ctx
@@ -58,7 +60,7 @@ class ManifestTree:
         """
 
         file_metadata = self._name_ctx.data_schema_impl.chunk_data(self._data_input, self._packet_output)
-        manifest_factory = ManifestFactory(tree_options=self._tree_options)
+        manifest_factory = ManifestFactory(tree_options=self._tree_options, manifest_graph=self._manifest_graph)
         optimized_params = self._calculate_optimal_tree(file_metadata=file_metadata,
                                                         manifest_factory=manifest_factory)
 
@@ -94,20 +96,16 @@ class ManifestTree:
         else:
             start_segment_id=None
 
-        root_manifest = manifest_factory.build(source=ptr,
+        root_packet = manifest_factory.build_packet(source=ptr,
                                                nc_defs=self._name_ctx.nc_def(),
                                                node_subtree_size=total_file_bytes,
                                                group_subtree_size=total_file_bytes,
                                                nc_id=self._name_ctx.manifest_schema_impl.nc_id(),
-                                               start_segment_id=start_segment_id)
+                                               start_segment_id=start_segment_id,
+                                               name=self._tree_options.name,
+                                               expiry_time=self._tree_options.root_expiry_time,
+                                               signer=self._tree_options.signer)
 
-        body = root_manifest.content_object(name=self._tree_options.name,
-                                             expiry_time=self._tree_options.root_expiry_time)
-
-        validation_alg = self._tree_options.signer.validation_alg()
-        validation_payload = self._tree_options.signer.sign(body.serialize(), validation_alg.serialize())
-
-        root_packet = Packet.create_signed_content_object(body, validation_alg, validation_payload)
         if self._tree_options.debug:
             print(f"Root packet: {root_packet}")
 
@@ -128,7 +126,11 @@ class ManifestTree:
         return tree_builder.build()
 
     def _calculate_optimal_tree(self, file_metadata: FileMetadata, manifest_factory: ManifestFactory) -> TreeParameters:
+        if self._manifest_graph is not None:
+            self._manifest_graph.pause()
         optimized_params = TreeParameters.create_optimized_tree(file_metadata=file_metadata,
                                                                 manifest_factory=manifest_factory,
                                                                 name_ctx=self._name_ctx)
+        if self._manifest_graph is not None:
+            self._manifest_graph.resume()
         return optimized_params

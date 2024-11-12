@@ -44,8 +44,8 @@ class ManiestFactoryTest(unittest.TestCase):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         factory = ManifestFactory(self._create_options())
-        manifest = factory.build(ptr)
-        actual = manifest.serialize()
+        rv = factory._build(ptr)
+        actual = rv.manifest.serialize()
 
         expected = array('B', [0, 2, 0, 14,   # Node
                                0, 2, 0, 10,   # HashGroup
@@ -59,8 +59,8 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
         factory = ManifestFactory(self._create_options())
-        manifest = factory.build(hg)
-        actual = manifest.serialize()
+        rv = factory._build(hg)
+        actual = rv.manifest.serialize()
 
         expected = array('B', [0, 2, 0, 14,   # Node
                                0, 2, 0, 10,   # HashGroup
@@ -75,8 +75,8 @@ class ManiestFactoryTest(unittest.TestCase):
         hg = HashGroup(pointers=ptr)
         node = Node(hash_groups=[hg])
         factory = ManifestFactory(self._create_options())
-        manifest = factory.build(node)
-        actual = manifest.serialize()
+        rv = factory._build(node)
+        actual = rv.manifest.serialize()
 
         expected = array('B', [0, 2, 0, 14,   # Node
                                0, 2, 0, 10,   # HashGroup
@@ -90,8 +90,8 @@ class ManiestFactoryTest(unittest.TestCase):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         factory = ManifestFactory(tree_options=tree_options)
-        manifest = factory.build(ptr, node_subtree_size=20, group_subtree_size=16)
-        actual = manifest.serialize()
+        rv = factory._build(ptr, node_subtree_size=20, group_subtree_size=16)
+        actual = rv.manifest.serialize()
 
         expected = array('B', [0, 2, 0, 46,   # Node
                                0, 1, 0, 12,   # NodeData
@@ -112,8 +112,8 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         hg = HashGroup(pointers=ptr)
         factory = ManifestFactory(tree_options=tree_options)
-        manifest = factory.build(hg, node_subtree_size=20, group_subtree_size=16)
-        actual = manifest.serialize()
+        rv = factory._build(hg, node_subtree_size=20, group_subtree_size=16)
+        actual = rv.manifest.serialize()
 
         # Note that we did not add a GroupData to the HashGroup, so it is missing even though
         # the options asked to put it in.
@@ -140,12 +140,12 @@ class ManiestFactoryTest(unittest.TestCase):
         node = Node(hash_groups=[hg])
         tree_options = self._create_options(manifest_encryptor=encryptor)
         factory = ManifestFactory(tree_options)
-        manifest = factory.build(node)
+        rv = factory._build(node)
 
-        self.assertTrue(manifest.is_encrypted())
+        self.assertTrue(rv.manifest.is_encrypted())
 
         decryptor = AeadDecryptor(key, 99)
-        actual_manifest = decryptor.decrypt_manifest(manifest)
+        actual_manifest = decryptor.decrypt_manifest(rv.manifest)
 
         self.assertEqual(node, actual_manifest.node())
 
@@ -154,8 +154,8 @@ class ManiestFactoryTest(unittest.TestCase):
         ptr = Pointers([hv])
         factory = ManifestFactory(self._create_options())
         nc_def = NcDef(nc_id=NcId(7), schema=PrefixSchema(name=Name.from_uri('ccnx:/a')))
-        manifest = factory.build(source=ptr, nc_defs=[nc_def])
-        actual = manifest.serialize()
+        rv = factory._build(source=ptr, nc_defs=[nc_def])
+        actual = rv.manifest.serialize()
 
         expected = array('B',[
                     # Node

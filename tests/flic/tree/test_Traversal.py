@@ -77,8 +77,8 @@ class TraversalTest(unittest.TestCase):
         pointers = []
         for packet in packets:
             pointers.append(packet.content_object_hash())
-        manifest = ManifestFactory(tree_options=tree_options).build(Pointers(pointers), nc_id=NcId(1))
-        return manifest
+        rv = ManifestFactory(tree_options=tree_options)._build(Pointers(pointers), nc_id=NcId(1))
+        return rv.manifest
 
     def test_data_node(self):
         """

@@ -43,6 +43,9 @@ class SegmentedSchemaImpl(SchemaImpl):
         self._name = schema.name()
         self._suffix_type = schema.suffix_type()
 
+    def __repr__(self):
+        return f'SegmentedImpl(name={self._name}, nc_id={self._nc_id}, schema={self._schema})'
+
     def get_name(self, suffix_id) -> Optional[Name]:
         """
         HashSchema always uses nameless objects

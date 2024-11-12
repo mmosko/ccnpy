@@ -59,9 +59,9 @@ class TreeParametersTest(unittest.TestCase):
         packet = factory.build_packet(source=piece)
         self.assertTrue(len(packet) < self.max_packet_size)
         self.assertEqual(40, params.num_pointers_per_node())
-        # 5 internal nodes + 21 leaf nodes = 26 nodes.
-        # max height = ceil(log_3(26)) ceil(2.79) = 3
-        self.assertEqual(3, params.tree_height())
+        print(params)
+        # solution={OptResult n=1000, p=40, dir=15, ind=25, int=1, leaf=25, w=15, h=1}
+        self.assertEqual(1, params.tree_height())
 
     def test_encrypted_maxsize(self):
         key = AeadGcm.generate(128)

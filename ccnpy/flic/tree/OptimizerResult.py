@@ -56,9 +56,26 @@ class OptimizerResult:
         )
 
     def _calculate_tree_height(self):
+        """
+        The number of nodes in a k-ary tree is:
+            n = (k^(h+1)-1)/(k-1)
+
+        So the height of a k-ary tree with n nodes is:
+            h = log_k((k-1) * n + 1) - 1
+        """
         if self._indirect_per_node == 1:
+            # a chain
             return self.total_nodes()
-        return int(math.ceil(math.log(self.total_nodes(),self._indirect_per_node)))
+
+        if self._indirect_per_node == 0:
+            # a tree with data only at the leaves
+            # we need _num_data_objects leaf pointers, so that happens at
+            return int(math.ceil(math.log(self._num_data_objects, self._direct_per_node)))
+
+        k = self._indirect_per_node
+        n = self.total_nodes()
+        arg = (k-1) * n + 1
+        return int(math.ceil(math.log(arg, self._indirect_per_node) - 1))
 
     def _calculate_num_leaf_nodes(self):
         num_internal_direct = self._num_internal_nodes * self._direct_per_node

@@ -107,7 +107,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         print(root_packet)
 
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=TreeIO.PacketMemoryReader(packet_writer), data_buffer=buffer)
+        traversal = Traversal(packet_input=TreeIO.PacketMemoryReader(packet_writer), data_writer=buffer)
         traversal.preorder(root_packet)
         self.assertEqual(self.file_data, buffer.buffer)
 
@@ -128,7 +128,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 
         packet_reader = TreeIO.PacketDirectoryReader(self.test_out_dir.name)
         buffer = TreeIO.DataBuffer()
-        traversal = Traversal(packet_input=packet_reader, data_buffer=buffer)
+        traversal = Traversal(packet_input=packet_reader, data_writer=buffer)
         traversal.preorder(root_packet)
         self.assertEqual(self.file_data, buffer.buffer)
 

@@ -15,17 +15,22 @@ from typing import List, Optional
 
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
-from ccnpy.flic.tlvs.Locators import Locators
+from ccnpy.flic.tlvs.LeafSize import LeafSize
 from ccnpy.flic.tlvs.Manifest import Manifest
-from .ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
-from ccnpy.flic.tlvs.LeafSize import LeafSize
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from .ManifestTreeOptions import ManifestTreeOptions
 from .tlvs.NcDef import NcDef
 from .tlvs.NcId import NcId
 from .tlvs.StartSegmentId import StartSegmentId
+from .tree.ManifestGraph import ManifestGraph
+from .tree.TreeBuildReturnValue import TreeBuilderReturnValue
+from ..core.ExpiryTime import ExpiryTime
+from ..core.Name import Name
+from ..core.Packet import Packet
+from ..crypto.Signer import Signer
 
 
 class ManifestFactory:
@@ -37,7 +42,7 @@ class ManifestFactory:
     This class is used by ManifestTree (and others), which is the top-level interface to FLIC.
     """
 
-    def __init__(self, tree_options: ManifestTreeOptions):
+    def __init__(self, tree_options: ManifestTreeOptions, manifest_graph: Optional[ManifestGraph] = None):
         """
         When passing tree options, note that they will only be applied if you construct the manifest at a
         lower level of abstraction than an option applies to.  For example, if you pass a `Node`,
@@ -45,9 +50,11 @@ class ManifestFactory:
         we can add GroupData and NodeData.
 
         :param tree_options: options guide how manifest is built.
+        :param manifest_graph: If not none, any created manifests will be added to the graph
         """
         self._encryptor = tree_options.manifest_encryptor
         self._tree_options = tree_options
+        self._manifest_graph = manifest_graph
 
     def tree_options(self) -> ManifestTreeOptions:
         return self._tree_options
@@ -56,7 +63,12 @@ class ManifestFactory:
                      nc_defs: Optional[List[NcDef]] = None,
                      node_subtree_size: Optional[int] = None,
                      group_subtree_size: Optional[int] = None,
-                     group_leaf_size: Optional[int] = None):
+                     group_leaf_size: Optional[int] = None,
+                     nc_id: Optional[NcId] = None,
+                     start_segment_id: Optional[StartSegmentId] = None,
+                     name: Optional[Name] = None,
+                     expiry_time: Optional[ExpiryTime] = None,
+                     signer: Optional[Signer] = None) -> Packet:
         """
         Calls `build()` and then construct a content object and packet to contain it.  Includes a maniest expiry time
         from tree_options.
@@ -66,23 +78,40 @@ class ManifestFactory:
         :param group_subtree_size:
         :param group_leaf_size:
         :param nc_defs: A list of name contructor definitions to include in the NodeData
+        :param name: The CCNx name to put in the packet
         :return:
         """
-        manifest = self.build(source=source,
-                              nc_defs = nc_defs,
-                              node_subtree_size=node_subtree_size,
-                              group_subtree_size=group_subtree_size,
-                              group_leaf_size=group_leaf_size)
-        packet = manifest.packet(expiry_time=self._tree_options.manifest_expiry_time)
+        rv = self._build(source=source,
+                         nc_defs = nc_defs,
+                         node_subtree_size=node_subtree_size,
+                         group_subtree_size=group_subtree_size,
+                         group_leaf_size=group_leaf_size,
+                         nc_id=nc_id,
+                         start_segment_id=start_segment_id)
+
+        body = rv.manifest.content_object(name=name,
+                                          expiry_time=expiry_time)
+
+        if signer is not None:
+            validation_alg = self._tree_options.signer.validation_alg()
+            validation_payload = self._tree_options.signer.sign(body.serialize(), validation_alg.serialize())
+            packet = Packet.create_signed_content_object(body, validation_alg, validation_payload)
+        else:
+            packet = Packet.create_content_object(body)
+
+        if self._manifest_graph is not None:
+            self._manifest_graph.add_manifest(hash_value=packet.content_object_hash(),
+                                              node=rv.node,
+                                              name=packet.body().name())
         return packet
 
-    def build(self, source,
+    def _build(self, source,
               nc_defs: Optional[List[NcDef]] = None,
               node_subtree_size: Optional[int] = None,
               group_subtree_size: Optional[int] = None,
               group_leaf_size: Optional[int] = None,
               nc_id: Optional[NcId] = None,
-              start_segment_id: Optional[StartSegmentId] = None):
+              start_segment_id: Optional[StartSegmentId] = None) -> TreeBuilderReturnValue:
         """
         depending on the level of control you wish to have over the manifest creation, you can
         pass one of several types as the source.
@@ -100,10 +129,8 @@ class ManifestFactory:
                                     there is only one HashGroup, add a GroupData with subtree size to the HashGroup.
         :param group_leaf_size: If not None and ManifestTreeOptions.add_group_leaf_size is True and
                                     there is only one HashGroup, add a GroupData with leaf size to the HashGroup.
-        :return: A Manifest
+        :return: A Manifest.ReturnValue
         """
-        manifest = None
-
         # If the tree options do not allow adding a type of metadata, we None it out here
         if not self._tree_options.add_node_subtree_size:
             node_subtree_size = None
@@ -121,7 +148,7 @@ class ManifestFactory:
             group_leaf_size = LeafSize(group_leaf_size)
 
         if isinstance(source, Pointers):
-            manifest = self._build_from_pointers(pointers=source,
+            rv = self._build_from_pointers(pointers=source,
                                                  nc_defs=nc_defs,
                                                  node_subtree_size=node_subtree_size,
                                                  group_subtree_size=group_subtree_size,
@@ -129,20 +156,20 @@ class ManifestFactory:
                                                  nc_id=nc_id,
                                                  start_segment_id=start_segment_id)
         elif isinstance(source, HashGroup):
-            manifest = self._build_node_from_hashgroups(hash_groups=[source], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
+            rv = self._build_node_from_hashgroups(hash_groups=[source], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
 
         elif isinstance(source, List):
-            manifest = self._build_node_from_hashgroups(hash_groups=source,
+            rv = self._build_node_from_hashgroups(hash_groups=source,
                                                         nc_defs=nc_defs,
                                                         node_subtree_size=node_subtree_size)
         elif isinstance(source, Node):
-            manifest = self._build_from_node(source)
+            rv = self._build_from_node(source)
         else:
             raise TypeError("Unsupported type for source: %r" % source)
 
-        if len(manifest) > self._tree_options.max_packet_size:
-            raise ValueError(f"The manifest is {len(manifest)} bytes and exeeds max_packet_size of {self._tree_options.max_packet_size}")
-        return manifest
+        if len(rv.manifest) > self._tree_options.max_packet_size:
+            raise ValueError(f"The manifest is {len(rv.manifest)} bytes and exeeds max_packet_size of {self._tree_options.max_packet_size}: {rv.manifest}")
+        return rv
 
     def _build_from_pointers(self, pointers,
                              nc_defs: Optional[List[NcDef]] = None,
@@ -150,7 +177,7 @@ class ManifestFactory:
                              group_subtree_size: Optional[SubtreeSize] = None,
                              group_leaf_size: Optional[LeafSize] = None,
                              nc_id: Optional[NcId] = None,
-                             start_segment_id: Optional[StartSegmentId] = None):
+                             start_segment_id: Optional[StartSegmentId] = None) -> TreeBuilderReturnValue:
         """
         From a Pointers object or a list of hash values, build a Manifest.  If the encryptor is
         not None, it will be an encrypted Manifest.
@@ -170,7 +197,7 @@ class ManifestFactory:
     def _build_node_from_hashgroups(self,
                                     hash_groups: List[HashGroup],
                                     nc_defs: Optional[List[NcDef]] = None,
-                                    node_subtree_size: Optional[SubtreeSize] = None):
+                                    node_subtree_size: Optional[SubtreeSize] = None) -> TreeBuilderReturnValue:
         """
         A Node may be one or more hash groups.  In practice, we usually have only one or two hash groups, depending
         on the name constrictors or locators.
@@ -182,16 +209,14 @@ class ManifestFactory:
         node = Node(node_data=node_data, hash_groups=hash_groups)
         return self._build_from_node(node)
 
-    def _build_from_node(self, node):
+    def _build_from_node(self, node) -> TreeBuilderReturnValue:
         if self._encryptor is None:
-            manifest = Manifest(node=node)
+            return TreeBuilderReturnValue(manifest=Manifest(node=node), node=node)
         else:
-            manifest = self._encrypt(node)
+            return self._encrypt(node)
 
-        return manifest
-
-    def _encrypt(self, node):
+    def _encrypt(self, node) -> TreeBuilderReturnValue:
         assert self._encryptor is not None
         security_ctx, encrypted_node, auth_tag = self._encryptor.encrypt(node=node)
         manifest = Manifest(security_ctx=security_ctx, node=encrypted_node, auth_tag=auth_tag)
-        return manifest
+        return TreeBuilderReturnValue(manifest=manifest, node=node)

@@ -37,6 +37,7 @@ from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
+from ccnpy.flic.tree.ManifestGraph import ManifestGraph
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 from tests.MockReader import MockReader
@@ -97,7 +98,7 @@ YwIDAQAB
                                           signer=self.root_signer,
                                           max_packet_size=max_packet_size,
                                           max_tree_degree=3,
-                                          debug=True)
+                                          debug=False)
         else:
             return ManifestTreeOptions(name=Name.from_uri("ccnx:/example.com/manifest"),
                                           schema_type=schema_type,
@@ -106,7 +107,7 @@ YwIDAQAB
                                           signer=self.root_signer,
                                           max_packet_size=max_packet_size,
                                           max_tree_degree=3,
-                                          debug=True)
+                                          debug=False)
 
     def test_nary_1_2_14(self):
         """
@@ -210,29 +211,24 @@ YwIDAQAB
         Use a large packet size, but limit the tree degree to 3.
 
         solution={OptResult n=23, p=3, dir=1, ind=2, int=5, leaf=6, w=0, h=4}
-
-                     top
-                A           B
-             C            u   v
-          G   H
-         z x y w
-
         :return:
         """
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
         data_input = MockReader(data=array("B", [x % 256 for x in range(0, 8000)]))
 
+        g = ManifestGraph()
         tree = ManifestTree(data_input=data_input,
                             packet_output=self.packet_buffer,
-                            tree_options=self._create_options(400, SchemaType.SEGMENTED))
-
+                            tree_options=self._create_options(400, SchemaType.SEGMENTED),
+                            manifest_graph=g)
         root_manifest_packet = tree.build()
+        # g.plot()
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
         traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=False, build_graph=True)
         traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
-        traversal.get_graph().plot()
+        # traversal.get_graph().plot()
 
         self.assertEqual(expected, actual_data.buffer)
 
