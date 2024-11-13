@@ -133,7 +133,6 @@ class AeadGcm(AeadKey):
         AeadKey.__init__(self, key, AESGCM)
 
     @classmethod
-    @staticmethod
     def aead_mode(cls) -> str:
         return "GCM"
 
@@ -157,7 +156,6 @@ class AeadCcm(AeadKey):
         AeadKey.__init__(self, key, AESCCM)
 
     @classmethod
-    @staticmethod
     def aead_mode(cls) -> str:
         return "CCM"
 
