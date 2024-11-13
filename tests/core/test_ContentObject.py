@@ -18,9 +18,14 @@ import unittest
 from datetime import datetime, UTC
 
 from ccnpy.core.ContentObject import ContentObject
+from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Name import Name
 from ccnpy.core.Payload import Payload
 from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.tlvs.HashGroup import HashGroup
+from ccnpy.flic.tlvs.Manifest import Manifest
+from ccnpy.flic.tlvs.Node import Node
+from ccnpy.flic.tlvs.Pointers import Pointers
 
 
 class ContentObjectTest(unittest.TestCase):
@@ -61,6 +66,15 @@ class ContentObjectTest(unittest.TestCase):
         expected = ContentObject.create_data(name=name, payload=payload, expiry_time=dt, final_chunk_id=9)
         self.assertEqual(expected, actual, "Incorrect deserialization")
 
+    def test_create_manifest(self):
+        dt = datetime.fromtimestamp(1560252745.906, UTC)
+        manifest = Manifest(node=Node(hash_groups=[HashGroup(pointers=Pointers([HashValue.create_sha256([0])]))]))
+        actual = ContentObject.create_manifest(manifest=manifest, name=Name.from_uri('ccnx:/foo'), expiry_time=dt)
+        encoded = actual.serialize()
+        decoded = ContentObject.parse(Tlv.deserialize(encoded))
+        self.assertEqual(actual, decoded)
+        decoded_manifest = Manifest.from_content_object(decoded)
+        self.assertEqual(manifest, decoded_manifest)
 
 
 if __name__ == '__main__':

@@ -31,7 +31,7 @@ class Link:
     """
     Serves as the base class for KeyLink and is used in LocatorList
     """
-    def __init__(self, name=None, keyid=None, digest=None):
+    def __init__(self, name: Optional[Name | str] = None, keyid: Optional[HashValue] = None, digest: Optional[HashValue] = None):
         """
         The Link will serialize as a list of TLVs.  It has no surrounding "link" type.  That context must be
         provided by the concrete class, like KeyLink.
@@ -55,6 +55,8 @@ class Link:
         self._name = name
         self._keyid = keyid
         self._digest = digest
+        # for iteration
+        self._offset = 0
 
         self._wire_format = array.array("B", [])
         if self._name is not None:
@@ -71,6 +73,21 @@ class Link:
 
     def __repr__(self):
         return "Link(%r, %r, %r)" % (self._name, self._keyid, self._digest)
+
+    def __len__(self):
+        return len(self._wire_format)
+
+    def __iter__(self):
+        self._offset = 0
+        return self
+
+    def __next__(self):
+        if self._offset == len(self._wire_format):
+            raise StopIteration
+
+        output = self._wire_format[self._offset]
+        self._offset += 1
+        return output
 
     def name(self) -> Optional[Name]:
         return self._name

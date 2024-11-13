@@ -132,13 +132,13 @@ class TreeBuilderTest(unittest.TestCase):
             ```
             Example:
                 DDDDMMM
-                  _/  \\_____________________________
-                 /     \___                          \
-                /          \                          \
+                  _/  ||_____________________________
+                 /     |___                          |
+                /          |                          |
                 DDDDDDD     DDDDMMM                   DDDDMMM
-                         __/ \\                    __/ \\
-                        /     \\________          /     \\________
-                       /       \        \        /       \        \
+                         __/ ||                    __/ ||
+                        /     ||________          /     ||________
+                       /       |        |        /       |        |
                       DDDDDDD  DDDDDDD  DDDDDDD DDDDDDD  DDDDDDD  DDDDDDD
 
                 3 * 4 + 7 * 7 = 12 + 49 = 61

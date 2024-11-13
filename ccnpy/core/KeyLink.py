@@ -25,7 +25,7 @@ class KeyLink(TlvType):
     def class_type(cls):
         return cls.__T_KEYLINK
 
-    def __init__(self, link):
+    def __init__(self, link: Link):
         TlvType.__init__(self)
         self._link = link
         self._tlv = Tlv(self.class_type(), link)
