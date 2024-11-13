@@ -16,8 +16,23 @@ coverage = "^7.6.4"
 networkx = "^3.4.2"
 matplotlib = "^3.9.2"
 pydot = "^3.0.2"
-pygraphviz = "^1.14"
 
+
+[tool.poetry.group.dev.dependencies]
+coverage = "^7.6.4"
+pytest = "^8.3.3"
+
+[tool.coverage.run]  
+branch = true  
+source = ["./ccnpy"]  
+dynamic_context = "test_function" 
+
+[tool.coverage.report]  
+show_missing = true  
+fail_under = 80 
+
+[tool.coverage.html]  
+directory = "htmlcov"
 
 [build-system]
 requires = ["poetry-core"]

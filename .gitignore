@@ -6,3 +6,6 @@ output/
 test_key.pem
 poetry.lock
 dist/
+*.dot
+*.pem
+*.pub

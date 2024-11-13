@@ -2,7 +2,11 @@
 
 
 coverage:
-	coverage report --include="ccnpy/*" --omit="*/test_*"
+	poetry run coverage run -m pytest
+	poetry run coverage report -m
+
+check:
+	poetry run pytest
 
 clean:
 	coverage erase
