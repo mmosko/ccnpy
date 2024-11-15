@@ -90,6 +90,7 @@ class LocatorSchema(ProtocolFlagsSchema, ABC):
     Intermediate supertype for name constructors that have Locators.
     """
     def __init__(self, locators: Locators, flags: Optional[ProtocolFlags] = None):
+        assert locators is None or isinstance(locators, Locators)
         self._locators = locators
         super().__init__(flags)
         self._tlv = Tlv(self.class_type(), [self._locators, self._flags])
@@ -148,7 +149,7 @@ class NamedSchema(LocatorSchema, ABC):
     def __init__(self, name: Name, locators: Optional[Locators], flags: Optional[ProtocolFlags] = None):
         self._name = name
         super().__init__(locators=locators, flags=flags)
-        self._tlv = Tlv(self.class_type(), [self._name, self._locators, self._flags])
+        self._tlv = Tlv(self.class_type(), [self.name(), self.locators(), self.flags()])
 
     def __len__(self):
         return len(self._tlv)
@@ -162,9 +163,10 @@ class NamedSchema(LocatorSchema, ABC):
     @classmethod
     def parse(cls, tlv):
         values = cls.auto_parse(tlv,
-                                [('name', Name),
-                                ('locators', Locators),
-                                ('flags', ProtocolFlags)]
+                                [
+                                    ('name', Name),
+                                    ('locators', Locators),
+                                    ('flags', ProtocolFlags)]
         )
         return cls(**values)
 

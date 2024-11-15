@@ -32,11 +32,26 @@ from ccnpy.flic.tlvs.NcSchema import HashSchema
 from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class NodeDataTest(unittest.TestCase):
     def setUp(self):
         SchemaImplFactory.reset_nc_id()
+
+    @staticmethod
+    def _create_array():
+        return array.array("B", [
+                                     0, TlvNumbers.T_NODE_DATA, 0, 52,
+                                     0, TlvNumbers.T_SUBTREE_SIZE, 0,  2, 1,   2,
+                                     0, TlvNumbers.T_SUBTREE_DIGEST, 0,  7, 0, 1, 0, 3, 100, 110, 120,
+                                     # LocatorList
+                                     0, TlvNumbers.T_LOCATORS, 0, 31,
+                                     0, TlvNumbers.T_LINK, 0, 14,
+                                     0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
+                                     0, TlvNumbers.T_LINK, 0, 9,
+                                     0, 0, 0, 5, 0, 1, 0, 1, 99
+                                     ])
 
     def test_serialize(self):
         size = SubtreeSize(0x0102)
@@ -48,16 +63,7 @@ class NodeDataTest(unittest.TestCase):
         nd = NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
         actual = nd.serialize()
 
-        expected = array.array("B", [0, 1, 0, 58,
-                                     0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
-                                     0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
-                                     # LocatorList
-                                     0, 3, 0, 31,
-                                     0, 2, 0, 14,
-                                     0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
-                                     0, 2, 0, 9,
-                                     0, 0, 0, 5, 0, 1, 0, 1, 99
-                                     ])
+        expected = self._create_array()
         self.assertEqual(expected, actual)
 
     def test_parse(self):
@@ -68,17 +74,7 @@ class NodeDataTest(unittest.TestCase):
         locators = Locators(locators=[loc1, loc2])
 
         expected = NodeData(subtree_size=size, subtree_digest=digest, locators=locators)
-
-        wire_format = array.array("B", [0, 1, 0, 58,
-                                        0, 1, 0,  8, 0, 0, 0, 0,   0,   0,   1,   2,
-                                        0, 2, 0,  7, 0, 1, 0, 3, 100, 110, 120,
-                                        # LocatorList
-                                        0, 3, 0, 31,
-                                        0, 2, 0, 14,
-                                        0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
-                                        0, 2, 0, 9,
-                                        0, 0, 0, 5, 0, 1, 0, 1, 99
-                                        ])
+        wire_format = self._create_array()
         tlv = Tlv.deserialize(wire_format)
         actual = NodeData.parse(tlv)
 
@@ -101,31 +97,32 @@ class NodeDataTest(unittest.TestCase):
         print(wire_format)
 
         expected_wire_format = array.array('B',
-                                     [0, 1, 0, 82,
-                                        0, 1, 0, 8, 0, 0, 0, 0, 0, 0, 18, 52,
+                                     [
+                                        0, TlvNumbers.T_NODE_DATA, 0, 76,
+                                        0, TlvNumbers.T_SUBTREE_SIZE, 0, 2, 18, 52,
                                         # NC DEF for NcId #1
-                                        0, 6, 0, 33,
+                                        0, TlvNumbers.T_NCDEF, 0, 33,
                                             # ncid
-                                            0, 16, 0, 1, 1,
+                                            0, TlvNumbers.T_NCID, 0, 1, 1,
                                             # Hash Schema
-                                            0, 5, 0, 24,
+                                            0, TlvNumbers.T_HashSchema, 0, 24,
                                                 # locators
-                                                0, 3, 0, 20,
+                                                0, TlvNumbers.T_LOCATORS, 0, 20,
                                                     # Locator
-                                                    0, 2, 0, 16,
+                                                    0, TlvNumbers.T_LINK, 0, 16,
                                                         # name
                                                         0, 0, 0, 12,
                                                             0, 1, 0, 8, 109, 97, 110, 105, 102, 101, 115, 116,
                                         # NC DEF for NcId #2
-                                        0, 6, 0, 29,
+                                        0, TlvNumbers.T_NCDEF, 0, 29,
                                             # ncid
-                                            0, 16, 0, 1, 2,
+                                            0, TlvNumbers.T_NCID, 0, 1, 2,
                                             # Hash Schema
-                                            0, 5, 0, 20,
+                                            0, TlvNumbers.T_HashSchema, 0, 20,
                                                 # Locators
-                                                0, 3, 0, 16,
+                                                0, TlvNumbers.T_LOCATORS, 0, 16,
                                                     # Locator
-                                                    0, 2, 0, 12,
+                                                    0, TlvNumbers.T_LINK, 0, 12,
                                                         0, 0, 0, 8, 0, 1, 0, 4, 100, 97, 116, 97])
 
         self.assertEqual(expected_wire_format, wire_format)

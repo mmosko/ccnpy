@@ -19,25 +19,26 @@ import unittest
 from ccnpy.core.Tlv import Tlv
 from ccnpy.exceptions.CannotParseError import CannotParseError
 from ccnpy.flic.tlvs.ProtocolFlags import ProtocolFlags
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class ProtocolFlagsTest(unittest.TestCase):
     def test_serialize(self):
         flags = array.array("B", [1, 3, 5, 7, 9])
         pf = ProtocolFlags(flags)
-        expected = array.array("B", [0, 9, 0, 5, 1, 3, 5, 7, 9])
+        expected = array.array("B", [0, TlvNumbers.T_PROTOCOL_FLAGS, 0, 5, 1, 3, 5, 7, 9])
         actual = pf.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 9, 0, 5, 1, 3, 5, 7, 9])
+        wire_format = array.array("B", [0, TlvNumbers.T_PROTOCOL_FLAGS, 0, 5, 1, 3, 5, 7, 9])
         tlv = Tlv.deserialize(wire_format)
         actual = ProtocolFlags.parse(tlv)
         expected = ProtocolFlags([1, 3, 5, 7, 9])
         self.assertEqual(expected, actual)
 
     def test_deserialize_wrong_tlv(self):
-        wire_format = array.array("B", [0, 8, 0, 5, 1, 3, 5, 7, 9])
+        wire_format = array.array("B", [0, 99, 0, 5, 1, 3, 5, 7, 9])
         tlv = Tlv.deserialize(wire_format)
         with self.assertRaises(CannotParseError):
             ProtocolFlags.parse(tlv)

@@ -29,6 +29,7 @@ from ccnpy.flic.tlvs.SecurityCtx import SecurityCtx
 from ccnpy.flic.tlvs.AeadCtx import AeadCtx
 from ccnpy.flic.aeadctx.AeadImpl import AeadImpl
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class AeadImplTest(unittest.TestCase):
@@ -36,37 +37,31 @@ class AeadImplTest(unittest.TestCase):
     key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
                             0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
-    def test_aeadctx_serialize(self):
-        nonce = array.array("B", [77, 88])
-        keynum = 55
-        psk_ctx = AeadCtx.create_aes_gcm_128(keynum, nonce)
-        actual = psk_ctx.serialize()
+    nonce = array.array("B", [77, 88])
+    keynum = 55
 
-        expected = array.array("B", [ # SecurityCtx
-                                      0, 1, 0, 20,
-                                      # PresharedKeyCtx
-                                      0, 1, 0, 16,
-                                      # Key Number
-                                      0, 1, 0, 1, keynum,
-                                      # IV
-                                      0, 2, 0, 2, nonce[0], nonce[1],
-                                      # Mode
-                                      0, 3, 0, 1, 1
-                                     ])
-        self.assertEqual(expected, actual)
+    wire_format = array.array("B", [
+        # SecurityCtx
+        0, TlvNumbers.T_SECURITY_CTX, 0, 20,
+        # PresharedKeyCtx
+        0, TlvNumbers.T_AEAD_CTX, 0, 16,
+        # Key Number
+        0, TlvNumbers.T_KEYNUM, 0, 1, keynum,
+        # IV
+        0, TlvNumbers.T_NONCE, 0, 2, nonce[0], nonce[1],
+        # Mode
+        0, TlvNumbers.T_AEADMode, 0, 1, 1
+    ])
+
+    def test_aeadctx_serialize(self):
+        psk_ctx = AeadCtx.create_aes_gcm_128(self.keynum, self.nonce)
+        actual = psk_ctx.serialize()
+        self.assertEqual(self.wire_format, actual)
 
     def test_aeadctx_deserialize(self):
-        nonce = array.array("B", [77, 88])
-        keynum = 55
-        wire_format = array.array("B", [0, 1, 0, 20,
-                                        0, 1, 0, 16,
-                                        0, 1, 0, 1, keynum,
-                                        0, 2, 0, 2, nonce[0], nonce[1],
-                                        0, 3, 0, 1, 1
-                                        ])
-        tlv = Tlv.deserialize(wire_format)
+        tlv = Tlv.deserialize(self.wire_format)
         psk_ctx = SecurityCtx.parse(tlv)
-        expected = AeadCtx.create_aes_gcm_128(keynum, array.array("B", nonce))
+        expected = AeadCtx.create_aes_gcm_128(self.keynum, array.array("B", self.nonce))
         self.assertEqual(expected, psk_ctx)
 
     @staticmethod

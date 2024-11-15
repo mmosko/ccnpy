@@ -17,22 +17,31 @@ import array
 import unittest
 
 from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.tlvs.Locator import Locator
+from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.flic.tlvs.NcSchema import InterestDerivedSchema
+from ccnpy.flic.tlvs.NcSchema import HashSchema
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class NcDefTest(unittest.TestCase):
+    wire_format = array.array("B", [
+        0, TlvNumbers.T_NCDEF, 0, 26,
+        0, TlvNumbers.T_NCID, 0, 1, 5,
+        0, TlvNumbers.T_HashSchema, 0, 17,
+        0, TlvNumbers.T_LOCATORS, 0, 13,
+        0, TlvNumbers.T_LINK, 0, 9,
+        0, 0, 0, 5, 0, 1, 0, 1, 97])
+
     def test_serialize(self):
-        nc_def = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())
-        expected = array.array("B", [0, 6, 0, 9, 0, 16, 0, 1, 5, 0, 1, 0, 0])
+        nc_def = NcDef(nc_id=NcId(5), schema=HashSchema(locators=Locators.from_uri('ccnx:/a')))
         actual = nc_def.serialize()
-        self.assertEqual(expected, actual)
+        self.assertEqual(self.wire_format, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 6, 0, 9, 0, 16, 0, 1, 5, 0, 1, 0, 0])
-        tlv = Tlv.deserialize(wire_format)
+        tlv = Tlv.deserialize(self.wire_format)
         actual = NcDef.parse(tlv)
-        expected = NcDef(nc_id=NcId(5), schema=InterestDerivedSchema())
+        expected = NcDef(nc_id=NcId(5), schema=HashSchema(locators=Locators.from_uri('ccnx:/a')))
         self.assertEqual(expected, actual)
 

@@ -18,17 +18,17 @@ from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class Locator(TlvType):
     """
     A `Link` is not a TLV.  The Locator type encapsulates a Link inside a TLV.
     """
-    __type = 0x0002
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_LINK
 
     @classmethod
     def from_uri(cls, uri: str):

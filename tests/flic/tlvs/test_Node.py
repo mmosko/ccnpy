@@ -26,6 +26,7 @@ from ccnpy.flic.tlvs.NodeData import NodeData
 from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class NodeTest(unittest.TestCase):
@@ -48,23 +49,24 @@ class NodeTest(unittest.TestCase):
         node = self._create_node()
         actual = node.serialize()
 
-        expected = array.array("B", [0, 2, 0, 66,
+        expected = array.array("B", [
+                                     0, TlvNumbers.T_NODE, 0, 54,
                                      # NodeData
-                                     0, 1, 0, 12,
-                                     0, 1, 0,  8, 0, 0, 0, 0, 0, 0, 0x03, 0xE8,
+                                     0, TlvNumbers.T_NODE_DATA, 0, 6,
+                                     0, TlvNumbers.T_SUBTREE_SIZE, 0,  2, 0x03, 0xE8,
                                      # HashGroup 1
-                                     0, 2, 0,  32,
+                                     0, TlvNumbers.T_HASH_GROUP, 0,  26,
                                      # Group Data
-                                     0, 1, 0, 12,
-                                     0, 1, 0, 8, 0, 0, 0, 0, 0, 0, 2, 0x34,
+                                     0, TlvNumbers.T_GROUP_DATA, 0, 6,
+                                     0, TlvNumbers.T_SUBTREE_SIZE, 0, 2, 2, 0x34,
                                      # Pointers
-                                     0, 2, 0, 12,
+                                     0, TlvNumbers.T_PTRS, 0, 12,
                                      0, 1, 0, 2, 1, 2,
                                      0, 2, 0, 2, 3, 4,
                                      # Hash Group 2
-                                     0,  2, 0,  10,
+                                     0,  TlvNumbers.T_HASH_GROUP, 0,  10,
                                      # Pointers
-                                     0, 2, 0,  6,
+                                     0, TlvNumbers.T_PTRS, 0,  6,
                                      0, 3, 0, 2, 5, 6
                                      ])
         self.assertEqual(expected, actual)

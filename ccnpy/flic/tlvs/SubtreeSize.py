@@ -31,7 +31,7 @@ class SubtreeSize(TlvType):
     def __init__(self, size):
         TlvType.__init__(self)
         self._size = size
-        self._tlv = Tlv.create_uint64(self.class_type(), self._size)
+        self._tlv = Tlv.create_varint(self.class_type(), self._size)
 
     def __len__(self):
         return len(self._tlv)

@@ -21,6 +21,7 @@ from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.Locator import Locator
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class LocatorTest(unittest.TestCase):
@@ -31,14 +32,16 @@ class LocatorTest(unittest.TestCase):
         link = Link(name=name, keyid=keyid, digest=digest)
         locator = Locator(link)
         actual = locator.serialize()
-        expected = array.array("B", [0, 2, 0, 36,
+        expected = array.array("B", [
+                                     0, TlvNumbers.T_LINK, 0, 36,
                                      0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                      0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
                                      0, 3, 0, 8, 0, 2, 0, 4, 65, 66, 67, 68])
         self.assertEqual(expected, actual)
 
     def test_parse(self):
-        wire_format = array.array("B", [0, 2, 0, 36,
+        wire_format = array.array("B", [
+                                        0, TlvNumbers.T_LINK, 0, 36,
                                         0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
                                         0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
                                         0, 3, 0, 8, 0, 2, 0, 4, 65, 66, 67, 68])

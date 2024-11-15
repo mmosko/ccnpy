@@ -18,6 +18,7 @@ import unittest
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.LeafSize import LeafSize
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class LeafSizeTest(unittest.TestCase):
@@ -25,11 +26,11 @@ class LeafSizeTest(unittest.TestCase):
         ss = LeafSize(0x010203)
         actual = ss.serialize()
 
-        expected = array.array("B", [0, 17, 0, 3, 1, 2, 3])
+        expected = array.array("B", [0, TlvNumbers.T_LEAF_SIZE, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 17, 0, 3, 1, 2, 3])
+        wire_format = array.array("B", [0, TlvNumbers.T_LEAF_SIZE, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
         actual = LeafSize.parse(tlv)
         expected = LeafSize(0x010203)

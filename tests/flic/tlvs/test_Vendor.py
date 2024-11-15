@@ -25,25 +25,25 @@ class VendorTest(unittest.TestCase):
         v = Vendor(0x1234, [])
         actual = v.serialize()
 
-        expected = array.array("B", [0, 240, 0, 3, 0, 0x12, 0x34])
+        expected = array.array("B", [0x0F, 0xFF, 0, 3, 0, 0x12, 0x34])
         self.assertEqual(expected, actual)
 
     def test_serialize_payload(self):
         v = Vendor(0x1234, [5, 6, 7, 8])
         actual = v.serialize()
 
-        expected = array.array("B", [0, 240, 0, 7, 0, 0x12, 0x34, 5, 6, 7, 8])
+        expected = array.array("B", [0x0F, 0xFF, 0, 7, 0, 0x12, 0x34, 5, 6, 7, 8])
         self.assertEqual(expected, actual)
 
     def test_deserialize_no_payload(self):
-        wire_format = array.array("B", [0, 240, 0, 3, 0, 0x12, 0x34])
+        wire_format = array.array("B", [0x0F, 0xFF, 0, 3, 0, 0x12, 0x34])
         tlv = Tlv.deserialize(wire_format)
         actual = Vendor.parse(tlv)
         expected = Vendor(0x1234, [])
         self.assertEqual(expected, actual)
 
     def test_deserialize_payload(self):
-        wire_format = array.array("B", [0, 240, 0, 7, 0, 0x12, 0x34, 5, 6, 7, 8])
+        wire_format = array.array("B", [0x0F, 0xFF, 0, 7, 0, 0x12, 0x34, 5, 6, 7, 8])
         tlv = Tlv.deserialize(wire_format)
         actual = Vendor.parse(tlv)
         expected = Vendor(0x1234, [5, 6, 7, 8])
