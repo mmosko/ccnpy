@@ -15,6 +15,7 @@
 
 from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Payload import Payload
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class AuthTag(Payload):
@@ -24,11 +25,10 @@ class AuthTag(Payload):
     The AuthTag is the (normally) 16 byte authentication tag used by AES GCM or CCM to authenticate
     a message.
     """
-    __T_AUTHTAG = 0x0003
 
     @classmethod
     def class_type(cls):
-        return cls.__T_AUTHTAG
+        return TlvNumbers.T_AUTH_TAG
 
     def __init__(self, value):
         super().__init__(value)

@@ -11,23 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from ccnpy.core.DisplayFormatter import DisplayFormatter
-from ccnpy.core.Payload import Payload
-from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+from abc import abstractmethod, ABC
 
 
-class ProtocolFlags(Payload):
-    """
-    These are CCN/NDN flags to pass as part of the Interest.
-    """
+class Serializable(ABC):
 
-    @classmethod
-    def class_type(cls):
-        return TlvNumbers.T_PROTOCOL_FLAGS
-
-    def __init__(self, value):
-        super().__init__(value)
-
-    def __repr__(self):
-        return "Flags: %r" % DisplayFormatter.hexlify(self._value)
+    @abstractmethod
+    def serialize(self):
+        pass

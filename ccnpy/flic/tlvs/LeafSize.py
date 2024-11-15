@@ -16,6 +16,7 @@
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class LeafSize(TlvType):
@@ -24,11 +25,10 @@ class LeafSize(TlvType):
 
         LeafSize = TYPE LENGTH INTEGER
     """
-    __type = 0x0011
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_LEAF_SIZE
 
     def __init__(self, size):
         TlvType.__init__(self)

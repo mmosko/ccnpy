@@ -19,6 +19,7 @@ from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
 from ccnpy.exceptions.ParseError import ParseError
+from .TlvNumbers import TlvNumbers
 
 
 class NcDef(TlvType):
@@ -27,11 +28,10 @@ class NcDef(TlvType):
 
         NcDef = TYPE LENGTH NcId NcSchema
     """
-    __T_NCDEF = 0x0006
 
     @classmethod
     def class_type(cls):
-        return cls.__T_NCDEF
+        return TlvNumbers.T_NCDEF
 
     def __init__(self, nc_id: NcId, schema: NcSchema):
         TlvType.__init__(self)

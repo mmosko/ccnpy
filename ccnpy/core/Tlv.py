@@ -14,11 +14,11 @@
 
 import array
 
-from .TlvType import TlvType
+from .Serializable import Serializable
 from ..exceptions.ParseError import ParseError
 
 
-class Tlv:
+class Tlv(Serializable):
     @classmethod
     def create_uint64(cls, tlv_type, value):
         """
@@ -121,7 +121,7 @@ class Tlv:
             byte_list = []
             for x in value:
                 if x is not None:
-                    if isinstance(x, TlvType) or isinstance(x, Tlv):
+                    if isinstance(x, Serializable):
                         byte_list.extend(x.serialize())
                     else:
                         byte_list.append(x)

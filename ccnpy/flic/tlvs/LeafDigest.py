@@ -16,6 +16,7 @@ from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class LeafDigest(TlvType):
@@ -24,11 +25,10 @@ class LeafDigest(TlvType):
 
         LeafDigest = TYPE LENGTH HashValue
     """
-    __type = 0x0012
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_LEAF_DIGEST
 
     def __init__(self, digest: HashValue):
         TlvType.__init__(self)

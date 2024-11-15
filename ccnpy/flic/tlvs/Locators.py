@@ -13,12 +13,12 @@
 #  limitations under the License.
 from typing import List
 
-from .Locator import Locator
-from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from .Locator import Locator
+from .TlvNumbers import TlvNumbers
 
 
 class Locators(TlvType):
@@ -27,11 +27,10 @@ class Locators(TlvType):
 
         Locators = TYPE LENGTH 1*Link
     """
-    __type = 0x0003
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_LOCATORS
 
     @classmethod
     def from_uri(cls, uri: str):

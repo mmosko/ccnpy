@@ -15,6 +15,7 @@ from ccnpy.core.Name import NameComponent
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class SuffixComponentType(TlvType):
@@ -23,11 +24,10 @@ class SuffixComponentType(TlvType):
 
         SuffixComponentType = TYPE 2 2OCTET
     """
-    __type = 0x0014
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_SUFFIX_TYPE
 
     def __init__(self, value):
         TlvType.__init__(self)

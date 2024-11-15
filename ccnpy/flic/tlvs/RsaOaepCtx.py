@@ -12,33 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .SecurityCtx import SecurityCtx
-from .TlvNumbers import TlvNumbers
-from ...core.DisplayFormatter import DisplayFormatter
-from ...core.Tlv import Tlv
+from ccnpy.flic.tlvs.SecurityCtx import SecurityCtx
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Tlv import Tlv
 
 
-class AeadCtx(SecurityCtx):
+class RsaOaepCtx(SecurityCtx):
     """
-    The security context for a authenticated encryption, authenticated data algorithms.
+    The security context for RSA-OAEP wrapped keys
 
-    This is analogous to a ValidationAlg implementation,
-    such as ccnpy.ValidationAlg_RsaSha256.  This class is used by the `AEAD` class and typically
-    the user does not need to touch it.
-
-    Typically, you will use `AEADCtx.create_aes_gcm_256(...)` or `AEADCtx.parse(...)`.
-
-    This class uses the raw IV and does not make any assuptions about how it is generated.  See
-    NIST 800-38d for recommendations on constructing the IV and appropriate bit lengths.
-
-        AEADCtx = T_AEAD_CTX LENGTH AEADData
-        AEADData = KeyNum AEADNonce AEADMode
-        KeyNum = T_KEYNUM LENGTH INTEGER
-        AEADNonce = T_NONCE LENGTH 1*OCTET
-        AEADMode = T_AEADMode LENGTH (AEAD_AES_128_GCM / AEAD_AES_256_GCM /
-                   AEAD_AES_128_CCM / AEAD_AES_128_CCM)
-                   ; RFC5116 definitions
+    ```
+        RsaOaepCtx = T_RSAOAEP_CTX LENGTH RsaOaepData
+        RsaOaepData = AEADData [RsaOaepWrapper]
+        RsaOaepWrapper = KeyId KeyLink HashAlg WrappedKey
+            ; KeyId as pre RFC8609 for CCNx
+            ; KeyLink as pre RFC8609 for CCNx
+        HashAlg = T_HASH_ALG LENGTH alg_number
+            ; alg_number from IANA "CCNx Hash Function Types"
+        WrappedKey = T_WRAPPED_KEY LENGTH 4OCTET 1*OCTET
+            ; Encrypted 4-byte salt plus AES key
+    ```
     """
+    __T_AEAD = 0x0001
+    __T_KEYNUM = 0x0001
+    __T_NONCE = 0x0002
+    __T_MODE = 0x0003
+
     __AEAD_AES_128_GCM = 1
     __AEAD_AES_256_GCM = 2
     __AEAD_AES_128_CCM = 3
@@ -47,7 +46,7 @@ class AeadCtx(SecurityCtx):
 
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_AEAD_CTX
+        return cls.__T_AEAD
 
     @classmethod
     def create_aes_gcm_128(cls, key_number, nonce):
@@ -88,9 +87,9 @@ class AeadCtx(SecurityCtx):
         self._nonce = nonce
         self._mode = mode
 
-        key_tlv = Tlv(TlvNumbers.T_KEYNUM, Tlv.number_to_array(self._key_number))
-        nonce_tlv = Tlv(TlvNumbers.T_NONCE, self._nonce)
-        mode_tlv = Tlv.create_uint8(TlvNumbers.T_AEADMode, self._mode)
+        key_tlv = Tlv(self.__T_KEYNUM, Tlv.number_to_array(self._key_number))
+        nonce_tlv = Tlv(self.__T_NONCE, self._nonce)
+        mode_tlv = Tlv.create_uint8(self.__T_MODE, self._mode)
 
         self._tlv = Tlv(SecurityCtx.class_type(),
                         Tlv(self.class_type(), [key_tlv, nonce_tlv, mode_tlv]))
@@ -115,13 +114,13 @@ class AeadCtx(SecurityCtx):
         offset = 0
         while offset < tlv.length():
             inner_tlv = Tlv.deserialize(tlv.value()[offset:])
-            if inner_tlv.type() == TlvNumbers.T_KEYNUM:
+            if inner_tlv.type() == cls.__T_KEYNUM:
                 assert key_number is None
                 key_number = inner_tlv.value_as_number()
-            elif inner_tlv.type() == TlvNumbers.T_NONCE:
+            elif inner_tlv.type() == cls.__T_NONCE:
                 assert nonce is None
                 nonce = inner_tlv.value()
-            elif inner_tlv.type() == TlvNumbers.T_AEADMode:
+            elif inner_tlv.type() == cls.__T_MODE:
                 assert mode is None
                 mode = inner_tlv.value_as_number()
                 if mode not in cls.__allowed_modes:

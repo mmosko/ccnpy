@@ -15,6 +15,7 @@
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class SubtreeSize(TlvType):
@@ -23,11 +24,9 @@ class SubtreeSize(TlvType):
 
         SubtreeSize = TYPE LENGTH INTEGER
     """
-    __type = 0x0001
-
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_SUBTREE_SIZE
 
     def __init__(self, size):
         TlvType.__init__(self)

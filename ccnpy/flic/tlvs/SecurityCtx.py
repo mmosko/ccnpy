@@ -16,6 +16,7 @@ from abc import abstractmethod
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class SecurityCtx(TlvType):
@@ -23,14 +24,13 @@ class SecurityCtx(TlvType):
     Analogous to the ccnpy.ValidationAlg container.  It is an abstract intermediate class between
     TlvType and the concrete algorithms.
 
-    ```SecurityCtx = TYPE LENGTH AlgorithmCtx
-    AlgorithmCtx = AEADCtx / RsaKemCtx```
+        SecurityCtx = TYPE LENGTH AlgorithmCtx
+        AlgorithmCtx = AEADCtx / RsaOaepCtx```
     """
-    __type = 0x0001
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_SECURITY_CTX
 
     def __init__(self):
         TlvType.__init__(self)

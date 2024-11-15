@@ -16,6 +16,7 @@ from typing import Optional, List, Iterator
 
 from .HashGroup import HashGroup
 from .NodeData import NodeData
+from .TlvNumbers import TlvNumbers
 from ...core.HashValue import HashValue
 from ...core.Tlv import Tlv
 from ...core.TlvType import TlvType
@@ -32,7 +33,6 @@ class Node(TlvType):
     Node = TYPE LENGTH [NodeData] 1*HashGroup
     ```
     """
-    __type = 0x0002
     DEBUG = False
 
     @dataclass
@@ -73,7 +73,7 @@ class Node(TlvType):
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_NODE
 
     def __init__(self, node_data: Optional[NodeData] = None, hash_groups: List[HashGroup] = None):
         """

@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ccnpy.core.DisplayFormatter import DisplayFormatter
-from ccnpy.core.Payload import Payload
+from .TlvNumbers import TlvNumbers
+from ...core.DisplayFormatter import DisplayFormatter
+from ...core.Payload import Payload
 
 
 class EncryptedNode(Payload):
@@ -22,11 +23,10 @@ class EncryptedNode(Payload):
 
     An EncryptedNode represents an encrypted manifest: `SecurityCtx EncryptedNode AuthTag`.
     """
-    __T_ENC_NODE = 0x0004
 
     @classmethod
     def class_type(cls):
-        return cls.__T_ENC_NODE
+        return TlvNumbers.T_ENCRYPTED_NODE
 
     def __init__(self, value):
         Payload.__init__(self, value)

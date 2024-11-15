@@ -16,6 +16,7 @@
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class StartSegmentId(TlvType):
@@ -24,11 +25,10 @@ class StartSegmentId(TlvType):
 
         StartSegmentId = TYPE LENGTH Integer
     """
-    __type = 0x0013
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_START_SEGMENT_ID
 
     def __init__(self, value):
         TlvType.__init__(self)

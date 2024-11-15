@@ -16,14 +16,13 @@ from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class SubtreeDigest(TlvType):
-    __type = 0x0002
-
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_SUBTREE_DIGEST
 
     def __init__(self, digest: HashValue):
         TlvType.__init__(self)

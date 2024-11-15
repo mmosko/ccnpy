@@ -17,6 +17,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 from ccnpy.flic.tlvs.Vendor import Vendor
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
@@ -31,11 +32,10 @@ class NodeData(TlvType):
         NodeData = TYPE LENGTH [SubtreeSize] [SubtreeDigest] [Locators] 0*Vendor 0*NcDef
 
     """
-    __type = 0x0001
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_NODE_DATA
 
     def __init__(self,
                  subtree_size: Optional[SubtreeSize | int] = None,

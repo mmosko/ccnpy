@@ -14,8 +14,13 @@
 
 from abc import ABC, abstractmethod
 
+from ccnpy.core.Serializable import Serializable
+from ccnpy.core.Tlv import Tlv
+from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.exceptions.ParseError import ParseError
 
-class TlvType(ABC):
+
+class TlvType(Serializable):
     """
     superclass for objects that are TLV types
     """
@@ -43,3 +48,48 @@ class TlvType(ABC):
     @abstractmethod
     def parse(cls, tlv):
         pass
+
+    @classmethod
+    def auto_parse(cls, tlv, name_class_pairs):
+        """
+        `name_class_pairs` is a list of (str, class) pairs.  The string is the argument name for the
+         class constructor and the class is the corresponding TlvType.  `auto_parse` will go through the
+        `tlv` nesting and extract out the available classes.  it will then return a dictionary
+        `Dict[str, tlvtype]` that is used to initalize the class.
+
+        Example from GroupData:
+            classes = [ ('subtree_size', SubtreeSize),
+                   ('subtree_digest', SubtreeDigest),
+                   ('leaf_size', LeafSize),
+                   ('leaf_digest', LeafDigest),
+                   ('nc_id', NcId),
+                   ('start_segment_id', StartSegmentId) ]
+
+            values = cls.auto_parse(tlv, classes)
+            return GroupData(**values)
+        """
+        if tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
+
+        parser_lookup = {y.class_type(): (x, y) for x,y in name_class_pairs}
+        values = {x: None for x,y in name_class_pairs}
+
+        offset = 0
+        while offset < tlv.length():
+            try:
+                inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+            except ParseError as e:
+                print(f'Error parsing {tlv.value()} at offset {offset}: {e}')
+                raise
+
+            offset += len(inner_tlv)
+
+            try:
+                name_class = parser_lookup[inner_tlv.type()]
+                arg_name = name_class[0]
+                clazz = name_class[1]
+                assert values[arg_name] is None
+                values[arg_name] = clazz.parse(inner_tlv)
+            except KeyError:
+                raise ParseError("Unsupported TLV type %r" % inner_tlv)
+        return values

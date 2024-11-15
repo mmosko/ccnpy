@@ -15,14 +15,13 @@
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class NcId(TlvType):
-    __T_NCID = 0x0010
-
     @classmethod
     def class_type(cls):
-        return cls.__T_NCID
+        return TlvNumbers.T_NCID
 
     def __init__(self, nc_id: int):
         TlvType.__init__(self)
