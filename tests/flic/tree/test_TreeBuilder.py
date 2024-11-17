@@ -320,7 +320,7 @@ class TreeBuilderTest(unittest.TestCase):
         top_packet = tb.build()
         g.save('largetree.dot')
 
-        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(0)
+        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(1)
         self.assertEqual(expected_top_name, top_packet.body().name())
         print(name_ctx)
 
@@ -331,7 +331,7 @@ class TreeBuilderTest(unittest.TestCase):
         self.assertEqual(expected, data_buffer.buffer)
 
         # 136 manifest nodes and 5000 data nodes
-        self.assertEqual(5136, traversal.count())
+        self.assertEqual(5132, traversal.count())
 
         # 15-ary tree with 136 manifests => ceil(log_13(136)) = 2
         self.assertEqual(2, params.tree_height())

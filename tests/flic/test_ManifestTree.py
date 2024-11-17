@@ -172,7 +172,7 @@ YwIDAQAB
                 hash_groups=[
                     HashGroup(
                         group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(0)),
-                        pointers=Pointers([HashValue.create_sha256(unhexlify('445eaea33112ddf0d21cf3762cb49c29c28c97ab9da3917356f16884136614c1'))]))
+                        pointers=Pointers([HashValue.create_sha256(unhexlify('3008e4c3eeedecdf4dba55aaa51f92d3534a57bf9d232011fcd3eb0485ec871a'))]))
                 ]
             )
         )
@@ -195,9 +195,9 @@ YwIDAQAB
                         group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(1)),
                         pointers=Pointers([
                             HashValue.create_sha256(
-                                unhexlify('64a6960798d558159cd666820cf2b0081506fd3f589447ce68a54cb92e9a92b8')),
+                                unhexlify('10ca669f8505b78814a2b169a9b019b054e02a00ef6c98ac2d849ef20f0628a6')),
                             HashValue.create_sha256(
-                                unhexlify('de4301ebb864bf1f9ebada9fc47da014dc44f9f3f8d118ce685323c9b91a7cc7')),
+                                unhexlify('7809dd876472714225eaa79a3bb959ab8927619b5bb795f314bc66c9b2e95d62')),
                         ])),
                 ]
             )

@@ -33,6 +33,7 @@ from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class ManiestFactoryTest(unittest.TestCase):
@@ -40,19 +41,20 @@ class ManiestFactoryTest(unittest.TestCase):
     def _create_options(**kwargs):
         return ManifestTreeOptions(name='ccnx:/a', schema_type=SchemaType.HASHED, signer=None, **kwargs)
 
+    simple_wire_format = array('B', [
+                               0, TlvNumbers.T_NODE, 0, 14,   # Node
+                               0, TlvNumbers.T_HASH_GROUP, 0, 10,   # HashGroup
+                               0, TlvNumbers.T_PTRS, 0,  6,   # Pointers
+                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
+                         )
+
     def test_unencrypted_nopts_pointers(self):
         hv = HashValue.create_sha256([1, 2])
         ptr = Pointers([hv])
         factory = ManifestFactory(self._create_options())
         rv = factory._build(ptr)
         actual = rv.manifest.serialize()
-
-        expected = array('B', [0, 2, 0, 14,   # Node
-                               0, 2, 0, 10,   # HashGroup
-                               0, 2, 0,  6,   # Pointers
-                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
-                         )
-        self.assertEqual(expected, actual)
+        self.assertEqual(self.simple_wire_format, actual)
 
     def test_unencrypted_nopts_hashgroup(self):
         hv = HashValue.create_sha256([1, 2])
@@ -61,13 +63,7 @@ class ManiestFactoryTest(unittest.TestCase):
         factory = ManifestFactory(self._create_options())
         rv = factory._build(hg)
         actual = rv.manifest.serialize()
-
-        expected = array('B', [0, 2, 0, 14,   # Node
-                               0, 2, 0, 10,   # HashGroup
-                               0, 2, 0,  6,   # Pointers
-                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
-                         )
-        self.assertEqual(expected, actual)
+        self.assertEqual(self.simple_wire_format, actual)
 
     def test_unencrypted_nopts_node(self):
         hv = HashValue.create_sha256([1, 2])
@@ -77,13 +73,7 @@ class ManiestFactoryTest(unittest.TestCase):
         factory = ManifestFactory(self._create_options())
         rv = factory._build(node)
         actual = rv.manifest.serialize()
-
-        expected = array('B', [0, 2, 0, 14,   # Node
-                               0, 2, 0, 10,   # HashGroup
-                               0, 2, 0,  6,   # Pointers
-                               0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
-                         )
-        self.assertEqual(expected, actual)
+        self.assertEqual(self.simple_wire_format, actual)
 
     def test_unencrypted_opts_pointers(self):
         tree_options = self._create_options(add_group_subtree_size=True, add_node_subtree_size=True)
@@ -93,15 +83,14 @@ class ManiestFactoryTest(unittest.TestCase):
         rv = factory._build(ptr, node_subtree_size=20, group_subtree_size=16)
         actual = rv.manifest.serialize()
 
-        expected = array('B', [0, 2, 0, 46,   # Node
-                               0, 1, 0, 12,   # NodeData
-                               0, 1, 0,  8,   # SubtreeSize
-                               0, 0, 0, 0, 0, 0, 0, 20,
-                               0, 2, 0, 26,   # HashGroup
-                               0, 1, 0, 12,   # GroupData
-                               0, 1, 0,  8,   # SubtreeSize
-                               0, 0, 0, 0, 0, 0, 0, 16,
-                               0, 2, 0,  6,   # Pointers
+        expected = array('B', [
+                               0, TlvNumbers.T_NODE, 0, 32,
+                               0, TlvNumbers.T_NODE_DATA, 0, 5,
+                               0, TlvNumbers.T_SUBTREE_SIZE, 0,  1, 20,
+                               0, TlvNumbers.T_HASH_GROUP, 0, 19,
+                               0, TlvNumbers.T_GROUP_DATA, 0, 5,
+                               0, TlvNumbers.T_SUBTREE_SIZE, 0,  1, 16,
+                               0, TlvNumbers.T_PTRS, 0,  6,   # Pointers
                                0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
                          )
         self.assertEqual(expected, actual)
@@ -117,12 +106,12 @@ class ManiestFactoryTest(unittest.TestCase):
 
         # Note that we did not add a GroupData to the HashGroup, so it is missing even though
         # the options asked to put it in.
-        expected = array('B', [0, 2, 0, 30,   # Node
-                               0, 1, 0, 12,   # NodeData
-                               0, 1, 0,  8,   # SubtreeSize
-                               0, 0, 0, 0, 0, 0, 0, 20,
-                               0, 2, 0, 10,   # HashGroup
-                               0, 2, 0,  6,   # Pointers
+        expected = array('B', [
+                               0, TlvNumbers.T_NODE, 0, 23,
+                               0, TlvNumbers.T_NODE_DATA, 0, 5,
+                               0, TlvNumbers.T_SUBTREE_SIZE, 0,  1, 20,
+                               0, TlvNumbers.T_HASH_GROUP, 0, 10,
+                               0, TlvNumbers.T_PTRS, 0,  6,   # Pointers
                                0, 1, 0,  2, 1, 2]  # HashValue SHA256 + payload
                          )
         self.assertEqual(expected, actual)
@@ -159,21 +148,21 @@ class ManiestFactoryTest(unittest.TestCase):
 
         expected = array('B',[
                     # Node
-                    0, 2, 0, 40,
+                    0, TlvNumbers.T_NODE, 0, 40,
                         # Node Data
-                        0, 1, 0, 22,
+                        0, TlvNumbers.T_NODE_DATA, 0, 22,
                             # NcDef
-                            0, 6, 0, 18,
+                            0, TlvNumbers.T_NCDEF, 0, 18,
                                 # ncid
-                                0, 16, 0, 1, 7,
-                                    # prefix schema
-                                    0, 3, 0, 9,
+                                0, TlvNumbers.T_NCID, 0, 1, 7,
+                                # prefix schema
+                                0, TlvNumbers.T_PrefixSchema, 0, 9,
                                     # name
                                     0, 0, 0, 5, 0, 1, 0, 1, 97,
                         # hash group
-                        0, 2, 0, 10,
+                        0, TlvNumbers.T_HASH_GROUP, 0, 10,
                             # pointers
-                            0, 2, 0, 6,
+                            0, TlvNumbers.T_PTRS, 0, 6,
                                 # hash value
                                 0, 1, 0, 2, 1, 2
                          ])
