@@ -92,11 +92,11 @@ class TreeOptimizer:
     @staticmethod
     def calculate_n(k, d, m):
         """
-        For a given number of internal nodes, calculate it's capacity for direct nodes
+        For a given number of internal nodes, calculate its capacity for direct nodes
 
-        :param k:
-        :param d:
-        :param m:
+        :param k: the number of internal nodes
+        :param d: direct pointers per node
+        :param m: indirect pointers per node
         :return:
         """
         n = k * (d*m + m*m - m) + d + m
@@ -116,23 +116,35 @@ class TreeOptimizer:
         for m in range(0, self._num_pointers):
             d = self._num_pointers - m
             k = self.calculate_k(d, m)
-            w = self.calculate_waste(k, d, m)
-            if k < best_k:
-                best_k = k
+            if k < math.inf:
+                w = self.calculate_waste(k, d, m)
                 solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
-                best_solutions = [solution]
-            elif k == best_k:
-                solution = OptimizerResult(self._num_direct_nodes, self._num_pointers, d, m, k, w)
-                best_solutions.append(solution)
+                if k < best_k:
+                    best_k = k
+                    best_solutions = [solution]
+                elif k == best_k:
+                    best_solutions.append(solution)
 
         #print("Min k    : best solutions: %r" % best_solutions)
         return best_solutions
+
+    def minimize_k_min_waste(self)-> OptimizerResult:
+        solutions = self.minimize_k()
+        best_solution = None
+        min_waste = math.inf
+        for s in solutions:
+            if s.waste() < min_waste:
+                best_solution = s
+                min_waste = s.waste()
+        assert best_solution is not None
+        return best_solution
 
     def minimize_waste_min_height(self) -> OptimizerResult:
         """
         A minimum waste solution of minimum height
         """
         solutions = self.minimize_waste()
+        print(solutions)
         min_height = 0xFFFFFFFF
         min_solution = None
         for s in solutions:

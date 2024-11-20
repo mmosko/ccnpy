@@ -287,7 +287,7 @@ class TreeBuilderTest(unittest.TestCase):
         """
         A larger example using an optimized tree to minimize the tree waste
 
-        solution={OptResult n=5000, p=38, dir=23, ind=15, int=9, leaf=127, w=33, h=2}
+        solution={OptResult n=5000, p=39, dir=6, ind=33, int=4, leaf=128, w=55, h=2}
 
         :return:
         """
@@ -320,7 +320,7 @@ class TreeBuilderTest(unittest.TestCase):
         top_packet = tb.build()
         g.save('largetree.dot')
 
-        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(1)
+        expected_top_name = Name.from_uri('ccnx:/a').append_manifest_id(0)
         self.assertEqual(expected_top_name, top_packet.body().name())
         print(name_ctx)
 
@@ -331,7 +331,7 @@ class TreeBuilderTest(unittest.TestCase):
         self.assertEqual(expected, data_buffer.buffer)
 
         # 136 manifest nodes and 5000 data nodes
-        self.assertEqual(5132, traversal.count())
+        self.assertEqual(5133, traversal.count())
 
         # 15-ary tree with 136 manifests => ceil(log_13(136)) = 2
         self.assertEqual(2, params.tree_height())
