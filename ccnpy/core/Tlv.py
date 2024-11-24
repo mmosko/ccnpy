@@ -65,7 +65,7 @@ class Tlv(Serializable):
     def __init__(self, tlv_type, value):
         self._tlv_type = tlv_type
         # If the value is an array, we flatten it here
-        self._value = self._flatten(value)
+        self._value = self.flatten(value)
         self._wire_format = self._serialize()
 
     def __str__(self):
@@ -116,7 +116,7 @@ class Tlv(Serializable):
         return cls(tlv_type, value)
 
     @staticmethod
-    def _flatten(value):
+    def flatten(value):
         if isinstance(value, list):
             byte_list = []
             for x in value:

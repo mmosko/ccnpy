@@ -16,6 +16,8 @@ from abc import abstractmethod
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.exceptions.ParseError import ParseError
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
@@ -43,16 +45,19 @@ class SecurityCtx(TlvType):
     def parse(cls, tlv):
         # Due to circular reference between SecurityCtx and it's children, need
         # to defer the loading of the children
-        from ..tlvs.AeadCtx import AeadCtx
+        from .AeadCtx import AeadCtx
+        from .RsaOaepCtx import RsaOaepCtx
 
         if tlv.type() != cls.class_type():
-            raise ValueError("Incorrect TLV type %r" % tlv)
+            raise CannotParseError("Incorrect TLV type %r" % tlv)
 
         inner_tlv = Tlv.deserialize(tlv.value())
         if inner_tlv.type() == AeadCtx.class_type():
             return AeadCtx.parse(inner_tlv)
+        if inner_tlv.type() == RsaOaepCtx.class_type():
+            return RsaOaepCtx.parse(inner_tlv)
 
-        raise ValueError("Unsupported security context %r" % inner_tlv)
+        raise ParseError("Unsupported security context %r" % inner_tlv)
 
     @abstractmethod
     def serialize(self):

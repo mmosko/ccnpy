@@ -13,24 +13,22 @@
 #  limitations under the License.
 
 
-from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.core.DisplayFormatter import DisplayFormatter
+from ccnpy.core.Payload import Payload
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafSize(IntegerTlvType):
+class Nonce(Payload):
     """
-    Size of all application data immediately under the Group (i.e. via direct pointers).
-
-        LeafSize = TYPE LENGTH INTEGER
+    Nonce works just like ccnpy.core.Payload -- it stores a byte array.
     """
 
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_LEAF_SIZE
-
-    def __repr__(self):
-        return "LeafSize (%r)" % self._value
+        return TlvNumbers.T_NONCE
 
     def __init__(self, value):
         super().__init__(value)
 
+    def __repr__(self):
+        return "Nonce: {%r}" % DisplayFormatter.hexlify(self._value)

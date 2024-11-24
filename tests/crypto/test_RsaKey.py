@@ -123,3 +123,11 @@ YwIDAQAB
 
         result = key.verify(b1, b2, signature=signature)
         self.assertTrue(result)
+
+    def test_encrypt_decrypt(self):
+        key = RsaKey(self.private_key)
+        # 36 bytes is the typical AES 256 bit key plus a 4 byte salt
+        plaintext = array.array("B", [x for x in range(0,36)])
+        cyphertext = key.encrypt_oaep_sha256(plaintext)
+        actual = key.decrypt_oaep_sha256(cyphertext)
+        self.assertEqual(plaintext, actual)

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod, ABC
 
 from ccnpy.core.Serializable import Serializable
 from ccnpy.core.Tlv import Tlv
@@ -71,15 +71,23 @@ class TlvType(Serializable):
         if tlv.type() != cls.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
-        parser_lookup = {y.class_type(): (x, y) for x,y in name_class_pairs}
-        values = {x: None for x,y in name_class_pairs}
+        assert tlv.length() == len(tlv.value())
+        return cls.auto_value_parse(tlv.value(), name_class_pairs)
+
+    @staticmethod
+    def auto_value_parse(tlv_value, name_class_pairs):
+        """
+        Like `auto_parse`, but only parses the value after we've verified the outer class_type.
+        """
+        parser_lookup = {y.class_type(): (x, y) for x, y in name_class_pairs}
+        values = {x: None for x, y in name_class_pairs}
 
         offset = 0
-        while offset < tlv.length():
+        while offset < len(tlv_value):
             try:
-                inner_tlv = Tlv.deserialize(tlv.value()[offset:])
+                inner_tlv = Tlv.deserialize(tlv_value[offset:])
             except ParseError as e:
-                print(f'Error parsing {tlv.value()} at offset {offset}: {e}')
+                print(f'Error parsing {tlv_value} at offset {offset}: {e}')
                 raise
 
             offset += len(inner_tlv)
@@ -93,3 +101,37 @@ class TlvType(Serializable):
             except KeyError:
                 raise ParseError("Unsupported TLV type %r" % inner_tlv)
         return values
+
+
+class IntegerTlvType(TlvType, ABC):
+    """
+    A variable length, big-endian encoded integer.
+
+        Foo = TYPE LENGTH Integer
+    """
+
+    def __init__(self, value):
+        TlvType.__init__(self)
+        self._value = value
+        self._tlv = Tlv.create_varint(self.class_type(), self._value)
+
+    def __len__(self):
+        return len(self._tlv)
+
+    def __eq__(self, other):
+        if not isinstance(other, IntegerTlvType):
+            return False
+        return self._value == other._value
+
+    def value(self):
+        return self._value
+
+    @classmethod
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
+
+        return cls(tlv.value_as_number())
+
+    def serialize(self):
+        return self._tlv.serialize()

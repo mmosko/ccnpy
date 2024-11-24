@@ -19,8 +19,15 @@ from .Tlv import Tlv
 from .TlvType import TlvType
 
 
+class HashFunctionType:
+    T_SHA_256 = 0x0001
+    T_SHA_512 = 0x0002
+
+
 class HashValue(TlvType):
-    __T_SHA_256 = 0x0001
+    @classmethod
+    def create_sha256(cls, value):
+        return cls(HashFunctionType.T_SHA_256, value)
 
     @classmethod
     def class_type(cls):
@@ -28,7 +35,7 @@ class HashValue(TlvType):
         TODO: Need workaround for multiple hash types
         :return:
         """
-        return cls.__T_SHA_256
+        return HashFunctionType.T_SHA_256
 
     def __init__(self, hash_algorithm, value):
         """
@@ -59,8 +66,10 @@ class HashValue(TlvType):
         return output
 
     def __alg_string(self):
-        if self._hash_algorithm == self.__T_SHA_256:
+        if self._hash_algorithm == HashFunctionType.T_SHA_256:
             return "SHA256"
+        elif self._hash_algorithm == HashFunctionType.T_SHA_512:
+                return "SHA512"
         else:
             return "Unknown(%r)" % self._hash_algorithm
 
@@ -113,6 +122,3 @@ class HashValue(TlvType):
         tlv = Tlv.deserialize(buffer)
         return cls.parse(tlv)
 
-    @classmethod
-    def create_sha256(cls, value):
-        return cls(cls.__T_SHA_256, value)

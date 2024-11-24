@@ -13,26 +13,26 @@
 #  limitations under the License.
 from typing import Optional
 
-from .AeadData import AeadData, KeyNumber
-from ..tlvs.AeadCtx import AeadCtx
-from ..tlvs.AeadMode import AeadMode
-from ..tlvs.AuthTag import AuthTag
-from ..tlvs.EncryptedNode import EncryptedNode
-from ..tlvs.Manifest import Manifest
-from ..tlvs.Node import Node
+from ccnpy.flic.tlvs.AeadCtx import AeadCtx
+from ccnpy.flic.tlvs.AuthTag import AuthTag
+from ccnpy.flic.tlvs.EncryptedNode import EncryptedNode
+from ccnpy.flic.tlvs.Manifest import Manifest
+from ccnpy.flic.tlvs.Node import Node
+from .RsaOaepWrapper import RsaOaepWrapper
+from ..aeadctx.AeadData import AeadData
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ...crypto.DecryptionError import DecryptionError
 
 
-class AeadImpl:
+class RsaOaepImpl:
     """
-    The AEAD algorithm.
+    The RSA-OAEP algorithm.  it uses AeadImpl for the actual encryption.
 
-    Typically, you will use `AeadImpl.create_manifest(...)` to create a Manifest TLV out of
+    Typically, you will use `RsaOaepImpl.create_manifest(...)` to create a Manifest TLV out of
     a Node.
     """
 
-    def __init__(self, key: AeadKey, key_number: KeyNumber | int, salt: Optional[int]=None):
+    def __init__(self, aead_data: AeadData, rsa_oaep_wrapper: RsaOaepWrapper):
         """
 
         :param key: A AesGcmKey
@@ -42,12 +42,12 @@ class AeadImpl:
             raise TypeError("key must be AesGcmKey")
 
         self._key = key
-        self._key_number = key_number if isinstance(key_number, KeyNumber) else KeyNumber(key_number)
+        self._key_number = key_number
         self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
         print(self)
 
     def __repr__(self):
-        return f'AeadImpl: ({self._key_number}, salt: {self._salt}, {self._key.aead_mode()}, key len: {len(self._key)})'
+        return f'AeadImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)})'
 
     def _generate_nonce(self):
         if self._salt is None:
@@ -63,17 +63,17 @@ class AeadImpl:
 
     def _create_gcm_ctx(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_128()))
+            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, nonce=nonce)
         elif len(self._key) == 256:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_256()))
+            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, nonce=nonce)
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
     def _create_ccm_ctx(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_128()))
+            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, nonce=nonce)
         elif len(self._key) == 256:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_256()))
+            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, nonce=nonce)
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
@@ -143,13 +143,13 @@ class AeadImpl:
                              (security_ctx.key_number(), self._key_number))
 
         if self._key.aead_mode() == 'GCM':
-            if not (security_ctx.aead_data().mode().is_aes_gcm_128() or security_ctx.aead_data().mode().is_aes_gcm_256()):
+            if not (security_ctx.is_aes_gcm_128() or security_ctx.is_aes_gcm_256()):
                 raise DecryptionError(f'The AES key is for GCM but the manifest is not encrypted with GCM (security ctx type {security_ctx.class_type()})')
         if self._key.aead_mode() == 'CCM':
-            if not (security_ctx.aead_data().mode().is_aes_ccm_128() or security_ctx.aead_data().mode().is_aes_ccm_256()):
+            if not (security_ctx.is_aes_ccm_128() or security_ctx.is_aes_ccm_256()):
                 raise DecryptionError(f'The AES key is for CCM but the manifest is not encrypted with CCM (security ctx type {security_ctx.class_type()})')
 
-        plaintext = self._key.decrypt(iv=self._iv_from_nonce(security_ctx.nonce().value()),
+        plaintext = self._key.decrypt(iv=self._iv_from_nonce(security_ctx.nonce()),
                                       ciphertext=encrypted_node.value(),
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())

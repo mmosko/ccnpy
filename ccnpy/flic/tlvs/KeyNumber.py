@@ -17,20 +17,19 @@ from ccnpy.core.TlvType import IntegerTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafSize(IntegerTlvType):
+class KeyNumber(IntegerTlvType):
     """
-    Size of all application data immediately under the Group (i.e. via direct pointers).
+    A unique ID for a symmetric key
 
-        LeafSize = TYPE LENGTH INTEGER
+        KeyNum = TYPE LENGTH Integer
     """
 
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_LEAF_SIZE
-
-    def __repr__(self):
-        return "LeafSize (%r)" % self._value
+        return TlvNumbers.T_KEYNUM
 
     def __init__(self, value):
         super().__init__(value)
 
+    def __repr__(self):
+        return "KeyNum (%r)" % self._value

@@ -22,8 +22,6 @@ from .SubtreeSize import SubtreeSize
 from .TlvNumbers import TlvNumbers
 from ...core.Tlv import Tlv
 from ...core.TlvType import TlvType
-from ...exceptions.CannotParseError import CannotParseError
-from ...exceptions.ParseError import ParseError
 
 
 class GroupData(TlvType):

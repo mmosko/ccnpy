@@ -192,6 +192,48 @@ class RsaKey:
 
         return result
 
+    def encrypt_oaep_sha256(self, plaintext):
+        """
+        Encrypt the plain text using RSA-OAEP padding with SHA256 and MGF1.
+
+        :param plaintext: Bytes or an array
+        :returns: An array
+        """
+        if isinstance(plaintext, array.array):
+            plaintext = plaintext.tobytes()
+
+        output = self._public_key.encrypt(
+            plaintext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return array.array("B", output)
+
+    def decrypt_oaep_sha256(self, cyphertext):
+        """
+        Decrypt the message using RSA-OAEP with SHA256 and MGF1
+
+        :param cyphertext: Bytes or an array
+        :returns: An array
+        """
+        if isinstance(cyphertext, array.array):
+            cyphertext = cyphertext.tobytes()
+
+        output = self._private_key.decrypt(
+            cyphertext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return array.array("B", output)
+
     @classmethod
     def generate_private_key(cls, key_length=4096):
         # Creates an RsaPrivateKey object

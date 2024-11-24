@@ -13,13 +13,11 @@
 #  limitations under the License.
 
 
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.core.TlvType import IntegerTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class StartSegmentId(TlvType):
+class StartSegmentId(IntegerTlvType):
     """
     If using SegmentedScheme, the starting segment id for a hash group.
 
@@ -31,28 +29,7 @@ class StartSegmentId(TlvType):
         return TlvNumbers.T_START_SEGMENT_ID
 
     def __init__(self, value):
-        TlvType.__init__(self)
-        self._value = value
-        self._tlv = Tlv.create_varint(self.class_type(), self._value)
-
-    def __len__(self):
-        return len(self._tlv)
+        super().__init__(value)
 
     def __repr__(self):
         return "StartSegmentId (%r)" % self._value
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def value(self):
-        return self._value
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
-
-        return cls(tlv.value_as_number())
-
-    def serialize(self):
-        return self._tlv.serialize()

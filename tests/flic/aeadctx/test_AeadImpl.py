@@ -19,6 +19,8 @@ import unittest
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
+from ccnpy.flic.aeadctx.AeadData import AeadData
+from ccnpy.flic.tlvs.AeadMode import AeadMode
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
 from ccnpy.flic.tlvs.Manifest import Manifest
@@ -54,14 +56,14 @@ class AeadImplTest(unittest.TestCase):
     ])
 
     def test_aeadctx_serialize(self):
-        psk_ctx = AeadCtx.create_aes_gcm_128(self.keynum, self.nonce)
+        psk_ctx = AeadCtx(AeadData(self.keynum, self.nonce, AeadMode.create_aes_gcm_128()))
         actual = psk_ctx.serialize()
         self.assertEqual(self.wire_format, actual)
 
     def test_aeadctx_deserialize(self):
         tlv = Tlv.deserialize(self.wire_format)
         psk_ctx = SecurityCtx.parse(tlv)
-        expected = AeadCtx.create_aes_gcm_128(self.keynum, array.array("B", self.nonce))
+        expected = AeadCtx(AeadData(self.keynum, array.array("B", self.nonce), AeadMode.create_aes_gcm_128()))
         self.assertEqual(expected, psk_ctx)
 
     @staticmethod

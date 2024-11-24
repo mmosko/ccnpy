@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
 from ccnpy.crypto.AeadKey import AeadKey
 from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.flic.tlvs.KeyNumber import KeyNumber
 
 
 class InsecureKeystore:
@@ -32,16 +35,18 @@ class InsecureKeystore:
         self._asymmetric_by_keyid[key.keyid()] = key
         return self
 
-    def add_aes_key(self, key_num, key: AeadKey, salt):
+    def add_aes_key(self, key_num: KeyNumber | int, key: AeadKey, salt: Optional[int]):
+        if isinstance(key_num, KeyNumber):
+            key_num = key_num.value()
         self._symmetric_by_keynum[key_num] = key
         self._salt_by_keynum[key_num] = salt
         return self
 
-    def get_aes_key(self, key_num) -> AeadKey:
-        return self._symmetric_by_keynum[key_num]
+    def get_aes_key(self, key_num: KeyNumber) -> AeadKey:
+        return self._symmetric_by_keynum[key_num.value()]
 
-    def get_aes_salt(self, key_num):
-        return self._salt_by_keynum[key_num]
+    def get_aes_salt(self, key_num: KeyNumber):
+        return self._salt_by_keynum[key_num.value()]
 
     def get_rsa(self, name_or_keyid) -> RsaKey:
         if name_or_keyid in self._asymmetric_by_keyid:

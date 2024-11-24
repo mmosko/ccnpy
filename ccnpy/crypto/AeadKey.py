@@ -127,7 +127,6 @@ class AeadKey(ABC):
             raise DecryptionError(e)
 
 
-
 class AeadGcm(AeadKey):
     def __init__(self, key):
         AeadKey.__init__(self, key, AESGCM)

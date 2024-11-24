@@ -19,7 +19,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 class ProtocolFlags(Payload):
     """
-    These are CCN/NDN flags to pass as part of the Interest.
+    These are CCN/NDN flags to pass as part of the Interest.  Stored as a byte array, like Payload.
     """
 
     @classmethod

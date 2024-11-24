@@ -13,13 +13,12 @@
 #  limitations under the License.
 
 
-from .NcId import NcId
-from .NcSchema import NcSchema
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
-from ccnpy.exceptions.ParseError import ParseError
+from .NcId import NcId
+from .NcSchema import NcSchema
 from .TlvNumbers import TlvNumbers
+from ...exceptions.CannotParseError import CannotParseError
 
 
 class NcDef(TlvType):
@@ -28,6 +27,7 @@ class NcDef(TlvType):
 
         NcDef = TYPE LENGTH NcId NcSchema
     """
+    DEBUG = False
 
     @classmethod
     def class_type(cls):
