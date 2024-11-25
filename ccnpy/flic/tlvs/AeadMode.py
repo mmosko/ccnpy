@@ -64,7 +64,7 @@ class AeadMode(IntegerTlvType):
         super().__init__(mode)
 
     def __repr__(self):
-        return "AeadMode (%r)" % self._value
+        return "AeadMode (%r): %r" % (self._value, self.__mode_string())
 
     def is_aes_gcm_128(self):
         return self._value == self.__AEAD_AES_128_GCM

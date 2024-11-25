@@ -126,6 +126,8 @@ class AeadKey(ABC):
             # translate a Cryptography package exception into our own exception
             raise DecryptionError(e)
 
+    def key(self):
+        return self._key
 
 class AeadGcm(AeadKey):
     def __init__(self, key):

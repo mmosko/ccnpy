@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import array
 from abc import abstractmethod, ABC
 
+from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Serializable import Serializable
 from ccnpy.core.Tlv import Tlv
 from ccnpy.exceptions.CannotParseError import CannotParseError
@@ -135,3 +137,40 @@ class IntegerTlvType(TlvType, ABC):
 
     def serialize(self):
         return self._tlv.serialize()
+
+
+class OctetTlvType(TlvType, ABC):
+    """Encodes an octet string"""
+
+    def __init__(self, value):
+        TlvType.__init__(self)
+
+        if isinstance(value, list):
+            value = array.array("B", value)
+
+        self._value = value
+        self._tlv = Tlv(self.class_type(), self._value)
+
+    def __len__(self):
+        return len(self._tlv)
+
+    def __eq__(self, other):
+        if not isinstance(other, OctetTlvType):
+            return False
+        return self._value == other._value
+
+    def __repr__(self):
+        return "%r" % DisplayFormatter.hexlify(self._value)
+
+    def value(self):
+        return self._value
+
+    def serialize(self):
+        return self._tlv.serialize()
+
+    @classmethod
+    def parse(cls, tlv):
+        if tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
+
+        return cls(tlv.value())

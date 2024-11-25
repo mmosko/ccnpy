@@ -14,10 +14,11 @@
 
 from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Payload import Payload
+from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class ProtocolFlags(Payload):
+class ProtocolFlags(OctetTlvType):
     """
     These are CCN/NDN flags to pass as part of the Interest.  Stored as a byte array, like Payload.
     """
@@ -26,8 +27,5 @@ class ProtocolFlags(Payload):
     def class_type(cls):
         return TlvNumbers.T_PROTOCOL_FLAGS
 
-    def __init__(self, value):
-        super().__init__(value)
-
     def __repr__(self):
-        return "Flags: %r" % DisplayFormatter.hexlify(self._value)
+        return "Flags: %r" % super().__repr__()

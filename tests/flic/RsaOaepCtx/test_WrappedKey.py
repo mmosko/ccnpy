@@ -16,29 +16,38 @@
 import array
 import unittest
 
-from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
+from ccnpy.core.Tlv import Tlv
+from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.flic.RsaOaepCtx.WrappedKey import WrappedKey
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+from tests.MockKeys import shared_512_pub_pem, aes_key, shared_1024_pub_pem, shared_1024_key_pem
 
 
-class AeadKeyTest(unittest.TestCase):
-    # openssl rand 16 | xxd - -include
-    key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
-                            0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
+class WrappedKeyTest(unittest.TestCase):
 
-    def _aead(self, key, nonce_length):
-        buffer = array.array("B", b'somewhere over the rainbow')
-        aad = array.array("B", b'way up high')
+    def test_payload(self):
+        buffer = array.array("B", [1, 2, 3, 4])
+        wk = WrappedKey(buffer)
+        self.assertEqual(buffer, wk.value())
+        wire_format = wk.serialize()
+        self.assertEqual(array.array("B", [0, TlvNumbers.T_WRAPPED_KEY, 0, 4, 1, 2, 3, 4]), wire_format)
+        actual = WrappedKey.parse(Tlv.deserialize(wire_format))
+        self.assertEqual(wk, actual)
 
-        key = AeadGcm(self.key)
-        iv = key.nonce()
-        self.assertEqual(nonce_length, len(iv))
-        (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
-        plaintext = key.decrypt(iv=iv, ciphertext=c, associated_data=aad, auth_tag=a)
-        self.assertEqual(buffer, plaintext)
+    def test_encrypted_bad_key(self):
+        # key is too small for RSA-OAEP
+        pub_key = RsaKey(shared_512_pub_pem)
+        with self.assertRaises(ValueError):
+            WrappedKey.create(wrapping_key=pub_key, key=aes_key, salt=0x11223344)
 
-    def test_gcm_encrypt_decrypt(self):
-        key = AeadGcm(self.key)
-        self._aead(key, 12)
-
-    def test_ccm_encrypt_decrypt(self):
-        key = AeadCcm(self.key)
-        self._aead(key, 12)
+    def test_encrypted(self):
+        pub_key = RsaKey(shared_1024_pub_pem)
+        salt = 0x11223344
+        wk = WrappedKey.create(wrapping_key=pub_key, key=aes_key, salt=salt)
+        # OAEP makes the wire format unpredictable, so cannot directly test.
+        priv_key = RsaKey(shared_1024_key_pem)
+        actual_salt, actual_key = wk.decrypt(wrapping_key=priv_key)
+        self.assertEqual(salt, actual_salt)
+        self.assertEqual(aes_key, actual_key)
+        # encryption will be size of rsa key
+        self.assertEqual(128, len(wk.value()))

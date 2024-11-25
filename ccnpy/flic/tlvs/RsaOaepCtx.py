@@ -91,18 +91,6 @@ class RsaOaepCtx(SecurityCtx):
     def serialize(self):
         return self._tlv.serialize()
 
-    def is_aes_gcm_128(self):
-        return self._mode == self.__AEAD_AES_128_GCM
-
-    def is_aes_gcm_256(self):
-        return self._mode == self.__AEAD_AES_256_GCM
-
-    def is_aes_ccm_128(self):
-        return self._mode == self.__AEAD_AES_128_CCM
-
-    def is_aes_ccm_256(self):
-        return self._mode == self.__AEAD_AES_256_CCM
-
     def nonce(self):
         return self._nonce
 

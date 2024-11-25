@@ -13,12 +13,11 @@
 #  limitations under the License.
 
 
-from ccnpy.core.DisplayFormatter import DisplayFormatter
-from ccnpy.core.Payload import Payload
+from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class Nonce(Payload):
+class Nonce(OctetTlvType):
     """
     Nonce works just like ccnpy.core.Payload -- it stores a byte array.
     """
@@ -27,8 +26,5 @@ class Nonce(Payload):
     def class_type(cls):
         return TlvNumbers.T_NONCE
 
-    def __init__(self, value):
-        super().__init__(value)
-
     def __repr__(self):
-        return "Nonce: {%r}" % DisplayFormatter.hexlify(self._value)
+        return "Nonce: {%r}" % super().__repr__()

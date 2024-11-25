@@ -17,18 +17,15 @@ import array
 import unittest
 
 from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
+from tests.MockKeys import aes_key
 
 
 class AeadKeyTest(unittest.TestCase):
-    # openssl rand 16 | xxd - -include
-    key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
-                            0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
-
     def _aead(self, key, nonce_length):
         buffer = array.array("B", b'somewhere over the rainbow')
         aad = array.array("B", b'way up high')
 
-        key = AeadGcm(self.key)
+        key = AeadGcm(aes_key)
         iv = key.nonce()
         self.assertEqual(nonce_length, len(iv))
         (c, a) = key.encrypt(iv=iv, plaintext=buffer, associated_data=aad)
@@ -36,9 +33,9 @@ class AeadKeyTest(unittest.TestCase):
         self.assertEqual(buffer, plaintext)
 
     def test_gcm_encrypt_decrypt(self):
-        key = AeadGcm(self.key)
+        key = AeadGcm(aes_key)
         self._aead(key, 12)
 
     def test_ccm_encrypt_decrypt(self):
-        key = AeadCcm(self.key)
+        key = AeadCcm(aes_key)
         self._aead(key, 12)

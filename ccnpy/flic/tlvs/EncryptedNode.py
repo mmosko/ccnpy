@@ -13,11 +13,10 @@
 #  limitations under the License.
 
 from .TlvNumbers import TlvNumbers
-from ...core.DisplayFormatter import DisplayFormatter
-from ...core.Payload import Payload
+from ...core.TlvType import OctetTlvType
 
 
-class EncryptedNode(Payload):
+class EncryptedNode(OctetTlvType):
     """
     EncryptedNode works just like ccnpy.Payload -- it stores a byte array.
 
@@ -28,8 +27,6 @@ class EncryptedNode(Payload):
     def class_type(cls):
         return TlvNumbers.T_ENCRYPTED_NODE
 
-    def __init__(self, value):
-        Payload.__init__(self, value)
-
     def __repr__(self):
-        return "EncNode: %r" % DisplayFormatter.hexlify(self._value)
+        return "EncNode: %r" % super().__repr__()
+

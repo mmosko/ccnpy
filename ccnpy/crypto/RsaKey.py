@@ -15,6 +15,7 @@
 
 import array
 import hashlib
+import math
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -31,6 +32,9 @@ class RsaKey:
     """
     TODO: Need a way to create an RSA key from the DER encoded public key
     """
+    DEBUG=False
+    _SHA256_OVERHEAD = 66 #RSA OAEP overhead for sha 256 hash
+
     def __init__(self, pem_key, password=None):
         """
         Pass in one of (A) encrypted private key, (B) unencrypted private key, (C) public key
@@ -55,6 +59,11 @@ class RsaKey:
             self.__initialize_public_key(pem_key)
         else:
             raise RuntimeError("Could not determine type of key from PEM file")
+
+        if self.DEBUG:
+            if isinstance(self._public_key, rsa.RSAPublicKey):
+                print(self._public_key.public_numbers())
+                print(self._public_key.key_size)
 
     def __initialize_private_key(self, pem_key, password):
         self._private_key = serialization.load_pem_private_key(
@@ -201,6 +210,11 @@ class RsaKey:
         """
         if isinstance(plaintext, array.array):
             plaintext = plaintext.tobytes()
+
+        max_encryption_size = math.ceil(self._public_key.key_size / 8) - self._SHA256_OVERHEAD
+        if len(plaintext) > max_encryption_size:
+            required_key_size = (len(plaintext) + self._SHA256_OVERHEAD) * 8
+            raise ValueError(f"The RSA public key is {self._public_key.key_size} bits, but the plaintext of {len(plaintext)} bytes needs a key of at least {required_key_size} bits")
 
         output = self._public_key.encrypt(
             plaintext,

@@ -13,12 +13,11 @@
 #  limitations under the License.
 
 
-from ccnpy.core.DisplayFormatter import DisplayFormatter
-from ccnpy.core.Payload import Payload
+from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class AuthTag(Payload):
+class AuthTag(OctetTlvType):
     """
     AuthTag works just like ccnpy.core.Payload -- it stores a byte array.
 
@@ -30,8 +29,5 @@ class AuthTag(Payload):
     def class_type(cls):
         return TlvNumbers.T_AUTH_TAG
 
-    def __init__(self, value):
-        super().__init__(value)
-
     def __repr__(self):
-        return "AuthTag: %r" % DisplayFormatter.hexlify(self._value)
+        return "AuthTag: %r" % super().__repr__()

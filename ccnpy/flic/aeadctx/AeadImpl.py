@@ -44,7 +44,7 @@ class AeadImpl:
         self._key = key
         self._key_number = key_number if isinstance(key_number, KeyNumber) else KeyNumber(key_number)
         self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
-        print(self)
+        # print(self)
 
     def __repr__(self):
         return f'AeadImpl: ({self._key_number}, salt: {self._salt}, {self._key.aead_mode()}, key len: {len(self._key)})'
