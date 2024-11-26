@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.core.HashTlvType import HashTlvType
-from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+
+from .HashTlvType import HashTlvType
 
 
-class SubtreeDigest(HashTlvType):
+class KeyId(HashTlvType):
+    __T_KEYID = 0x0009
+
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_SUBTREE_DIGEST
+        return cls.__T_KEYID
 
     def __repr__(self):
-        return "SubtreeDigest(%r)" % self._digest
+        return "LeafDigest(%r)" % self._digest

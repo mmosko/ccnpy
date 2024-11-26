@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
-from ccnpy.flic.tlvs.AeadCtx import AeadCtx
 from ccnpy.flic.tlvs.AuthTag import AuthTag
 from ccnpy.flic.tlvs.EncryptedNode import EncryptedNode
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.Node import Node
 from .RsaOaepWrapper import RsaOaepWrapper
-from ..aeadctx.AeadData import AeadData
-from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
+from ..aeadctx.AeadImpl import AeadImpl
+from ..tlvs.KeyNumber import KeyNumber
+from ..tlvs.RsaOaepCtx import RsaOaepCtx
+from ...crypto.AeadKey import AeadKey
 from ...crypto.DecryptionError import DecryptionError
 
 
-class RsaOaepImpl:
+class RsaOaepImpl(AeadImpl):
     """
     The RSA-OAEP algorithm.  it uses AeadImpl for the actual encryption.
 
@@ -32,91 +32,45 @@ class RsaOaepImpl:
     a Node.
     """
 
-    def __init__(self, aead_data: AeadData, rsa_oaep_wrapper: RsaOaepWrapper):
-        """
-
-        :param key: A AesGcmKey
-        :param key_number: An integer used to reference the key
-        """
+    def __init__(self, wrapper: RsaOaepWrapper, key: AeadKey, key_number: KeyNumber, salt: int):
         if not isinstance(key, AeadKey):
             raise TypeError("key must be AesGcmKey")
-
-        self._key = key
-        self._key_number = key_number
-        self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
-        print(self)
+        super().__init__(key=key, key_number=key_number, salt=salt)
+        self._wrapper = wrapper
+        self._aead_impl = AeadImpl(key=key, key_number=key_number)
 
     def __repr__(self):
-        return f'AeadImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)})'
+        return f'RsaOaepImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)}, wrapper: {self._wrapper})'
 
-    def _generate_nonce(self):
-        if self._salt is None:
-            return self._key.nonce(96)
-
-        salt_len = len(self._salt) * 8
-        return self._key.nonce(96 - salt_len)
-
-    def _iv_from_nonce(self, nonce):
-        if self._salt is None:
-            return nonce
-        return self._salt + nonce
-
-    def _create_gcm_ctx(self, nonce):
-        if len(self._key) == 128:
-            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, nonce=nonce)
-        elif len(self._key) == 256:
-            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, nonce=nonce)
-        else:
-            raise ValueError("Unsupported key length %r" % len(self._key))
-
-    def _create_ccm_ctx(self, nonce):
-        if len(self._key) == 128:
-            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, nonce=nonce)
-        elif len(self._key) == 256:
-            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, nonce=nonce)
-        else:
-            raise ValueError("Unsupported key length %r" % len(self._key))
-
-    def encrypt(self, node):
+    def encrypt(self, node: Node, include_wrapper: bool = False):
         """
 
         :param node: A Node
+        :param include_wrapper: Include the RsaOaepWrapper in the security context
         :return: (security_ctx, encrypted_node, auth_tag)
         """
         if not isinstance(node, Node):
             raise TypeError("node must be Node")
 
-        plaintext = node.serialized_value()
         nonce = self._generate_nonce()
-        iv = self._iv_from_nonce(nonce)
+        aead_data = self._create_aead_data(nonce)
+        wrapper = self._wrapper if include_wrapper else None
+        security_ctx = RsaOaepCtx(aead_data=aead_data, rsa_oaep_wrapper=wrapper)
+        return self.encrypt_with_security_ctx(node, security_ctx)
 
-        if isinstance(self._key, AeadGcm):
-            security_ctx = self._create_gcm_ctx(nonce)
-        elif isinstance(self._key, AeadCcm):
-            security_ctx = self._create_ccm_ctx(nonce)
-        else:
-            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
-
-        ciphertext, a = self._key.encrypt(iv=iv,
-                                          plaintext=plaintext,
-                                          associated_data=security_ctx.serialize())
-
-        encrypted_node = EncryptedNode(ciphertext)
-        auth_tag = AuthTag(a)
-        return security_ctx, encrypted_node, auth_tag
-
-    def create_encrypted_manifest(self, node):
+    def create_encrypted_manifest(self, node: Node, include_wrapper: bool = False):
         """
 
         :param node: A Node to encrypt and wrap in a Manifest
+        :param include_wrapper: Include the RsaOaepWrapper in the security context
         :return: A Manifest
         """
 
-        security_ctx, encrypted_node, auth_tag = self.encrypt(node)
+        security_ctx, encrypted_node, auth_tag = self.encrypt(node, include_wrapper)
         manifest = Manifest(security_ctx=security_ctx, node=encrypted_node, auth_tag=auth_tag)
         return manifest
 
-    def decrypt_node(self, security_ctx: AeadCtx, encrypted_node: EncryptedNode, auth_tag: AuthTag):
+    def decrypt_node(self, security_ctx: RsaOaepCtx, encrypted_node: EncryptedNode, auth_tag: AuthTag):
         """
         Example:
             manifest = Manifest.deserialize(payload.value())
@@ -182,8 +136,8 @@ class RsaOaepImpl:
             raise TypeError("manifest did not contain an encrypted node")
         if security_ctx is None:
             raise ValueError("security context must not be None")
-        if not isinstance(security_ctx, AeadCtx):
-            raise TypeError("security_ctx must be a AeadCtx")
+        if not isinstance(security_ctx, RsaOaepCtx):
+            raise TypeError("security_ctx must be a RsaOaepCtx")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
 

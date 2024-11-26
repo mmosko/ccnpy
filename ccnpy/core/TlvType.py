@@ -174,3 +174,4 @@ class OctetTlvType(TlvType, ABC):
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
         return cls(tlv.value())
+

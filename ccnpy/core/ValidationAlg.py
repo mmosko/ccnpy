@@ -16,6 +16,7 @@ from abc import abstractmethod
 from datetime import datetime, UTC
 
 from .HashValue import HashValue
+from .KeyId import KeyId
 from .KeyLink import KeyLink
 from .SignatureTime import SignatureTime
 from .Tlv import Tlv
@@ -100,7 +101,6 @@ class ValidationAlg_Crc32c(ValidationAlg):
 class ValidationAlg_RsaSha256(ValidationAlg):
     __T_RSA_SHA256 = 0x0004
 
-    __T_KEYID = 0x0009
     __T_PUBLICKEYLOC = 0x000A
     __T_PUBLICKEY = 0x000B
 
@@ -109,7 +109,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
     def class_type(cls):
         return cls.__T_RSA_SHA256
 
-    def __init__(self, keyid=None, public_key=None, key_link=None, signature_time=None):
+    def __init__(self, keyid: HashValue=None, public_key=None, key_link=None, signature_time=None):
         """
         :param keyid: The keyid to include in the ValidationAlg (HashValue)
         :param public_key: A crypto.RsaKey with a public key to embed in the ValidationAlg (RsaKey)
@@ -125,7 +125,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         if keyid is None:
             raise ValueError("Must provide a keyid and/or a public_key")
 
-        tlvs.append(Tlv(self.__T_KEYID, keyid))
+        tlvs.append(KeyId(keyid))
 
         if public_key is not None:
             tlvs.append(Tlv(self.__T_PUBLICKEY, public_key.der()))
@@ -150,7 +150,9 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         self._signature_time = signature_time
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, ValidationAlg_RsaSha256):
+            return False
+        return self._tlv == other._tlv
 
     def __len__(self):
         return len(self._tlv)
@@ -159,7 +161,7 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         return "RsaSha256: {keyid: %r, pk: %r, keylink: %r, %r}" % \
                (self._keyid, self._public_key, self._key_link, self._signature_time)
 
-    def keyid(self):
+    def keyid(self) -> HashValue:
         return self._keyid
 
     def public_key(self):
@@ -181,9 +183,9 @@ class ValidationAlg_RsaSha256(ValidationAlg):
         offset = 0
         while offset < tlv.length():
             inner_tlv = Tlv.deserialize(tlv.value()[offset:])
-            if inner_tlv.type() == cls.__T_KEYID:
-                hash_value_tlv = Tlv.deserialize(inner_tlv.value())
-                keyid = HashValue.parse(hash_value_tlv)
+            if inner_tlv.type() == KeyId.class_type():
+                keyid_tlv = KeyId.parse(inner_tlv)
+                keyid = keyid_tlv.digest()
             elif inner_tlv.type() == SignatureTime.class_type():
                 signature_time = SignatureTime.parse(inner_tlv)
             elif inner_tlv.type() == cls.__T_PUBLICKEY:

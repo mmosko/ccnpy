@@ -11,14 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from ccnpy.core.HashTlvType import HashTlvType
+
+
+from ccnpy.core.TlvType import IntegerTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class SubtreeDigest(HashTlvType):
+class HashAlg(IntegerTlvType):
+    """
+        HashAlg = TYPE LENGTH Integer
+    """
+
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_SUBTREE_DIGEST
+        return TlvNumbers.T_HASH_ALG
+
+    def __init__(self, value):
+        super().__init__(value)
 
     def __repr__(self):
-        return "SubtreeDigest(%r)" % self._digest
+        return "HashAlg (%r)" % self._value

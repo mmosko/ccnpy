@@ -11,66 +11,88 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
+from .HashAlg import HashAlg
 from .WrappedKey import WrappedKey
-from ..tlvs.TlvNumbers import TlvNumbers
-from ...core.DisplayFormatter import DisplayFormatter
-from ...core.HashValue import HashValue, HashFunctionType
+from ...core.HashValue import HashFunctionType
+from ...core.KeyId import KeyId
 from ...core.KeyLink import KeyLink
+from ...core.Serializable import Serializable
 from ...core.Tlv import Tlv
+from ...core.TlvType import TlvType
 
 
-class RsaOaepWrapper:
+class RsaOaepWrapper(Serializable):
     """
+        NOTE: RsaOaepWrapper is not a TLV, it is a serializable buffer.
+
         RsaOaepWrapper = KeyId KeyLink HashAlg WrappedKey
             ; KeyId as pre RFC8609 for CCNx
             ; KeyLink as pre RFC8609 for CCNx
         HashAlg = T_HASH_ALG LENGTH alg_number
             ; alg_number from IANA "CCNx Hash Function Types"
-        WrappedKey = T_WRAPPED_KEY LENGTH 4OCTET 1*OCTET
+        WrappedKey = T_WRAPPED_KEY LENGTH RsaOaepEnc(salt, aes_key)
             ; Encrypted 4-byte salt plus AES key
     """
 
-    @classmethod
-    def create_sha256(cls, key_number, nonce):
-        return cls(key_number=key_number, nonce=nonce, mode=cls.__AEAD_AES_128_GCM)
+    DEBUG=False
 
-    def __init__(self, key_id: HashValue, key_link: KeyLink, hash_alg: HashFunctionType, wrapped_key: WrappedKey):
+    @classmethod
+    def create_sha256(cls, key_id: KeyId, wrapped_key: WrappedKey, key_link: Optional[KeyLink]=None):
+        return cls(key_id=key_id, key_link=key_link, wrapped_key=wrapped_key, hash_alg=HashAlg(HashFunctionType.T_SHA_256))
+
+    def __init__(self, key_id: KeyId, hash_alg: HashAlg, wrapped_key: WrappedKey, key_link: Optional[KeyLink]=None):
         """
 
         :param key_number: An integer
         :param nonce: A byte array
         :param mode: One of the allowed modes (use a class create_x method to create)
         """
-        self.key_number = key_number
-        self.nonce = nonce
-        self.mode = mode
-
-        self.key_tlv = Tlv(TlvNumbers.T_KEYNUM, Tlv.number_to_array(self.key_number))
-        self.nonce_tlv = Tlv(TlvNumbers.T_NONCE, self.nonce)
-        self.mode_tlv = Tlv.create_uint8(TlvNumbers.T_AEADMode, self.mode)
+        self._key_id = key_id
+        self._key_link = key_link
+        self._wrapped_key = wrapped_key
+        self._hash_alg = hash_alg
+        self._wire_format = Tlv.flatten([self._key_id, self._key_link, self._hash_alg, self._wrapped_key])
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, RsaOaepWrapper):
+            return False
+        return self._wire_format == other._wire_format
+
+    def __len__(self):
+        return len(self._wire_format)
 
     def __repr__(self):
-        return "kn: %r, iv: %r, mode: %r" % (self.key_number,
-                                                       DisplayFormatter.hexlify(self.nonce),
-                                                       self.__mode_string())
+        return ("id: %r, link: %r, alg: %r, wrapped: %r" %
+                (self._key_id, self._key_link, self._hash_alg, self._wrapped_key))
 
-    def is_aes_gcm_128(self):
-        return self.mode == self.__AEAD_AES_128_GCM
+    def key_id(self) -> KeyId:
+        return self._key_id
 
-    def is_aes_gcm_256(self):
-        return self.mode == self.__AEAD_AES_256_GCM
+    def key_link(self) -> KeyLink:
+        return self._key_link
 
-    def is_aes_ccm_128(self):
-        return self.mode == self.__AEAD_AES_128_CCM
+    def is_sha_256(self):
+        return self._hash_alg.value() == HashFunctionType.T_SHA_256
 
-    def is_aes_ccm_256(self):
-        return self.mode == self.__AEAD_AES_256_CCM
+    def is_sha_512(self):
+        return self._hash_alg.value() == HashFunctionType.T_SHA_512
 
-    def nonce(self):
-        return self.nonce
+    def wrapped_key(self) -> WrappedKey:
+        return self._wrapped_key
 
-    def key_number(self):
-        return self.key_number
+    def serialize(self):
+        return self._wire_format
+
+    @classmethod
+    def parse(cls, tlv):
+        if cls.DEBUG:
+            print(f'RsaOaepWrapper parsing Tlv: {tlv}')
+
+        values = TlvType.auto_value_parse(tlv, [
+            ('key_id', KeyId),
+            ('key_link', KeyLink),
+            ('hash_alg', HashAlg),
+            ('wrapped_key', WrappedKey)])
+        return cls(**values)

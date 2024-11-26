@@ -13,8 +13,9 @@
 #  limitations under the License.
 import os
 
+from .RsaOaepImpl import RsaOaepImpl
+from .RsaOaepWrapper import RsaOaepWrapper
 from .WrappedKey import WrappedKey
-from ..aeadctx.AeadImpl import AeadImpl
 from ..ManifestEncryptor import ManifestEncryptor
 from ..tlvs.KeyNumber import KeyNumber
 from ...crypto.AeadKey import AeadGcm, AeadKey
@@ -36,9 +37,9 @@ class RsaOaepEncryptor(ManifestEncryptor):
         return cls(wrapping_key=wrapping_key, key=key, salt=salt, key_number=key_number)
 
     def __init__(self, wrapping_key: RsaKey, key: AeadKey, key_number: KeyNumber, salt=None):
-        self._psk = AeadImpl(key, key_number, salt)
-        self._wrapped_cyphertext = wrapping_key.encrypt_oaep_sha256()
-        self._wrapped_key = WrappedKey(key=key, salt=salt)
+        self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=key.key(), salt=salt)
+        self._wrapper = RsaOaepWrapper.create_sha256(key_id=wrapping_key.keyid(), wrapped_key=self._wrapped_key)
+        self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, salt=salt)
 
     def encrypt(self, node):
-        return self._psk.encrypt(node)
+        return self._impl.encrypt(node)

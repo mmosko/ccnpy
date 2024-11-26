@@ -20,6 +20,7 @@ from ..tlvs.AuthTag import AuthTag
 from ..tlvs.EncryptedNode import EncryptedNode
 from ..tlvs.Manifest import Manifest
 from ..tlvs.Node import Node
+from ..tlvs.SecurityCtx import SecurityCtx
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ...crypto.DecryptionError import DecryptionError
 
@@ -61,21 +62,32 @@ class AeadImpl:
             return nonce
         return self._salt + nonce
 
-    def _create_gcm_ctx(self, nonce):
+    def _create_gcm_aead_data(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_128()))
+            return AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_128())
         elif len(self._key) == 256:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_256()))
+            return AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_gcm_256())
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
 
-    def _create_ccm_ctx(self, nonce):
+    def _create_ccm_aead_data(self, nonce):
         if len(self._key) == 128:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_128()))
+            return AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_128())
         elif len(self._key) == 256:
-            return AeadCtx(AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_256()))
+            return AeadData(key_number=self._key_number, nonce=nonce, mode=AeadMode.create_aes_ccm_256())
         else:
             raise ValueError("Unsupported key length %r" % len(self._key))
+
+    def _create_aead_data(self, nonce):
+        if isinstance(self._key, AeadGcm):
+            return self._create_gcm_aead_data(nonce)
+        elif isinstance(self._key, AeadCcm):
+            return self._create_ccm_aead_data(nonce)
+        else:
+            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
+
+    def _create_aead_ctx(self, nonce):
+        return AeadCtx(self._create_aead_data(nonce))
 
     def encrypt(self, node):
         """
@@ -86,17 +98,25 @@ class AeadImpl:
         if not isinstance(node, Node):
             raise TypeError("node must be Node")
 
-        plaintext = node.serialized_value()
         nonce = self._generate_nonce()
+        security_ctx = self._create_aead_ctx(nonce)
+        return self.encrypt_with_security_ctx(node, security_ctx)
+
+    def encrypt_with_security_ctx(self, node: Node, security_ctx: SecurityCtx):
+        """
+
+        :param node: A Node
+        :param security_ctx: The Security context to add to the manifest
+        :return: (security_ctx, encrypted_node, auth_tag)
+        """
+        if not isinstance(node, Node):
+            raise TypeError("node must be Node")
+
+        # TODO: fixup typing so nonce is defined
+        nonce = security_ctx.nonce()
         iv = self._iv_from_nonce(nonce)
 
-        if isinstance(self._key, AeadGcm):
-            security_ctx = self._create_gcm_ctx(nonce)
-        elif isinstance(self._key, AeadCcm):
-            security_ctx = self._create_ccm_ctx(nonce)
-        else:
-            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
-
+        plaintext = node.serialized_value()
         ciphertext, a = self._key.encrypt(iv=iv,
                                           plaintext=plaintext,
                                           associated_data=security_ctx.serialize())
@@ -104,6 +124,7 @@ class AeadImpl:
         encrypted_node = EncryptedNode(ciphertext)
         auth_tag = AuthTag(a)
         return security_ctx, encrypted_node, auth_tag
+
 
     def create_encrypted_manifest(self, node):
         """
