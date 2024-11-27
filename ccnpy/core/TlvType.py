@@ -150,7 +150,9 @@ class OctetTlvType(TlvType, ABC):
         if value is None:
             raise ValueError(f"Nonce value must not be None, use an empty list")
 
-        if isinstance(value, list):
+        if isinstance(value, bytes):
+            value = array.array("B", value)
+        elif isinstance(value, list):
             value = array.array("B", value)
 
         self._value = value
@@ -172,6 +174,9 @@ class OctetTlvType(TlvType, ABC):
 
     def serialize(self):
         return self._tlv.serialize()
+
+    def value_bytes(self) -> bytes:
+        return self._value.tobytes()
 
     @classmethod
     def parse(cls, tlv):

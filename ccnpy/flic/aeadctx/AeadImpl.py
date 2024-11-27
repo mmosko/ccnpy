@@ -20,6 +20,7 @@ from ..tlvs.AeadCtx import AeadCtx
 from ..tlvs.AeadMode import AeadMode
 from ..tlvs.AuthTag import AuthTag
 from ..tlvs.EncryptedNode import EncryptedNode
+from ..tlvs.KdfData import KdfData
 from ..tlvs.Manifest import Manifest
 from ..tlvs.Node import Node
 from ..tlvs.SecurityCtx import SecurityCtx, AeadSecurityCtx
@@ -35,34 +36,46 @@ class AeadImpl:
     a Node.
     """
 
-    def __init__(self, key: AeadKey, key_number: KeyNumber | int, salt: Optional[int]=None):
+    def __init__(self,
+                 key: AeadKey,
+                 key_number: KeyNumber | int,
+                 aead_salt: Optional[int]=None,
+                 kdf_data: Optional[KdfData]=None,
+                 kdf_salt: Optional[int]=None):
         """
+        If using a KDF and `KdfInfo` is not present, you must set the `KdfInfo` with the CCNx name before
+        creating the `AeadImpl`.
 
         :param key: A AesGcmKey
         :param key_number: An integer used to reference the key
+        :param aead_salt: Salt for AEAD encryption / decryption
+        :param kdf_data: Use a KDF if present.
+        :param kdf_salt: Optional salt for use with KDF.
         """
         if not isinstance(key, AeadKey):
             raise TypeError("key must be AesGcmKey")
 
         self._key = key
         self._key_number = key_number if isinstance(key_number, KeyNumber) else KeyNumber(key_number)
-        self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
+        self._aead_salt = aead_salt.to_bytes(4, byteorder='big') if aead_salt is not None else None
+        self._kdf_data = kdf_data
+        self._kdf_salt = kdf_salt.to_bytes(4, byteorder='big') if kdf_salt is not None else None
         # print(self)
 
     def __repr__(self):
-        return f'AeadImpl: ({self._key_number}, salt: {self._salt}, {self._key.aead_mode()}, key len: {len(self._key)})'
+        return f'AeadImpl: ({self._key_number}, salt: {self._aead_salt}, {self._key.aead_mode()}, key len: {len(self._key)})'
 
     def _generate_nonce(self):
-        if self._salt is None:
+        if self._aead_salt is None:
             return self._key.nonce(96)
 
-        salt_len = len(self._salt) * 8
+        salt_len = len(self._aead_salt) * 8
         return self._key.nonce(96 - salt_len)
 
     def _iv_from_nonce(self, nonce: array):
-        if self._salt is None:
+        if self._aead_salt is None:
             return nonce
-        return self._salt + nonce
+        return self._aead_salt + nonce
 
     def _create_gcm_aead_data(self, nonce):
         if len(self._key) == 128:

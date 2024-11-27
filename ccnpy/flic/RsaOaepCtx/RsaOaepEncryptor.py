@@ -36,10 +36,12 @@ class RsaOaepEncryptor(ManifestEncryptor):
         key_number = KeyNumber(os.urandom(4))
         return cls(wrapping_key=wrapping_key, key=key, salt=salt, key_number=key_number)
 
-    def __init__(self, wrapping_key: RsaKey, key: AeadKey, key_number: KeyNumber, salt=None):
+    def __init__(self, wrapping_key: RsaKey, key: AeadKey, key_number: KeyNumber, salt: int | bytes=None):
+        if isinstance(salt, bytes):
+            salt = int.from_bytes(salt)
         self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=key.key(), salt=salt)
         self._wrapper = RsaOaepWrapper.create_sha256(key_id=wrapping_key.keyid(), wrapped_key=self._wrapped_key)
-        self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, salt=salt)
+        self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, aead_salt=salt)
 
     def encrypt(self, node, **kwargs):
         return self._impl.encrypt(node, **kwargs)

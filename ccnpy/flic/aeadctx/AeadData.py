@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from array import array
+from typing import Optional
 
 from ..tlvs.AeadMode import AeadMode
+from ..tlvs.KdfData import KdfData
 from ..tlvs.KeyNumber import KeyNumber
 from ..tlvs.Nonce import Nonce
 from ...core.Serializable import Serializable
@@ -30,23 +32,27 @@ class AeadData(Serializable):
     """
     DEBUG=False
 
-    def __init__(self, key_number: KeyNumber | int, nonce: Nonce | array, mode: AeadMode):
+    def __init__(self, key_number: KeyNumber | int, nonce: Nonce | array, mode: AeadMode, kdf_data: Optional[KdfData] = None):
         """
 
         :param key_number: An integer
         :param nonce: A byte array
         :param mode: One of the allowed modes (use a class create_x method to create)
+        :param kdf_data: Optional use of a KDF for the key
         """
         self._key_number = key_number if isinstance(key_number, KeyNumber) else KeyNumber(key_number)
         self._nonce = nonce if isinstance(nonce, Nonce) else Nonce(nonce)
         self._mode = mode
-        self._wire_format = Tlv.flatten([self._key_number, self._nonce, self._mode])
+        self._kdf_data = kdf_data
+        self._wire_format = Tlv.flatten([self._key_number, self._nonce, self._mode, self._kdf_data])
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, AeadData):
+            return False
+        return self._wire_format == other._wire_format
 
     def __repr__(self):
-        return "AeadData: {%r, %r, %r}" % (self.key_number(), self.nonce(), self.mode())
+        return "AeadData: {%r, %r, %r, %r}" % (self.key_number(), self.nonce(), self.mode(), self._kdf_data)
 
     def __len__(self):
         return len(self._wire_format)
@@ -65,6 +71,9 @@ class AeadData(Serializable):
     def mode(self) -> AeadMode:
         return self._mode
 
+    def kdf_data(self) -> Optional[KdfData]:
+        return self._kdf_data
+
     def serialize(self):
         return self._wire_format
 
@@ -80,6 +89,7 @@ class AeadData(Serializable):
         values = TlvType.auto_value_parse(tlv_value, [
             ('key_number', KeyNumber),
             ('nonce', Nonce),
-            ('mode', AeadMode)],
+            ('mode', AeadMode),
+            ('kdf_data', KdfData)],
             skip_unknown=True)
         return cls(**values)

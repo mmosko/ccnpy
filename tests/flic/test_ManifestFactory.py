@@ -20,6 +20,8 @@ from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadGcm
+from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.flic.RsaOaepCtx.RsaOaepEncryptor import RsaOaepEncryptor
 from ccnpy.flic.tlvs.HashGroup import HashGroup
 from ccnpy.flic.tlvs.Locator import Locator
 from ccnpy.flic.tlvs.Locators import Locators
@@ -33,7 +35,9 @@ from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.RsaOaepCtx import RsaOaepCtx
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+from tests.MockKeys import shared_1024_pub_pem
 
 
 class ManiestFactoryTest(unittest.TestCase):
@@ -168,4 +172,24 @@ class ManiestFactoryTest(unittest.TestCase):
                          ])
         self.assertEqual(expected, actual)
 
+    def test_rsa_oaep_encrypted_nopts_node(self):
+        key = AeadGcm(array("B", 16 * [1]).tobytes())
+        encryptor = RsaOaepEncryptor.create_with_new_content_key(wrapping_key=RsaKey(shared_1024_pub_pem))
+
+        hv = HashValue.create_sha256(array("B", [1, 2]))
+        ptr = Pointers([hv])
+        hg = HashGroup(pointers=ptr)
+        node = Node(hash_groups=[hg])
+        tree_options = self._create_options(manifest_encryptor=encryptor)
+        factory = ManifestFactory(tree_options)
+        rv = factory._build(node)
+
+        self.assertTrue(rv.manifest.is_encrypted())
+        self.assertIsInstance(rv.manifest.security_ctx(), RsaOaepCtx)
+
+        decryptor = RsaOaepDecryptor()
+        decryptor = AeadDecryptor(key, 99)
+        actual_manifest = decryptor.decrypt_manifest(rv.manifest)
+
+        self.assertEqual(node, actual_manifest.node())
 

@@ -96,15 +96,17 @@ class ManifestTree:
         else:
             start_segment_id=None
 
-        root_packet = manifest_factory.build_packet(source=ptr,
-                                               nc_defs=self._name_ctx.nc_def(),
-                                               node_subtree_size=total_file_bytes,
-                                               group_subtree_size=total_file_bytes,
-                                               nc_id=self._name_ctx.manifest_schema_impl.nc_id(),
-                                               start_segment_id=start_segment_id,
-                                               name=self._tree_options.name,
-                                               expiry_time=self._tree_options.root_expiry_time,
-                                               signer=self._tree_options.signer)
+        root_packet = manifest_factory.build_packet(
+            source=ptr,
+            nc_defs=self._name_ctx.nc_def(),
+            node_subtree_size=total_file_bytes,
+            group_subtree_size=total_file_bytes,
+            nc_id=self._name_ctx.manifest_schema_impl.nc_id(),
+            start_segment_id=start_segment_id,
+            name=self._tree_options.name,
+            expiry_time=self._tree_options.root_expiry_time,
+            signer=self._tree_options.signer,
+            include_full_security_context=True)
 
         if self._tree_options.debug:
             print(f"Root packet: {root_packet}")

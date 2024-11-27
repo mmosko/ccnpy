@@ -70,6 +70,9 @@ class TlvNumbers:
     T_AEADMode = 0x0002
     T_HASH_ALG = 0x0003
     T_WRAPPED_KEY = 0x0004
+    T_KDF_DATA = 0x0005
+    T_KDF_ALG = 0x0006
+    T_KDF_INFO = 0x0007
     T_KEYID = 0x0009
     T_KEYLINK = 0x000E
 

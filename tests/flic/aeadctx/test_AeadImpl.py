@@ -96,7 +96,7 @@ class AeadImplTest(unittest.TestCase):
     def test_encrypt_decrypt_node_with_salt(self):
         key = AeadGcm(aes_key)
         # the salt should be paded out to 4 bytes
-        psk = AeadImpl(key=key, key_number=55, salt=0x010203)
+        psk = AeadImpl(key=key, key_number=55, aead_salt=0x010203)
 
         node = self._create_node()
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)

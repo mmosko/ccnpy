@@ -97,6 +97,8 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
         args.data_expiry = '2019-10-11T01:02:03+00:00'
         args.enc_key = None
         args.key_num = None
+        args.wrap_key = None
+        args.wrap_pass = None
         return args
 
     def test_manifest(self):

@@ -32,6 +32,8 @@ class RsaOaepImpl(AeadImpl):
     """
     The RSA-OAEP algorithm.  it uses AeadImpl for the actual encryption.
 
+    Each instance of RsaOaepImpl for a specific `(key_id, key_number)` pair.
+
     Typically, you will use `RsaOaepImpl.create_manifest(...)` to create a Manifest TLV out of
     a Node.
     """
@@ -63,7 +65,7 @@ class RsaOaepImpl(AeadImpl):
         key_number = rsa_oaep_ctx.key_number()
         aead_key = keystore.get_aes_key(key_number)
         salt = keystore.get_aes_salt(key_number)
-        return cls(wrapper=rsa_oaep_ctx.rsa_oaep_wrapper(), key=aead_key, key_number=key_number, salt=salt)
+        return cls(wrapper=rsa_oaep_ctx.rsa_oaep_wrapper(), key=aead_key, key_number=key_number, aead_salt=salt)
 
     @staticmethod
     def _create_aead_key(aead_data: AeadData, key: array) -> AeadKey:
@@ -84,20 +86,20 @@ class RsaOaepImpl(AeadImpl):
             salt, aes_key = rsa_oaep_wrapper.wrapped_key().decrypt(wrapping_key)
             aead_key = cls._create_aead_key(rsa_oaep_ctx.aead_data(), aes_key)
             keystore.add_aes_key(rsa_oaep_ctx.key_number(), aead_key, salt)
-            return cls(wrapper=rsa_oaep_wrapper, key=aead_key, key_number=rsa_oaep_ctx.key_number(), salt=salt)
+            return cls(wrapper=rsa_oaep_wrapper, key=aead_key, key_number=rsa_oaep_ctx.key_number(), aead_salt=salt)
         except KeyIdNotFoundError as e:
             print(f"Could not find keyid in kestore: {rsa_oaep_ctx.key_id()}")
             raise e
 
-    def __init__(self, wrapper: Optional[RsaOaepWrapper], key: AeadKey, key_number: KeyNumber, salt: int):
+    def __init__(self, wrapper: Optional[RsaOaepWrapper], key: AeadKey, key_number: KeyNumber, aead_salt: int):
         if not isinstance(key, AeadKey):
             raise TypeError("key must be AesGcmKey")
-        super().__init__(key=key, key_number=key_number, salt=salt)
+        super().__init__(key=key, key_number=key_number, aead_salt=aead_salt)
         self._wrapper = wrapper
         self._aead_impl = AeadImpl(key=key, key_number=key_number)
 
     def __repr__(self):
-        return f'RsaOaepImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)}, wrapper: {self._wrapper})'
+        return f'RsaOaepImpl: (num: {self._key_number}, salt: {self._aead_salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)}, wrapper: {self._wrapper})'
 
     def encrypt(self, node: Node, include_wrapper: bool = False):
         """

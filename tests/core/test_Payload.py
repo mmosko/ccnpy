@@ -32,3 +32,18 @@ class PayloadTest(unittest.TestCase):
         actual = Payload.parse(tlv)
         expected = Payload(array.array("B", [1, 2, 3, 4]))
         self.assertEqual(expected, actual)
+
+    def test_list_input(self):
+        payload = Payload([1, 2, 3])
+        expected = array.array("B", [1, 2, 3])
+        self.assertEqual(expected, payload.value())
+
+    def test_bytes_input(self):
+        payload = Payload(b"\01\02\03")
+        expected = array.array("B", [1, 2, 3])
+        self.assertEqual(expected, payload.value())
+
+    def test_value_bytes(self):
+        input = b"\01\02\03"
+        payload = Payload(input)
+        self.assertEqual(input, payload.value_bytes())

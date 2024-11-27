@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from typing import List, Optional
+from xml.etree.ElementInclude import include
 
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
@@ -68,7 +69,8 @@ class ManifestFactory:
                      start_segment_id: Optional[StartSegmentId] = None,
                      name: Optional[Name] = None,
                      expiry_time: Optional[ExpiryTime] = None,
-                     signer: Optional[Signer] = None) -> Packet:
+                     signer: Optional[Signer] = None,
+                     include_full_security_context: bool = False) -> Packet:
         """
         Calls `build()` and then construct a content object and packet to contain it.  Includes a maniest expiry time
         from tree_options.
@@ -79,6 +81,7 @@ class ManifestFactory:
         :param group_leaf_size:
         :param nc_defs: A list of name contructor definitions to include in the NodeData
         :param name: The CCNx name to put in the packet
+        :param include_full_security_context: If the encryptor has the option of including a larger security context, do it.
         :return:
         """
         rv = self._build(source=source,
@@ -87,7 +90,8 @@ class ManifestFactory:
                          group_subtree_size=group_subtree_size,
                          group_leaf_size=group_leaf_size,
                          nc_id=nc_id,
-                         start_segment_id=start_segment_id)
+                         start_segment_id=start_segment_id,
+                         include_full_security_context=include_full_security_context)
 
         body = rv.manifest.content_object(name=name,
                                           expiry_time=expiry_time)
@@ -111,7 +115,8 @@ class ManifestFactory:
               group_subtree_size: Optional[int] = None,
               group_leaf_size: Optional[int] = None,
               nc_id: Optional[NcId] = None,
-              start_segment_id: Optional[StartSegmentId] = None) -> TreeBuilderReturnValue:
+              start_segment_id: Optional[StartSegmentId] = None,
+              include_full_security_context: bool = False) -> TreeBuilderReturnValue:
         """
         depending on the level of control you wish to have over the manifest creation, you can
         pass one of several types as the source.
@@ -154,16 +159,21 @@ class ManifestFactory:
                                                  group_subtree_size=group_subtree_size,
                                                  group_leaf_size=group_leaf_size,
                                                  nc_id=nc_id,
-                                                 start_segment_id=start_segment_id)
+                                                 start_segment_id=start_segment_id,
+                                                 include_full_security_context=include_full_security_context)
         elif isinstance(source, HashGroup):
-            rv = self._build_node_from_hashgroups(hash_groups=[source], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
+            rv = self._build_node_from_hashgroups(hash_groups=[source],
+                                                  nc_defs=nc_defs,
+                                                  node_subtree_size=node_subtree_size,
+                                                  include_full_security_context=include_full_security_context)
 
         elif isinstance(source, List):
             rv = self._build_node_from_hashgroups(hash_groups=source,
-                                                        nc_defs=nc_defs,
-                                                        node_subtree_size=node_subtree_size)
+                                                  nc_defs=nc_defs,
+                                                  node_subtree_size=node_subtree_size,
+                                                  include_full_security_context=include_full_security_context)
         elif isinstance(source, Node):
-            rv = self._build_from_node(source)
+            rv = self._build_from_node(source, include_full_security_context)
         else:
             raise TypeError("Unsupported type for source: %r" % source)
 
@@ -177,7 +187,8 @@ class ManifestFactory:
                              group_subtree_size: Optional[SubtreeSize] = None,
                              group_leaf_size: Optional[LeafSize] = None,
                              nc_id: Optional[NcId] = None,
-                             start_segment_id: Optional[StartSegmentId] = None) -> TreeBuilderReturnValue:
+                             start_segment_id: Optional[StartSegmentId] = None,
+                             include_full_security_context: bool = False) -> TreeBuilderReturnValue:
         """
         From a Pointers object or a list of hash values, build a Manifest.  If the encryptor is
         not None, it will be an encrypted Manifest.
@@ -192,12 +203,17 @@ class ManifestFactory:
                                    start_segment_id=start_segment_id)
 
         hg = HashGroup(pointers=pointers, group_data=group_data)
-        return self._build_node_from_hashgroups(hash_groups=[hg], nc_defs=nc_defs, node_subtree_size=node_subtree_size)
+        return self._build_node_from_hashgroups(
+            hash_groups=[hg],
+            nc_defs=nc_defs,
+            node_subtree_size=node_subtree_size,
+            include_full_security_context=include_full_security_context)
 
     def _build_node_from_hashgroups(self,
                                     hash_groups: List[HashGroup],
                                     nc_defs: Optional[List[NcDef]] = None,
-                                    node_subtree_size: Optional[SubtreeSize] = None) -> TreeBuilderReturnValue:
+                                    node_subtree_size: Optional[SubtreeSize] = None,
+                                    include_full_security_context: bool = False) -> TreeBuilderReturnValue:
         """
         A Node may be one or more hash groups.  In practice, we usually have only one or two hash groups, depending
         on the name constrictors or locators.
@@ -207,16 +223,16 @@ class ManifestFactory:
             node_data = NodeData(subtree_size=node_subtree_size, nc_defs=nc_defs)
 
         node = Node(node_data=node_data, hash_groups=hash_groups)
-        return self._build_from_node(node)
+        return self._build_from_node(node, include_full_security_context)
 
-    def _build_from_node(self, node) -> TreeBuilderReturnValue:
+    def _build_from_node(self, node, include_full_security_context: bool) -> TreeBuilderReturnValue:
         if self._encryptor is None:
             return TreeBuilderReturnValue(manifest=Manifest(node=node), node=node)
         else:
-            return self._encrypt(node)
+            return self._encrypt(node, include_full_security_context)
 
-    def _encrypt(self, node) -> TreeBuilderReturnValue:
+    def _encrypt(self, node: Node, include_full_security_context: bool) -> TreeBuilderReturnValue:
         assert self._encryptor is not None
-        security_ctx, encrypted_node, auth_tag = self._encryptor.encrypt(node=node)
+        security_ctx, encrypted_node, auth_tag = self._encryptor.encrypt(node=node, include_wrapper=include_full_security_context)
         manifest = Manifest(security_ctx=security_ctx, node=encrypted_node, auth_tag=auth_tag)
         return TreeBuilderReturnValue(manifest=manifest, node=node)

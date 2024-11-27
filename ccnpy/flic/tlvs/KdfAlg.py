@@ -12,26 +12,28 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.crypto.HpkeKdfIdentifiers import HpkeKdfIdentifiers
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class KeyNumber(IntegerTlvType):
-    """
-    A unique ID for a symmetric key
-
-        KeyNum = TYPE LENGTH Integer
-    """
-
+class KdfAlg(IntegerTlvType):
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_KEYNUM
+        return TlvNumbers.T_KDF_ALG
 
-    def __init__(self, value: int | bytes):
-        if isinstance(value, bytes):
-            value=int.from_bytes(value)
-        super().__init__(value)
+    @classmethod
+    def create_hkdf_sha256(cls):
+        return cls(HpkeKdfIdentifiers.HKDF_SHA256)
+
+    @classmethod
+    def create_hkdf_sha384(cls):
+        return cls(HpkeKdfIdentifiers.HKDF_SHA384)
+
+    @classmethod
+    def create_hkdf_sha512(cls):
+        return cls(HpkeKdfIdentifiers.HKDF_SHA512)
 
     def __repr__(self):
-        return "KeyNum (%r)" % self._value
+        return f"KdfAlg ({self._value})"
+

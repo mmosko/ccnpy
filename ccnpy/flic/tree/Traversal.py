@@ -182,12 +182,12 @@ class Traversal:
 
         security_ctx = manifest.security_ctx()
         if isinstance(security_ctx, AeadCtx):
-            decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
+            decryptor = self._decryptor_cache.get_or_create(security_ctx)
             # may raise DecryptionError
             return decryptor.decrypt_manifest(manifest)
         elif isinstance(security_ctx, RsaOaepCtx):
             # TODO: Finish
-            decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
+            decryptor = self._decryptor_cache.get_or_create(security_ctx)
             # may raise DecryptionError
             return decryptor.decrypt_manifest(manifest)
         else:

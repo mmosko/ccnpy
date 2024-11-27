@@ -13,25 +13,7 @@
 #  limitations under the License.
 
 
-from ccnpy.core.TlvType import IntegerTlvType
-from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
-
-
-class KeyNumber(IntegerTlvType):
-    """
-    A unique ID for a symmetric key
-
-        KeyNum = TYPE LENGTH Integer
-    """
-
-    @classmethod
-    def class_type(cls):
-        return TlvNumbers.T_KEYNUM
-
-    def __init__(self, value: int | bytes):
-        if isinstance(value, bytes):
-            value=int.from_bytes(value)
-        super().__init__(value)
-
-    def __repr__(self):
-        return "KeyNum (%r)" % self._value
+class HpkeKdfIdentifiers:
+    HKDF_SHA256 = 0x0001
+    HKDF_SHA384 = 0x0002
+    HKDF_SHA512 = 0x0003

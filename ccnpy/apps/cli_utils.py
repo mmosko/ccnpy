@@ -18,6 +18,7 @@ from ccnpy.crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer, RsaSha256Verifier
+from ccnpy.flic.RsaOaepCtx.RsaOaepEncryptor import RsaOaepEncryptor
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
 
@@ -28,6 +29,9 @@ def add_encryption_cli_args(parser):
                         help="RSA key in PEM format to sign the root manifest")
     parser.add_argument('-p', dest="key_pass", default=None,
                         help="RSA key password (otherwise will prompt)")
+
+    parser.add_argument('--wrap-key', dest="wrap_key", default=None, help="Wrapping key for RSA-OAEP mode.")
+    parser.add_argument('--wrap-pass', dest="wrap_pass", default=None, help="Wrapping key key password (otherwise will prompt).")
 
     parser.add_argument('--enc-key', dest="enc_key", default=None, help="AES encryption key (hex string)")
     parser.add_argument("--aes-mode", dest="aes_mode", default='GCM', choices=['GCM', 'CCM'], help="Encryption algorithm, default GCM")
@@ -60,6 +64,23 @@ def aead_decryptor_from_cli_args(args):
         return AeadDecryptor(key=key, key_number=args.key_num, salt=args.salt)
     return None
 
+def rsa_oaep_encryptor_from_cli_args(args):
+    if args.wrap_key is None:
+        raise ValueError("You must specify a wrapping key for RSA-OAEP mode.")
+
+    wrapping_key = RsaKey.load_pem_key(args.wrap_key, args.wrap_pass)
+    if args.enc_key is None:
+        return RsaOaepEncryptor.create_with_new_content_key(wrapping_key)
+
+    key = aes_key_from_cli_args(args)
+    return RsaOaepEncryptor(wrapping_key=wrapping_key, key=key, key_number=args.key_num)
+
+def encryptor_from_cli_args(args):
+    if args.wrap_key is None:
+        return aead_encryptor_from_cli_args(args)
+    else:
+        return rsa_oaep_encryptor_from_cli_args(args)
+
 def rsa_signer_from_cli_args(args):
     if args.key_file is not None:
         signing_key = RsaKey.load_pem_key(args.key_file, args.key_pass)
@@ -75,12 +96,15 @@ def rsa_verifier_from_cli_args(args):
 def fixup_key_password(args, ask_for_pass: bool = True):
     if args.key_pass is None:
         if ask_for_pass:
-            args.key_pass = getpass.getpass(prompt="Private key password")
-        else:
-            return
+            args.key_pass = getpass.getpass(prompt="Signing private key password")
+            if len(args.key_pass) == 0:
+                args.key_pass = None
 
-    if len(args.key_pass) == 0:
-        args.key_pass = None
+    if args.wrap_key is not None and args.wrap_pass is None:
+        if ask_for_pass:
+            args.wrap_pass = getpass.getpass(prompt="Wrapping key password")
+            if len(args.wrap_pass) == 0:
+                args.wrap_pass = None
 
 def create_keystore(args):
     keystore = InsecureKeystore()
@@ -90,5 +114,8 @@ def create_keystore(args):
 
     if args.key_file is not None:
         keystore.add_rsa_key(name='default', key=RsaKey.load_pem_key(args.key_file, args.key_pass))
+
+    if args.wrap_key is not None:
+        keystore.add_rsa_key(name='wrap', key=RsaKey.load_pem_key(args.wrap_key, args.wrap_pass))
 
     return keystore

@@ -13,25 +13,19 @@
 #  limitations under the License.
 
 
-from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class KeyNumber(IntegerTlvType):
+class KdfInfo(OctetTlvType):
     """
-    A unique ID for a symmetric key
 
-        KeyNum = TYPE LENGTH Integer
     """
 
     @classmethod
     def class_type(cls):
-        return TlvNumbers.T_KEYNUM
-
-    def __init__(self, value: int | bytes):
-        if isinstance(value, bytes):
-            value=int.from_bytes(value)
-        super().__init__(value)
+        return TlvNumbers.T_KDF_INFO
 
     def __repr__(self):
-        return "KeyNum (%r)" % self._value
+        return "KdfInfo: %r" % super().__repr__()
+
