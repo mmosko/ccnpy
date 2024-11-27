@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from array import array
+from doctest import set_unittest_reportflags
 from typing import Optional
 
 from .AeadData import AeadData, KeyNumber
@@ -20,7 +22,7 @@ from ..tlvs.AuthTag import AuthTag
 from ..tlvs.EncryptedNode import EncryptedNode
 from ..tlvs.Manifest import Manifest
 from ..tlvs.Node import Node
-from ..tlvs.SecurityCtx import SecurityCtx
+from ..tlvs.SecurityCtx import SecurityCtx, AeadSecurityCtx
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ...crypto.DecryptionError import DecryptionError
 
@@ -57,7 +59,7 @@ class AeadImpl:
         salt_len = len(self._salt) * 8
         return self._key.nonce(96 - salt_len)
 
-    def _iv_from_nonce(self, nonce):
+    def _iv_from_nonce(self, nonce: array):
         if self._salt is None:
             return nonce
         return self._salt + nonce
@@ -86,7 +88,7 @@ class AeadImpl:
         else:
             raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
 
-    def _create_aead_ctx(self, nonce):
+    def _create_aead_ctx(self, nonce) -> AeadCtx:
         return AeadCtx(self._create_aead_data(nonce))
 
     def encrypt(self, node):
@@ -102,7 +104,7 @@ class AeadImpl:
         security_ctx = self._create_aead_ctx(nonce)
         return self.encrypt_with_security_ctx(node, security_ctx)
 
-    def encrypt_with_security_ctx(self, node: Node, security_ctx: SecurityCtx):
+    def encrypt_with_security_ctx(self, node: Node, security_ctx: AeadSecurityCtx):
         """
 
         :param node: A Node
@@ -112,9 +114,7 @@ class AeadImpl:
         if not isinstance(node, Node):
             raise TypeError("node must be Node")
 
-        # TODO: fixup typing so nonce is defined
-        nonce = security_ctx.nonce()
-        iv = self._iv_from_nonce(nonce)
+        iv = self._iv_from_nonce(security_ctx.nonce().value())
 
         plaintext = node.serialized_value()
         ciphertext, a = self._key.encrypt(iv=iv,

@@ -20,14 +20,11 @@ class ManifestEncryptor(ABC):
     Abstract class used to sign a Packet.
     """
     @abstractmethod
-    def encrypt(self, node):
+    def encrypt(self, node, **kwargs):
         """
         Returns an encrypted Manifest
         :param node: The plaintext Node
+        :param kwargs: Some encryptors may take optional arguments
         :return: The tuple (security_ctx, encrypted_node, auth_tag)
         """
         pass
-
-    def salt_size(self):
-        """0 if no salt, otherwise the bytes of salt"""
-        return 0

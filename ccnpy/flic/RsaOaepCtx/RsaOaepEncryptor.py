@@ -25,7 +25,7 @@ from ...crypto.RsaKey import RsaKey
 class RsaOaepEncryptor(ManifestEncryptor):
 
     @classmethod
-    def create_with_new_key(cls, wrapping_key: RsaKey):
+    def create_with_new_content_key(cls, wrapping_key: RsaKey):
         """
         Creates with a random content encryption key and salt.
 
@@ -41,5 +41,5 @@ class RsaOaepEncryptor(ManifestEncryptor):
         self._wrapper = RsaOaepWrapper.create_sha256(key_id=wrapping_key.keyid(), wrapped_key=self._wrapped_key)
         self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, salt=salt)
 
-    def encrypt(self, node):
-        return self._impl.encrypt(node)
+    def encrypt(self, node, **kwargs):
+        return self._impl.encrypt(node, **kwargs)

@@ -21,6 +21,7 @@ from ..name_constructor.SchemaImplFactory import SchemaImplFactory
 from ..tlvs.AeadCtx import AeadCtx
 from ..tlvs.Manifest import Manifest
 from ..tlvs.NcDef import NcDef
+from ..tlvs.RsaOaepCtx import RsaOaepCtx
 from ...core.ContentObject import ContentObject
 from ...core.DisplayFormatter import DisplayFormatter
 from ...core.HashValue import HashValue
@@ -181,6 +182,11 @@ class Traversal:
 
         security_ctx = manifest.security_ctx()
         if isinstance(security_ctx, AeadCtx):
+            decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
+            # may raise DecryptionError
+            return decryptor.decrypt_manifest(manifest)
+        elif isinstance(security_ctx, RsaOaepCtx):
+            # TODO: Finish
             decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
             # may raise DecryptionError
             return decryptor.decrypt_manifest(manifest)

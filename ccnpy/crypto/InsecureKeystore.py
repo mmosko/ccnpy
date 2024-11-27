@@ -18,6 +18,13 @@ from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.flic.tlvs.KeyNumber import KeyNumber
 
 
+class KeyIdNotFoundError(RuntimeError):
+    pass
+
+class KeyNumberNotFoundError(RuntimeError):
+    pass
+
+
 class InsecureKeystore:
     """
     This is a prototype keystore for symmetric and asymmetric keys.  It is not secure.  It should not be used
@@ -43,19 +50,31 @@ class InsecureKeystore:
         return self
 
     def get_aes_key(self, key_num: KeyNumber) -> AeadKey:
-        return self._symmetric_by_keynum[key_num.value()]
+        try:
+            return self._symmetric_by_keynum[key_num.value()]
+        except KeyError as e:
+            raise KeyNumberNotFoundError(e)
 
     def get_aes_salt(self, key_num: KeyNumber):
-        return self._salt_by_keynum[key_num.value()]
+        try:
+            return self._salt_by_keynum[key_num.value()]
+        except KeyError as e:
+            raise KeyNumberNotFoundError(e)
 
     def get_rsa(self, name_or_keyid) -> RsaKey:
         if name_or_keyid in self._asymmetric_by_keyid:
             return self._asymmetric_by_keyid[name_or_keyid]
-        return self._asymmetric_by_name[name_or_keyid]
+        try:
+            return self._asymmetric_by_name[name_or_keyid]
+        except KeyError as e:
+            raise KeyIdNotFoundError(e)
 
     def get_rsa_pub_key(self, keyid) -> RsaKey:
-        k = self._asymmetric_by_keyid[keyid]
-        if k.has_public_key():
-            return k
-        else:
-            raise ValueError(f'Key matching keyid {keyid} has no public key')
+        try:
+            k = self._asymmetric_by_keyid[keyid]
+            if k.has_public_key():
+                return k
+            else:
+                raise KeyIdNotFoundError(f'Key matching keyid {keyid} has no public key')
+        except KeyError as e:
+            raise KeyIdNotFoundError(e)

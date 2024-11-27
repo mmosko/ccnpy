@@ -86,13 +86,26 @@ class RsaOaepWrapper(Serializable):
         return self._wire_format
 
     @classmethod
-    def parse(cls, tlv):
+    def parse(cls, tlv_value):
+        """
+        RsaOaepWrapper is not a TlvType.  It parses the Tlv value of of RsaOaepCtx.
+        """
         if cls.DEBUG:
-            print(f'RsaOaepWrapper parsing Tlv: {tlv}')
+            print(f'RsaOaepWrapper parsing Tlv value: {tlv_value}')
 
-        values = TlvType.auto_value_parse(tlv, [
+        values = TlvType.auto_value_parse(tlv_value, [
             ('key_id', KeyId),
             ('key_link', KeyLink),
             ('hash_alg', HashAlg),
-            ('wrapped_key', WrappedKey)])
+            ('wrapped_key', WrappedKey)],
+            skip_unknown=True)
+
+        # When used inside RsaOaepCtx, it may be the case that none of these parameters exist.
+        # If all the dictionary entries are none, do not instantiate the class
+        filtered = {k: v for k, v in values.items() if v is not None}
+        if len(filtered) == 0:
+            if cls.DEBUG:
+                print("RsaOaepWrapper found no parameters, returning None")
+            return None
+
         return cls(**values)

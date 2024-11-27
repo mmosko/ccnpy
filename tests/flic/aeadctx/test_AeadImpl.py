@@ -32,12 +32,13 @@ from ccnpy.flic.tlvs.AeadCtx import AeadCtx
 from ccnpy.flic.aeadctx.AeadImpl import AeadImpl
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+from tests.MockKeys import aes_key
 
 
 class AeadImplTest(unittest.TestCase):
-    # openssl rand 16 | xxd - -include
-    key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
-                            0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
+    # # openssl rand 16 | xxd - -include
+    # key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
+    #                         0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
 
     nonce = array.array("B", [77, 88])
     keynum = 55
@@ -80,8 +81,8 @@ class AeadImplTest(unittest.TestCase):
         return Node(node_data=nd, hash_groups=[hg1, hg2])
 
     def test_encrypt_decrypt_node(self):
-        aes_key = AeadGcm(self.key)
-        psk = AeadImpl(key=aes_key, key_number=55)
+        key = AeadGcm(aes_key)
+        psk = AeadImpl(key=key, key_number=55)
 
         node = self._create_node()
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
@@ -93,9 +94,9 @@ class AeadImplTest(unittest.TestCase):
         self.assertEqual(node, plaintext)
 
     def test_encrypt_decrypt_node_with_salt(self):
-        aes_key = AeadGcm(self.key)
+        key = AeadGcm(aes_key)
         # the salt should be paded out to 4 bytes
-        psk = AeadImpl(key=aes_key, key_number=55, salt=0x010203)
+        psk = AeadImpl(key=key, key_number=55, salt=0x010203)
 
         node = self._create_node()
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
@@ -108,8 +109,8 @@ class AeadImplTest(unittest.TestCase):
 
     def test_encrypt_decrypt_manifest(self):
         node = self._create_node()
-        aes_key = AeadCcm(self.key)
-        psk = AeadImpl(key=aes_key, key_number=55)
+        key = AeadCcm(aes_key)
+        psk = AeadImpl(key=key, key_number=55)
         encrypted_manifest = psk.create_encrypted_manifest(node)
         decrypted_manifest = psk.decrypt_manifest(encrypted_manifest)
         expected = Manifest(node=node)

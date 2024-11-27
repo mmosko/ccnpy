@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .SecurityCtx import SecurityCtx
+from .SecurityCtx import SecurityCtx, AeadSecurityCtx
 from .TlvNumbers import TlvNumbers
 from ..aeadctx.AeadData import AeadData
 from ...core.Tlv import Tlv
 from ...exceptions.CannotParseError import CannotParseError
 
 
-class AeadCtx(SecurityCtx):
+class AeadCtx(AeadSecurityCtx):
     """
     The security context for a authenticated encryption, authenticated data algorithms.
 
@@ -45,9 +45,7 @@ class AeadCtx(SecurityCtx):
         :param nonce: A byte array
         :param mode: One of the allowed modes (use a class create_x method to create)
         """
-        SecurityCtx.__init__(self)
-        self._aead_data = aead_data
-
+        super().__init__(aead_data)
         self._tlv = Tlv(SecurityCtx.class_type(),
                         Tlv(self.class_type(), self._aead_data))
 
@@ -64,20 +62,16 @@ class AeadCtx(SecurityCtx):
 
     @classmethod
     def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
+        if tlv.type() != SecurityCtx.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
-        aead_data = AeadData.parse(tlv.value())
+        inner_tlv = Tlv.deserialize(tlv.value())
+
+        if inner_tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv)
+
+        aead_data = AeadData.parse(inner_tlv.value())
         return cls(aead_data=aead_data)
 
     def serialize(self):
         return self._tlv.serialize()
-
-    def nonce(self):
-        return self._aead_data.nonce()
-
-    def key_number(self):
-        return self._aead_data.key_number()
-
-    def aead_data(self):
-        return self._aead_data

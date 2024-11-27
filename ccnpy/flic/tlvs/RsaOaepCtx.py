@@ -13,17 +13,18 @@
 #  limitations under the License.
 from typing import Optional
 
-from ccnpy.flic.RsaOaepCtx.RsaOaepWrapper import RsaOaepWrapper
-from ccnpy.flic.aeadctx.AeadData import AeadData
-from ccnpy.flic.tlvs.SecurityCtx import SecurityCtx
-from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Tlv import Tlv
-from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+from ccnpy.exceptions.CannotParseError import CannotParseError
+from .SecurityCtx import SecurityCtx, AeadSecurityCtx
+from .TlvNumbers import TlvNumbers
+from ..RsaOaepCtx.RsaOaepWrapper import RsaOaepWrapper
+from ..aeadctx.AeadData import AeadData
 
 
-class RsaOaepCtx(SecurityCtx):
+class RsaOaepCtx(AeadSecurityCtx):
     """
-    The security context for RSA-OAEP wrapped keys
+    The security context for RSA-OAEP wrapped keys.  RsaOaepCtx always provides an AeadSecurityCtx, as it uses
+    the same AEAD encryption.
 
     ```
         RsaOaepCtx = T_RSAOAEP_CTX LENGTH RsaOaepData
@@ -37,62 +38,58 @@ class RsaOaepCtx(SecurityCtx):
             ; Encrypted 4-byte salt plus AES key
     ```
     """
+    DEBUG = False
+
     @classmethod
     def class_type(cls):
         return TlvNumbers.T_RSAOAEP_CTX
 
-    def __init__(self, aead_data: AeadData, rsa_oaep_wrapper: Optional[RsaOaepWrapper]):
+    def __init__(self, aead_data: AeadData, rsa_oaep_wrapper: Optional[RsaOaepWrapper]=None):
         """
 
-        :param key_number: An integer
-        :param nonce: A byte array
-        :param mode: One of the allowed modes (use a class create_x method to create)
+        :param aead_data: The mandatory symmetric key data
+        :param rsa_oaep_wrapper: The optional (and large) public keu data
         """
-        SecurityCtx.__init__(self)
-        self._tlv = None
+        super().__init__(aead_data)
+        self._rsa_oaep_wrapper = rsa_oaep_wrapper
+        self._tlv = Tlv(SecurityCtx.class_type(),
+                        Tlv(self.class_type(), [self._aead_data, self._rsa_oaep_wrapper]))
 
     def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+        if not isinstance(other, RsaOaepCtx):
+            return False
+        return self._tlv == other._tlv
 
     def __len__(self):
         return len(self._tlv)
 
     def __repr__(self):
-        return "PSK: {kn: %r, iv: %r, mode: %r}" % (self._key_number,
-                                                       DisplayFormatter.hexlify(self._nonce),
-                                                       self.__mode_string())
+        return "PSK: {aead: %r, wrapper: %r}" % (self._aead_data, self._rsa_oaep_wrapper),
 
     @classmethod
     def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise ValueError("Incorrect TLV type %r" % tlv.type())
+        if cls.DEBUG:
+            print(f'RsaOaepCtx parsing Tlv: {tlv}')
 
-        key_number = nonce = mode = None
-        offset = 0
-        while offset < tlv.length():
-            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
-            if inner_tlv.type() == cls.__T_KEYNUM:
-                assert key_number is None
-                key_number = inner_tlv.value_as_number()
-            elif inner_tlv.type() == cls.__T_NONCE:
-                assert nonce is None
-                nonce = inner_tlv.value()
-            elif inner_tlv.type() == cls.__T_MODE:
-                assert mode is None
-                mode = inner_tlv.value_as_number()
-                if mode not in cls.__allowed_modes:
-                    raise ValueError("Unsupported mode %r" % inner_tlv)
-            else:
-                raise ValueError("Unsupported TLV %r" % inner_tlv)
-            offset += len(inner_tlv)
+        if tlv.type() != SecurityCtx.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 
-        return cls(key_number=key_number, nonce=nonce, mode=mode)
+        inner_tlv = Tlv.deserialize(tlv.value())
+
+        if inner_tlv.type() != cls.class_type():
+            raise CannotParseError("Incorrect TLV type %r" % tlv)
+
+        aead_data = AeadData.parse(inner_tlv.value())
+        rsa_oaep_wrapper = RsaOaepWrapper.parse(inner_tlv.value())
+        return cls(aead_data=aead_data, rsa_oaep_wrapper=rsa_oaep_wrapper)
 
     def serialize(self):
         return self._tlv.serialize()
 
-    def nonce(self):
-        return self._nonce
+    def key_id(self):
+        if self._rsa_oaep_wrapper is not None:
+            return self._rsa_oaep_wrapper.key_id()
+        return None
 
-    def key_number(self):
-        return self._key_number
+    def rsa_oaep_wrapper(self) -> Optional[RsaOaepWrapper]:
+        return self._rsa_oaep_wrapper

@@ -69,12 +69,17 @@ class AeadData(Serializable):
         return self._wire_format
 
     @classmethod
-    def parse(cls, tlv):
-        if cls.DEBUG:
-            print(f'AeadData parsing Tlv: {tlv}')
+    def parse(cls, tlv_value):
+        """
+        AeadData is not a TlvType.  It parses the Tlv value of of AeadCtx.
+        """
 
-        values = TlvType.auto_value_parse(tlv, [
+        if cls.DEBUG:
+            print(f'AeadData parsing Tlv: {tlv_value}')
+
+        values = TlvType.auto_value_parse(tlv_value, [
             ('key_number', KeyNumber),
             ('nonce', Nonce),
-            ('mode', AeadMode) ])
+            ('mode', AeadMode)],
+            skip_unknown=True)
         return cls(**values)

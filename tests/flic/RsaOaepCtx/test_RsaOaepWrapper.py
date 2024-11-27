@@ -32,13 +32,16 @@ from tests.MockKeys import shared_512_pub_pem, aes_key, shared_1024_pub_pem, sha
 
 class RsaOaepWrapperTest(unittest.TestCase):
 
-    def test_serialize(self):
+    def setUp(self):
         wk = WrappedKey(array.array("B", [1, 2, 3, 4]))
         keyid = KeyId(HashValue(1, [5, 6, 7]))
         key_link = KeyLink(Link(Name.from_uri('ccnx:/a')))
         hash_alg = HashAlg(HashFunctionType.T_SHA_256)
-        wrapper = RsaOaepWrapper(key_id=keyid, key_link=key_link, hash_alg=hash_alg, wrapped_key=wk)
-        wire_format = wrapper.serialize()
+        self.wrapper = RsaOaepWrapper(key_id=keyid, key_link=key_link, hash_alg=hash_alg, wrapped_key=wk)
+
+
+    def test_serialize(self):
+        wire_format = self.wrapper.serialize()
         expected_wire_format = array.array("B",[
             0, TlvNumbers.T_KEYID, 0, 7,
                 0, 1, 0, 3, 5, 6, 7,
@@ -53,5 +56,28 @@ class RsaOaepWrapperTest(unittest.TestCase):
         self.assertEqual(expected_wire_format, wire_format)
 
         decoded = RsaOaepWrapper.parse(wire_format)
-        self.assertEqual(wrapper, decoded)
+        self.assertEqual(self.wrapper, decoded)
 
+    def test_parse_with_extra(self):
+        wire_format = array.array("B",[
+            0, TlvNumbers.T_KEYNUM, 0, 1,
+                1,
+            0, TlvNumbers.T_KEYID, 0, 7,
+                0, 1, 0, 3, 5, 6, 7,
+            0, TlvNumbers.T_KEYLINK, 0, 9,
+                0, 0, 0, 5, 0, 1, 0, 1, 97,
+            0, TlvNumbers.T_HASH_ALG, 0, 1,
+                1,
+            0, TlvNumbers.T_WRAPPED_KEY, 0, 4,
+                1, 2, 3, 4
+        ])
+        decoded = RsaOaepWrapper.parse(wire_format)
+        self.assertEqual(self.wrapper, decoded)
+
+    def test_parse_as_none(self):
+        wire_format = array.array("B",[
+            0, TlvNumbers.T_KEYNUM, 0, 1,
+                1,
+        ])
+        decoded = RsaOaepWrapper.parse(wire_format)
+        self.assertIsNone(decoded)

@@ -77,7 +77,7 @@ class TlvType(Serializable):
         return cls.auto_value_parse(tlv.value(), name_class_pairs)
 
     @staticmethod
-    def auto_value_parse(tlv_value, name_class_pairs):
+    def auto_value_parse(tlv_value, name_class_pairs, skip_unknown: bool = True):
         """
         Like `auto_parse`, but only parses the value after we've verified the outer class_type.
         """
@@ -101,7 +101,9 @@ class TlvType(Serializable):
                 assert values[arg_name] is None
                 values[arg_name] = clazz.parse(inner_tlv)
             except KeyError:
-                raise ParseError("Unsupported TLV type %r" % inner_tlv)
+                if not skip_unknown:
+                    raise ParseError("Unsupported TLV type %r" % inner_tlv)
+
         return values
 
 
@@ -144,6 +146,9 @@ class OctetTlvType(TlvType, ABC):
 
     def __init__(self, value):
         TlvType.__init__(self)
+
+        if value is None:
+            raise ValueError(f"Nonce value must not be None, use an empty list")
 
         if isinstance(value, list):
             value = array.array("B", value)
