@@ -14,24 +14,25 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.LeafDigest import LeafDigest
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafDigestTest(unittest.TestCase):
+class LeafDigestTest(CcnpyTestCase):
     def test_serialize(self):
         hv = HashValue(55, array.array("B", [1, 2, 3]))
         sd = LeafDigest(hv)
         actual = sd.serialize()
 
-        expected = array.array("B", [0, 18, 0, 7, 0, 55, 0, 3, 1, 2, 3])
+        expected = array.array("B", [0, TlvNumbers.T_LEAF_DIGEST, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 18, 0, 7, 0, 55, 0, 3, 1, 2, 3])
+        wire_format = array.array("B", [0, TlvNumbers.T_LEAF_DIGEST, 0, 7, 0, 55, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
         sd = LeafDigest.parse(tlv)
         expected = LeafDigest(HashValue(55, array.array("B", [1, 2, 3])))

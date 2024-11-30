@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.KeyLink import KeyLink
@@ -23,7 +23,7 @@ from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 
 
-class KeyLinkTest(unittest.TestCase):
+class KeyLinkTest(CcnpyTestCase):
     def test_serialize(self):
         name = Name.from_uri('ccnx:/a/b')
         keyid = HashValue(1, b'ab')

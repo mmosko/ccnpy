@@ -14,12 +14,13 @@
 from typing import Optional
 
 from .AeadImpl import AeadImpl
+from .AeadParameters import AeadParameters
 from ..ManifestDecryptor import ManifestDecryptor
 
 
 class AeadDecryptor(ManifestDecryptor):
-    def __init__(self, key, key_number: int, salt: Optional[int] = None):
-        self._psk = AeadImpl(key, key_number, salt)
+    def __init__(self, params: AeadParameters):
+        self._psk = AeadImpl(params)
 
     def decrypt_manifest(self, manifest):
         return self._psk.decrypt_manifest(manifest)

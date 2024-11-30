@@ -34,7 +34,7 @@ class FileChunks:
         """
         return self._chunks[item]
 
-    def append(self, manifest_pointer):
+    def append(self, manifest_pointer: SizedPointer):
         if not isinstance(manifest_pointer, SizedPointer):
             raise TypeError("manifest_pointer must be ccnpy.flic.ManifestPointer")
 

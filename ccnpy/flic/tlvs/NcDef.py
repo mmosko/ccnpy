@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import logging
 
-
-from .NcId import NcId
-from .NcSchema import NcSchema
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
-from ccnpy.exceptions.ParseError import ParseError
+from .NcId import NcId
+from .NcSchema import NcSchema
+from .TlvNumbers import TlvNumbers
+from ...exceptions.CannotParseError import CannotParseError
 
 
 class NcDef(TlvType):
@@ -27,11 +27,11 @@ class NcDef(TlvType):
 
         NcDef = TYPE LENGTH NcId NcSchema
     """
-    __T_NCDEF = 0x0006
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def class_type(cls):
-        return cls.__T_NCDEF
+        return TlvNumbers.T_NCDEF
 
     def __init__(self, nc_id: NcId, schema: NcSchema):
         TlvType.__init__(self)
@@ -58,6 +58,8 @@ class NcDef(TlvType):
 
     @classmethod
     def parse(cls, tlv):
+        cls.logger.debug('parsing: %s', tlv)
+
         if tlv.type() != cls.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 

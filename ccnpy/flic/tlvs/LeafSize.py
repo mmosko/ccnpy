@@ -13,46 +13,26 @@
 #  limitations under the License.
 
 
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafSize(TlvType):
+class LeafSize(IntegerTlvType):
     """
     Size of all application data immediately under the Group (i.e. via direct pointers).
 
         LeafSize = TYPE LENGTH INTEGER
     """
-    __type = 0x0011
 
     @classmethod
     def class_type(cls):
-        return cls.__type
-
-    def __init__(self, size):
-        TlvType.__init__(self)
-        self._size = size
-        self._tlv = Tlv.create_varint(self.class_type(), self._size)
-
-    def __len__(self):
-        return len(self._tlv)
+        return TlvNumbers.T_LEAF_SIZE
 
     def __repr__(self):
-        return "LeafSize: %r" % self._size
+        return "LeafSize (%r)" % self._value
 
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
+    def __init__(self, value):
+        super().__init__(value)
 
-    def size(self):
-        return self._size
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
-
-        return cls(tlv.value_as_number())
-
-    def serialize(self):
-        return self._tlv.serialize()
+    def size(self) -> int:
+        return self.value()

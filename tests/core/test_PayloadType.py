@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.PayloadType import PayloadType
 from ccnpy.core.Tlv import Tlv
 
 
-class PayloadTypeTest(unittest.TestCase):
+class PayloadTypeTest(CcnpyTestCase):
     def test_serialize(self):
         pt = PayloadType.create_link_type()
         self.assertTrue(pt.is_link(), "did not test as Link type")

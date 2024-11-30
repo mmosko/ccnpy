@@ -14,6 +14,7 @@
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class Pointers(TlvType):
@@ -34,11 +35,9 @@ class Pointers(TlvType):
             print(hv)
     """
 
-    __type = 0x0002
-
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_PTRS
 
     def __init__(self, hash_values):
         TlvType.__init__(self)

@@ -14,13 +14,13 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.AuthTag import AuthTag
 
 
-class AuthTagTest(unittest.TestCase):
+class AuthTagTest(CcnpyTestCase):
     def test_serialize(self):
         tag = AuthTag(array.array("B", [1, 2, 3, 4]))
         expected = array.array("B", [0, 3, 0, 4, 1, 2, 3, 4])

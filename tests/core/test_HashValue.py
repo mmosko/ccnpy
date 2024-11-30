@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 
 
-class HashValueTest(unittest.TestCase):
+class HashValueTest(CcnpyTestCase):
     def test_in_dictionary(self):
         hv1 = HashValue.create_sha256([1, 2, 3])
         hv2 = HashValue.create_sha256([1, 2, 3])

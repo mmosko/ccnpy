@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from datetime import datetime, UTC
 
 from ccnpy.core.ContentObject import ContentObject
@@ -28,7 +28,7 @@ from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.Pointers import Pointers
 
 
-class ContentObjectTest(unittest.TestCase):
+class ContentObjectTest(CcnpyTestCase):
     def test_serialize(self):
         name = Name.from_uri('ccnx:/apple/pie')
         payload = Payload(array.array("B", [1, 3, 5, 7, 9]))

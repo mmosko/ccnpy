@@ -14,22 +14,23 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class StartSegmentIdTest(unittest.TestCase):
+class StartSegmentIdTest(CcnpyTestCase):
     def test_serialize(self):
         ss = StartSegmentId(22)
         actual = ss.serialize()
 
-        expected = array.array("B", [0, 19, 0, 1, 22])
+        expected = array.array("B", [0, TlvNumbers.T_START_SEGMENT_ID, 0, 1, 22])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 19, 0, 1, 22])
+        wire_format = array.array("B", [0, TlvNumbers.T_START_SEGMENT_ID, 0, 1, 22])
         tlv = Tlv.deserialize(wire_format)
         actual = StartSegmentId.parse(tlv)
         expected = StartSegmentId(22)

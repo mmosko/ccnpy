@@ -11,32 +11,29 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import logging
 from typing import Optional
 
-from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
-from ccnpy.flic.tlvs.LeafDigest import LeafDigest
-from ccnpy.flic.tlvs.LeafSize import LeafSize
-from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
-from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
-from ccnpy.flic.tlvs.NcId import NcId
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
-from ccnpy.exceptions.ParseError import ParseError
+from .LeafDigest import LeafDigest
+from .LeafSize import LeafSize
+from .NcId import NcId
+from .StartSegmentId import StartSegmentId
+from .SubtreeDigest import SubtreeDigest
+from .SubtreeSize import SubtreeSize
+from .TlvNumbers import TlvNumbers
+from ...core.Tlv import Tlv
+from ...core.TlvType import TlvType
 
 
 class GroupData(TlvType):
     """
     TODO: Should extend NodeData instead of repeating all the code
     """
-    __type = 0x0001
-    __subtree_digest_type = 0x0002
-
-    DEBUG = False
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_GROUP_DATA
 
     def __init__(self,
                  subtree_size: Optional[SubtreeSize] = None,
@@ -109,44 +106,8 @@ class GroupData(TlvType):
         return self._tlv.serialize()
 
     @classmethod
-    def auto_parse(cls, tlv, name_class_pairs):
-        """
-        `name_class_pairs` is a list of (str, class) pairs.  The string is the argument name for the
-         class constructor and the class is the corresponding TlvType.  `auto_parse` will go through the
-        `tlv` nesting and extract out the available classes.  it will then return a dictionary
-        `Dict[str, tlvtype]` that is used to initalize the class.
-        """
-
-        parser_lookup = {y.class_type(): (x, y) for x,y in name_class_pairs}
-        values = {x: None for x,y in name_class_pairs}
-
-        offset = 0
-        while offset < tlv.length():
-            try:
-                inner_tlv = Tlv.deserialize(tlv.value()[offset:])
-            except ParseError as e:
-                print(f'Error parsing {tlv.value()} at offset {offset}: {e}')
-                raise
-
-            offset += len(inner_tlv)
-
-            try:
-                name_class = parser_lookup[inner_tlv.type()]
-                arg_name = name_class[0]
-                clazz = name_class[1]
-                assert values[arg_name] is None
-                values[arg_name] = clazz.parse(inner_tlv)
-            except KeyError:
-                raise ParseError("Unsupported GroupData TLV type %r" % inner_tlv)
-        return values
-
-    @classmethod
     def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
-
-        if cls.DEBUG:
-            print(f'GroupData parsing Tlv: {tlv}')
+        cls.logger.debug('parsing Tlv: %s', tlv)
 
         classes = [ ('subtree_size', SubtreeSize),
                    ('subtree_digest', SubtreeDigest),
@@ -157,3 +118,4 @@ class GroupData(TlvType):
 
         values = cls.auto_parse(tlv, classes)
         return cls(**values)
+

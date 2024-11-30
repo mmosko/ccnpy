@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 
 
-class TlvTest(unittest.TestCase):
+class TlvTest(CcnpyTestCase):
     def test_serialize_array(self):
         type = 0x1234
         value = array.array("B", [10, 11, 12, 13])

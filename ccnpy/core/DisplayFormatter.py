@@ -21,7 +21,9 @@ import jsbeautifier
 class DisplayFormatter:
     @classmethod
     def hexlify(cls, value):
-        return str(binascii.hexlify(value), 'utf-8')
+        if value is None:
+            return "None"
+        return f'0x{str(binascii.hexlify(value), 'utf-8')}'
 
     @classmethod
     def prettify(cls, value):

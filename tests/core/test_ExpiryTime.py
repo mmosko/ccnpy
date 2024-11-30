@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.ExpiryTime import ExpiryTime
 from ccnpy.core.Tlv import Tlv
 
 
-class ExpiryTimeTest(unittest.TestCase):
+class ExpiryTimeTest(CcnpyTestCase):
     def test_serialize(self):
         timestamp = 1560227545.906023
         expiry = ExpiryTime(timestamp)

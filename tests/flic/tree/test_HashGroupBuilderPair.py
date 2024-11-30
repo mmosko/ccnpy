@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from typing import Optional
 
 from ccnpy.core.HashValue import HashValue
@@ -36,7 +36,7 @@ from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tree.HashGroupBuilderPair import HashGroupBuilderPair
 
 
-class HashGroupBuilderPairTest(unittest.TestCase):
+class HashGroupBuilderPairTest(CcnpyTestCase):
 
     @staticmethod
     def _create_options(max_packet_size: int, schema_type: SchemaType, encryptor: Optional[ManifestEncryptor] = None):

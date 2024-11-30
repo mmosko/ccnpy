@@ -12,18 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .HashGroupBuilderPair import HashGroupBuilderPair
 from .ManifestSizeCalculator import ManifestSizeCalculator
 from .OptimizerResult import OptimizerResult
 from .TreeOptimizer import TreeOptimizer
-from ..HashGroupBuilder import HashGroupBuilder
 from ..ManifestFactory import ManifestFactory
 from ..name_constructor.FileMetadata import FileMetadata
 from ..name_constructor.NameConstructorContext import NameConstructorContext
-from ..name_constructor.SchemaImpl import SchemaImpl
-from ..tlvs.StartSegmentId import StartSegmentId
-from ...core.ExpiryTime import ExpiryTime
-from ...core.HashValue import HashValue
 
 
 class TreeParameters:
@@ -134,4 +128,6 @@ class TreeParameters:
         # There are a few possible outputs from the tree optimizer.  In general, we use
         # this one, as it picks the tree that fits the data well (minimizes waste), and then
         # from those picks one with minimum height.
-        return to.minimize_waste_min_height()
+        #return to.minimize_k()
+        return to.minimize_k_min_waste()
+        # return to.minimize_waste_min_height()

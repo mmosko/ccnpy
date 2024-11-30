@@ -14,11 +14,11 @@
 
 import array
 
-from .TlvType import TlvType
+from .Serializable import Serializable
 from ..exceptions.ParseError import ParseError
 
 
-class Tlv:
+class Tlv(Serializable):
     @classmethod
     def create_uint64(cls, tlv_type, value):
         """
@@ -65,7 +65,7 @@ class Tlv:
     def __init__(self, tlv_type, value):
         self._tlv_type = tlv_type
         # If the value is an array, we flatten it here
-        self._value = self._flatten(value)
+        self._value = self.flatten(value)
         self._wire_format = self._serialize()
 
     def __str__(self):
@@ -101,6 +101,9 @@ class Tlv:
 
         return result
 
+    def __hash__(self):
+        return hash(self._wire_format.tobytes())
+
     @classmethod
     def deserialize(cls, buffer):
         if len(buffer) < 4:
@@ -116,12 +119,12 @@ class Tlv:
         return cls(tlv_type, value)
 
     @staticmethod
-    def _flatten(value):
+    def flatten(value):
         if isinstance(value, list):
             byte_list = []
             for x in value:
                 if x is not None:
-                    if isinstance(x, TlvType) or isinstance(x, Tlv):
+                    if isinstance(x, Serializable):
                         byte_list.extend(x.serialize())
                     else:
                         byte_list.append(x)

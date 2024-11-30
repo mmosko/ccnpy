@@ -11,13 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
 from .AeadImpl import AeadImpl
+from .AeadParameters import AeadParameters
 from ..ManifestEncryptor import ManifestEncryptor
+from ..tlvs.KdfData import KdfData
+from ..tlvs.KeyNumber import KeyNumber
+from ...crypto.AeadKey import AeadKey
 
 
 class AeadEncryptor(ManifestEncryptor):
-    def __init__(self, key, key_number, salt=None):
-        self._psk = AeadImpl(key, key_number, salt)
+    def __init__(self, params: AeadParameters):
+        self._psk = AeadImpl(params)
 
-    def encrypt(self, node):
+    def encrypt(self, node, **kwargs):
         return self._psk.encrypt(node)

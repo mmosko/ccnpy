@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import logging
 
 from crc32c import crc32c
 
@@ -26,6 +26,7 @@ class Crc32cSigner(Signer):
     """
     pip install crc32c
     """
+    logger = logging.getLogger(__name__)
 
     def __init__(self):
         """
@@ -38,6 +39,7 @@ class Crc32cSigner(Signer):
         for buffer in buffers:
             checksum = crc32c(buffer, checksum)
         payload = ValidationPayload(Tlv.uint32_to_array(checksum))
+        self.logger.debug('crc32c: %s', payload)
         return payload
 
     def keyid(self):

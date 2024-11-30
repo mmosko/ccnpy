@@ -14,34 +14,35 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.NcId import NcId
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NcIdTest(unittest.TestCase):
+class NcIdTest(CcnpyTestCase):
     def test_serialize(self):
         ncid = NcId(5)
-        expected = array.array("B", [0, 16, 0, 1, 5])
+        expected = array.array("B", [0, TlvNumbers.T_NCID, 0, 1, 5])
         actual = ncid.serialize()
         self.assertEqual(expected, actual)
 
     def test_serialize_3_bytes(self):
         ncid = NcId(0x123456)
-        expected = array.array("B", [0, 16, 0, 3, 0x12, 0x34, 0x56])
+        expected = array.array("B", [0, TlvNumbers.T_NCID, 0, 3, 0x12, 0x34, 0x56])
         actual = ncid.serialize()
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 16, 0, 1, 5])
+        wire_format = array.array("B", [0, TlvNumbers.T_NCID, 0, 1, 5])
         tlv = Tlv.deserialize(wire_format)
         actual = NcId.parse(tlv)
         expected = NcId(5)
         self.assertEqual(expected, actual)
 
     def test_deserialize_3_bytes(self):
-        wire_format = array.array("B", [0, 16, 0, 3, 0x12, 0x34, 0x56])
+        wire_format = array.array("B", [0, TlvNumbers.T_NCID, 0, 3, 0x12, 0x34, 0x56])
         tlv = Tlv.deserialize(wire_format)
         actual = NcId.parse(tlv)
         expected = NcId(0x123456)

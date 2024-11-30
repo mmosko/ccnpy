@@ -12,7 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from ccnpy.crypto.InsecureKeystore import InsecureKeystore
+from ccnpy.flic.ManifestDecryptor import ManifestDecryptor
+from ccnpy.flic.RsaOaepCtx.RsaOaepDecryptor import RsaOaepDecryptor
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
+from ccnpy.flic.tlvs.AeadCtx import AeadCtx
+from ccnpy.flic.tlvs.RsaOaepCtx import RsaOaepCtx
+from ccnpy.flic.tlvs.SecurityCtx import AeadSecurityCtx
 
 
 class DecryptorCache:
@@ -27,15 +33,22 @@ class DecryptorCache:
         self._keystore = keystore
         self._last_key_num = None
         self._last_decryptor = None
+        self._oaep_decryptor = RsaOaepDecryptor(keystore=self._keystore)
 
-    def get_or_create(self, key_num: int):
+    def get_or_create(self, security_ctx: AeadSecurityCtx):
+        # TODO: This is not correct for RsaOaep, as it uses (keyid, keynum) pair as index
+        key_num = security_ctx.key_number()
         if key_num == self._last_key_num:
             return self._last_decryptor
         self._last_key_num = key_num
-        self._last_decryptor = self._create(key_num)
+        self._last_decryptor = self._create(security_ctx)
         return self._last_decryptor
 
-    def _create(self, key_num) -> AeadDecryptor:
-        key = self._keystore.get_aes_key(key_num)
-        salt = self._keystore.get_aes_salt(key_num)
-        return AeadDecryptor(key, key_num, salt=salt)
+    def _create(self, security_ctx: AeadSecurityCtx) -> ManifestDecryptor:
+        # TODO: implement for RsaOaep too
+        if isinstance(security_ctx, AeadCtx):
+            key_num = security_ctx.key_number()
+            return AeadDecryptor(self._keystore.get_aes_key(key_num))
+
+        if isinstance(security_ctx, RsaOaepCtx):
+            return self._oaep_decryptor

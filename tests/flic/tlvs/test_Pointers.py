@@ -14,14 +14,15 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class PointersTest(unittest.TestCase):
+class PointersTest(CcnpyTestCase):
     def test_serialize(self):
         h1 = HashValue(1, array.array('B', [1, 2]))
         h2 = HashValue(2, array.array('B', [3, 4]))
@@ -30,7 +31,8 @@ class PointersTest(unittest.TestCase):
         p = Pointers([h1, h2, h3])
         actual = p.serialize()
 
-        expected = array.array("B", [0, 2, 0, 18,
+        expected = array.array("B", [
+                                     0, TlvNumbers.T_PTRS, 0, 18,
                                      0, 1, 0,  2, 1, 2,
                                      0, 2, 0,  2, 3, 4,
                                      0, 3, 0,  2, 5, 6])
@@ -42,7 +44,8 @@ class PointersTest(unittest.TestCase):
         h3 = HashValue(3, array.array('B', [5, 6]))
         expected = Pointers([h1, h2, h3])
 
-        wire_format = array.array("B", [0, 2, 0, 18,
+        wire_format = array.array("B", [
+                                        0, TlvNumbers.T_PTRS, 0, 18,
                                         0, 1, 0,  2, 1, 2,
                                         0, 2, 0,  2, 3, 4,
                                         0, 3, 0,  2, 5, 6])

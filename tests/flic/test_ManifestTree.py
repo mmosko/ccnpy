@@ -14,7 +14,7 @@
 
 
 import io
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 from binascii import unhexlify
 
@@ -40,54 +40,17 @@ from ccnpy.flic.tlvs.StartSegmentId import StartSegmentId
 from ccnpy.flic.tree.ManifestGraph import ManifestGraph
 from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
+from tests.MockKeys import private_key_pem
 from tests.MockReader import MockReader
 
 
-class test_ManifestTree(unittest.TestCase):
-    # openssl genrsa -out test_key.pem
-    private_key = b'''-----BEGIN RSA PRIVATE KEY-----
-MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
-NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
-Yx1MvFKjWAHRDsVTdPNGKqNt8wFZgzxTZw24IlBIk0hOXlgV70TIbo9TvZ9Wl7nI
-Uihz66OmY1b+DEokjphEjzX1PJK/a/Xat4L0CRnUVSZ+VGbaqbzkT1FKHTfCVSk6
-Jcz7/EtcKnKyajCVcQKoL8Zgv4oXqWzXcGJKewM/87c2S2qMwdocG0XZx90GqEI9
-Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2GyYwIDAQABAoIBABtFIKZLvwAO8amk
-dxLK838055GG5MtZY5L9y0Oe6ze3z/KmHh7Iy/SWpW/mzQmMVYmp6BLmGEEJEuf0
-rLUq2Fp+N++aQ9LL/kZV7/XUbT8misvCoaZllJKGH2zcqKS+Zx+pbYUyUFAI87d5
-lU7h8TFhczgetYV9NOjWTQkLTGMgXTNiOLraoXqTcO7jB5IrtAtewrImiI7q5a4L
-nE03hs2u19iWHPkGvdt7fSMJ66Krju15Afe25Qxwf7n02yJkFcRxa30YGfL3MkMM
-wEyA8BjFPaUYd0NuuAblK3JQ7MUEU371lINQRM+Z4QZowIZZbm0uJpHqQ4NcCsNn
-LIP+miECgYEA957kkw4z/xdCQcfK5B3vSBf+VhIpNhH/vE18Z7i0kTOX0BedEMpX
-3TUd1nzfbyymZAxk3Vis1Dj46NvE2+GDaiCzm7PPsZeSGE7LNtCi9930Q6pQsId5
-+iWQhatRsg6zfQarhI6ul8YYcB3zwL51H8eRZDl1NXwy8oI5eyvEgw0CgYEA9Qyu
-Oh44wcrXswazrJBmVGoC+kXenZJ8lVp1S5UnEZRDfhSXf8RUj+sARbCGRYedZqtd
-2H+vaG5AyiRJcCjSYCAfyh/DYYFKzJ76D6xV6h5NpbJx6xUWEwfxgP84Of3YK6z1
-zifU2eGhu5o8CJhU3eRA348x82zvxPXSU/inby8CgYBSDs/Eg9JrWHPWhLURv3HK
-PFlGgKIzjudmqW7umGEONUC77vdX1xYi8jU/HQaWOv+w7AKI75fmhDLIR/wGucbo
-5olescnEGmyJraLeOWmoJl+KBOjUdzDO2p/4C/v4u7JzXkB8nyPwm+8BSIu8deEu
-dN4Tjo7u+IeRoeIWlTx8CQKBgBu7oKgxLWk5RKodMw5vlTUufkHG0IfywSjCAQ5Z
-xf8mUXEecXrjRFK5XOGGNdv+miC5ejh7UuW1vJ1j9++6nvyEBjUA3ULWuBlqUJCf
-h2WkolMDXAMn8sSanIll2P4vLVzcCUGYnm0+LOinbu3mF4y5PWJPuW58QLKAw5n/
-RSu/AoGAH5miv08oDmLaxSBG0+7pukI3WK8AskxtFvhdvLH3zkHvYBXglBGfRVNe
-x03TA4KebgVHxWU+ozn/jOFwXg1m8inSt3LolR9pARSHXCbwerhvE9fN+QA9CPqq
-YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
------END RSA PRIVATE KEY-----'''
+class test_ManifestTree(CcnpyTestCase):
 
-    # openssl rsa -in test_key.pem -pubout -out rsa_pub.pem
-    public_key = b'''-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7QdUuaoTr4gA1bMoCdjU
-NPqpb7f211TYFcahHhaBPnBwQwYjNIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/o
-R2MWVaJoeSKq7UP7gqlSjrplZEaIYx1MvFKjWAHRDsVTdPNGKqNt8wFZgzxTZw24
-IlBIk0hOXlgV70TIbo9TvZ9Wl7nIUihz66OmY1b+DEokjphEjzX1PJK/a/Xat4L0
-CRnUVSZ+VGbaqbzkT1FKHTfCVSk6Jcz7/EtcKnKyajCVcQKoL8Zgv4oXqWzXcGJK
-ewM/87c2S2qMwdocG0XZx90GqEI9Jk+Rs6JKJoYf9GTW6yDBAH+wGISSPQj0U2Gy
-YwIDAQAB
------END PUBLIC KEY-----'''
 
     def setUp(self):
         SchemaImplFactory.reset_nc_id()
         self.packet_buffer = TreeIO.PacketMemoryWriter()
-        self.rsa_key = RsaKey(pem_key=self.private_key)
+        self.rsa_key = RsaKey(pem_key=private_key_pem)
         self.root_signer = RsaSha256Signer(key=self.rsa_key)
 
     def _create_options(self, max_packet_size, schema_type=SchemaType.HASHED):
@@ -116,7 +79,7 @@ YwIDAQAB
         :return:
         """
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
-        data_input = io.BytesIO(self.private_key)
+        data_input = io.BytesIO(private_key_pem)
 
         tree = ManifestTree(data_input=data_input,
                             packet_output=self.packet_buffer,
@@ -124,7 +87,7 @@ YwIDAQAB
 
         root_manifest = tree.build()
 
-        expected = array("B", self.private_key)
+        expected = array("B", private_key_pem)
         actual_data = TreeIO.DataBuffer()
         traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=False)
         traversal.preorder(root_manifest, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
@@ -142,7 +105,7 @@ YwIDAQAB
         :return:
         """
         # setup a source to use as a byte array.  Use the private key, as we already have that as a bytearray.
-        data_input = io.BytesIO(self.private_key)
+        data_input = io.BytesIO(private_key_pem)
 
         tree = ManifestTree(data_input=data_input,
                             packet_output=self.packet_buffer,
@@ -150,7 +113,7 @@ YwIDAQAB
 
         root_manifest = tree.build()
 
-        expected = array("B", self.private_key)
+        expected = array("B", private_key_pem)
         actual_data = TreeIO.DataBuffer()
 
         traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer)
@@ -172,7 +135,7 @@ YwIDAQAB
                 hash_groups=[
                     HashGroup(
                         group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(0)),
-                        pointers=Pointers([HashValue.create_sha256(unhexlify('445eaea33112ddf0d21cf3762cb49c29c28c97ab9da3917356f16884136614c1'))]))
+                        pointers=Pointers([HashValue.create_sha256(unhexlify('3008e4c3eeedecdf4dba55aaa51f92d3534a57bf9d232011fcd3eb0485ec871a'))]))
                 ]
             )
         )
@@ -195,9 +158,9 @@ YwIDAQAB
                         group_data=GroupData(nc_id=NcId(1), start_segment_id=StartSegmentId(1)),
                         pointers=Pointers([
                             HashValue.create_sha256(
-                                unhexlify('64a6960798d558159cd666820cf2b0081506fd3f589447ce68a54cb92e9a92b8')),
+                                unhexlify('10ca669f8505b78814a2b169a9b019b054e02a00ef6c98ac2d849ef20f0628a6')),
                             HashValue.create_sha256(
-                                unhexlify('de4301ebb864bf1f9ebada9fc47da014dc44f9f3f8d118ce685323c9b91a7cc7')),
+                                unhexlify('7809dd876472714225eaa79a3bb959ab8927619b5bb795f314bc66c9b2e95d62')),
                         ])),
                 ]
             )
@@ -226,7 +189,7 @@ YwIDAQAB
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=False, build_graph=True)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=True)
         traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
         # traversal.get_graph().plot()
 
@@ -243,3 +206,23 @@ YwIDAQAB
 
         self._test_root_manifest(root_manifest_packet)
         self._test_top_manifest(self.packet_buffer.packets[-2])
+
+    def test_rsa_oaep(self):
+        data_input = MockReader(data=array("B", [x % 256 for x in range(0, 500)]))
+
+        options = ManifestTreeOptions(name=Name.from_uri("ccnx:/example.com/manifest"),
+                                          schema_type=SchemaType.SEGMENTED,
+                                          manifest_prefix=Name.from_uri('ccnx:/manifest'),
+                                          data_prefix=Name.from_uri('ccnx:/data'),
+                                          signer=self.root_signer,
+                                          max_packet_size=400,
+                                          max_tree_degree=3,
+                                          debug=False)
+
+        g = ManifestGraph()
+        tree = ManifestTree(data_input=data_input,
+                            packet_output=self.packet_buffer,
+                            tree_options=options,
+                            manifest_graph=g)
+        root_manifest_packet = tree.build()
+        # g.plot()

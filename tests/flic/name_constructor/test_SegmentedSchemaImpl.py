@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.FinalChunkId import FinalChunkId
@@ -35,7 +35,7 @@ from tests.MockReader import MockReader
 from tests.crypto.test_RsaSha256 import private_key_pem
 
 
-class SegmentedSchemaImplTest(unittest.TestCase):
+class SegmentedSchemaImplTest(CcnpyTestCase):
 
     def setUp(self):
         self.nc_id = NcId(5)

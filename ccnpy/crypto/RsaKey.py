@@ -15,6 +15,8 @@
 
 import array
 import hashlib
+import logging
+import math
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -31,6 +33,9 @@ class RsaKey:
     """
     TODO: Need a way to create an RSA key from the DER encoded public key
     """
+    logger = logging.getLogger(__name__)
+    _SHA256_OVERHEAD = 66 #RSA OAEP overhead for sha 256 hash
+
     def __init__(self, pem_key, password=None):
         """
         Pass in one of (A) encrypted private key, (B) unencrypted private key, (C) public key
@@ -56,7 +61,13 @@ class RsaKey:
         else:
             raise RuntimeError("Could not determine type of key from PEM file")
 
+        if self.logger.isEnabledFor(logging.DEBUG):
+            if isinstance(self._public_key, rsa.RSAPublicKey):
+                self.logger.debug('RSA public keysize: %s', self._public_key.key_size)
+
     def __initialize_private_key(self, pem_key, password):
+        if password is not None and len(password) == 0:
+            password = None
         self._private_key = serialization.load_pem_private_key(
                                 pem_key,
                                 password=password,
@@ -191,6 +202,53 @@ class RsaKey:
             pass
 
         return result
+
+    def encrypt_oaep_sha256(self, plaintext):
+        """
+        Encrypt the plain text using RSA-OAEP padding with SHA256 and MGF1.
+
+        :param plaintext: Bytes or an array
+        :returns: An array
+        """
+        if isinstance(plaintext, array.array):
+            plaintext = plaintext.tobytes()
+
+        max_encryption_size = math.ceil(self._public_key.key_size / 8) - self._SHA256_OVERHEAD
+        if len(plaintext) > max_encryption_size:
+            required_key_size = (len(plaintext) + self._SHA256_OVERHEAD) * 8
+            raise ValueError(f"The RSA public key is {self._public_key.key_size} bits, but the plaintext of {len(plaintext)} bytes needs a key of at least {required_key_size} bits")
+
+        output = self._public_key.encrypt(
+            plaintext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return array.array("B", output)
+
+    def decrypt_oaep_sha256(self, cyphertext):
+        """
+        Decrypt the message using RSA-OAEP with SHA256 and MGF1
+
+        :param cyphertext: Bytes or an array
+        :returns: An array
+        """
+        if isinstance(cyphertext, array.array):
+            cyphertext = cyphertext.tobytes()
+
+        output = self._private_key.decrypt(
+            cyphertext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return array.array("B", output)
 
     @classmethod
     def generate_private_key(cls, key_length=4096):

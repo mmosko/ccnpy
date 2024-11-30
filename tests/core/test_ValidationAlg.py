@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.SignatureTime import SignatureTime
@@ -22,7 +22,7 @@ from ccnpy.core.Tlv import Tlv
 from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c, ValidationAlg, ValidationAlg_RsaSha256
 
 
-class ValidationAlgTest(unittest.TestCase):
+class ValidationAlgTest(CcnpyTestCase):
     def test_crc32c_serialize(self):
         va = ValidationAlg_Crc32c()
         actual = va.serialize()

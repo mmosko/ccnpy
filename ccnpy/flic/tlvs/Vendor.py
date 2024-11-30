@@ -18,14 +18,13 @@ from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
 from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class Vendor(TlvType):
-    __T_VENDOR = 0x00F0
-
     @classmethod
     def class_type(cls):
-        return cls.__T_VENDOR
+        return TlvNumbers.T_ORG
 
     def __init__(self, pen: int, payload):
         TlvType.__init__(self)

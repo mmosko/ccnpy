@@ -12,52 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ccnpy.core.HashValue import HashValue
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.core.HashTlvType import HashTlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafDigest(TlvType):
+class LeafDigest(HashTlvType):
     """
     Digest of all application data immediately under the Group
 
         LeafDigest = TYPE LENGTH HashValue
     """
-    __type = 0x0012
 
     @classmethod
     def class_type(cls):
-        return cls.__type
-
-    def __init__(self, digest: HashValue):
-        TlvType.__init__(self)
-
-        if digest is None:
-            raise ValueError("digest must not be None")
-        if not isinstance(digest, HashValue):
-            raise TypeError("digest must be ccnpy.HashValue")
-
-        self._digest = digest
-        self._tlv = Tlv(self.class_type(), self._digest)
-
-    def __len__(self):
-        return len(self._tlv)
+        return TlvNumbers.T_LEAF_DIGEST
 
     def __repr__(self):
         return "LeafDigest(%r)" % self._digest
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
-
-        inner_tlv = Tlv.deserialize(tlv.value())
-        digest = HashValue.parse(inner_tlv)
-        return cls(digest)
-
-    def serialize(self):
-        return self._tlv.serialize()

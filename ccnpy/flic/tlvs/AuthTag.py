@@ -13,25 +13,21 @@
 #  limitations under the License.
 
 
-from ccnpy.core.DisplayFormatter import DisplayFormatter
-from ccnpy.core.Payload import Payload
+from ccnpy.core.TlvType import OctetTlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class AuthTag(Payload):
+class AuthTag(OctetTlvType):
     """
     AuthTag works just like ccnpy.core.Payload -- it stores a byte array.
 
     The AuthTag is the (normally) 16 byte authentication tag used by AES GCM or CCM to authenticate
     a message.
     """
-    __T_AUTHTAG = 0x0003
 
     @classmethod
     def class_type(cls):
-        return cls.__T_AUTHTAG
-
-    def __init__(self, value):
-        super().__init__(value)
+        return TlvNumbers.T_AUTH_TAG
 
     def __repr__(self):
-        return "AuthTag: %r" % DisplayFormatter.hexlify(self._value)
+        return "AuthTag: %r" % super().__repr__()

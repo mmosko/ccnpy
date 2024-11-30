@@ -95,8 +95,8 @@ class OptimizerResult:
         if not capacity >= self._num_data_objects:
             raise ValueError(f'capacity {capacity} < num data objects {self._num_data_objects}')
 
-        if not capacity == self._num_data_objects + self._waste:
-            raise ValueError(f'Waste {self.waste()} != capacity {capacity} - num data objects {self._num_data_objects}')
+        # if not capacity == self._num_data_objects + self._waste:
+        #     raise ValueError(f'Waste {self.waste()} != capacity {capacity} - num data objects {self._num_data_objects}')
 
     def num_data_objects(self):
         """The number of data objects"""

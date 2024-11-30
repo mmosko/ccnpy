@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import logging
 from typing import Optional, Dict, List
 
 from .DecryptorCache import DecryptorCache
@@ -21,6 +21,7 @@ from ..name_constructor.SchemaImplFactory import SchemaImplFactory
 from ..tlvs.AeadCtx import AeadCtx
 from ..tlvs.Manifest import Manifest
 from ..tlvs.NcDef import NcDef
+from ..tlvs.RsaOaepCtx import RsaOaepCtx
 from ...core.ContentObject import ContentObject
 from ...core.DisplayFormatter import DisplayFormatter
 from ...core.HashValue import HashValue
@@ -31,6 +32,10 @@ from ...crypto.InsecureKeystore import InsecureKeystore
 
 
 class Traversal:
+    """
+    Walks a FLIC manifest in the traversal order.
+    """
+    logger = logging.getLogger(__name__)
 
     class NameConstructorCache:
         _next_cache_id = 1
@@ -49,7 +54,7 @@ class Traversal:
                 self.cache[nc_def.nc_id().id()] = SchemaImplFactory.from_ncdef(nc_def)
 
     def __init__(self, packet_input: PacketReader, data_writer, keystore: Optional[InsecureKeystore] = None,
-                 debug=False, build_graph: bool = False):
+                 build_graph: bool = False):
         """
         :param packet_input: A reader that we can fetch objects from via '.get'
         :param data_writer: A writer we can append application data to for output (needs to support `.write(bytes)`).
@@ -63,7 +68,6 @@ class Traversal:
         self._decryptor_cache = DecryptorCache(self._keystore)
         self._build_graph = build_graph
         self._manifest_graph = ManifestGraph()
-        self.debug = debug
 
     def get_graph(self):
         """Will only be built if `build_graph` is true in construfctor"""
@@ -81,8 +85,7 @@ class Traversal:
         """
         nc_cache = Traversal.NameConstructorCache()
         root_packet = self._packet_input.get(name=root_name, hash_restriction=hash_restriction)
-        if self.debug:
-            print(f'Traversal root packet: {root_packet}')
+        self.logger.debug('Traversal root packet: %s', root_packet)
 
         self._validator.validate_packet(packet=root_packet)
         self.preorder(packet=root_packet, nc_cache=nc_cache)
@@ -96,8 +99,7 @@ class Traversal:
         :param nc_cache: The name constructor cache.  It may be modified as we traverse down branches.
         :return:
         """
-        if self.debug:
-            print(f'Preorder {packet.content_object_hash()} => {packet}')
+        self.logger.debug('Preorder %s => %s', packet.content_object_hash(), packet)
 
         if nc_cache is None:
             nc_cache = Traversal.NameConstructorCache()
@@ -114,8 +116,8 @@ class Traversal:
             manifest = self._manifest_from_content_object(body)
             if self._build_graph:
                 self._manifest_graph.add_manifest(hash_value=packet.content_object_hash(), node=manifest.node(), name=packet.body().name())
-            if self.debug:
-                print("Preorder: %r" % manifest)
+
+            self.logger.debug("Preorder: %s", manifest)
 
             nc_cache = self._update_nc_cache(nc_cache=nc_cache, manifest=manifest)
             try:
@@ -125,8 +127,8 @@ class Traversal:
                 raise
 
         elif body.payload_type().is_data():
-            if self.debug:
-                print("Traversal: %r" % body)
+            self.logger.debug("Traversal: %s", body)
+
             if self._build_graph:
                 self._manifest_graph.add_data(data_hash=packet.content_object_hash())
 
@@ -137,8 +139,7 @@ class Traversal:
 
     def _write_data(self, payload):
         if self._data_writer is not None:
-            if self.debug:
-                print(f'Traversal save {len(payload.value())} bytes')
+            self.logger.debug('Traversal save %d bytes', len(payload.value()))
             self._data_writer.write(payload.value())
 
     def _visit_children(self, parent_packet: Packet, manifest: Manifest, nc_cache: NameConstructorCache):
@@ -153,23 +154,24 @@ class Traversal:
         """
         children = []
         for hash_iterator_value in manifest.hash_values():
-            if self.debug:
+            if self.logger.isEnabledFor(logging.DEBUG):
                 children.append(DisplayFormatter.hexlify(hash_iterator_value.hash_value.value()))
+
             packet = self._fetch_packet(nc_cache=nc_cache,
                                         nc_id=hash_iterator_value.nc_id,
                                         hash_value=hash_iterator_value.hash_value,
                                         segment_id=hash_iterator_value.segment_id)
             if packet is None:
                 raise ValueError("Failed to get packet for: %r" % hash_iterator_value)
-            if self.debug:
-                print(f'visit_children: child {packet}')
+
+            self.logger.debug('visit_children: child %s', packet)
 
             self._validator.validate_packet(packet=packet)
             self.preorder(packet=packet, nc_cache=nc_cache)
 
-        if self.debug:
+        if self.logger.isEnabledFor(logging.DEBUG):
             packet_id = DisplayFormatter.hexlify(parent_packet.content_object_hash().value())
-            print(f'parent {packet_id} : children: {children}')
+            self.logger.debug('parent %s : children: %s', packet_id, children)
 
     def _manifest_from_content_object(self, content_object):
         manifest = Manifest.from_content_object(content_object)
@@ -181,11 +183,13 @@ class Traversal:
 
         security_ctx = manifest.security_ctx()
         if isinstance(security_ctx, AeadCtx):
-            decryptor = self._decryptor_cache.get_or_create(security_ctx.key_number())
+            decryptor = self._decryptor_cache.get_or_create(security_ctx)
             # may raise DecryptionError
-            return decryptor.decrypt_manifest(manifest)
+        elif isinstance(security_ctx, RsaOaepCtx):
+            decryptor = self._decryptor_cache.get_or_create(security_ctx)
         else:
             raise ValueError(f"Unsupported encryption mode: {security_ctx}")
+        return decryptor.decrypt_manifest(manifest)
 
     @staticmethod
     def _update_nc_cache(nc_cache: NameConstructorCache, manifest: Manifest):
@@ -207,6 +211,5 @@ class Traversal:
     def _fetch_packet(self, nc_cache: NameConstructorCache, nc_id: int, hash_value: HashValue, segment_id: Optional[int]):
         schema_impl = nc_cache.cache[nc_id]
         interest_name = schema_impl.get_name(segment_id)
-        if self.debug:
-            print(f'fetch_packet: {interest_name}, {hash_value}')
+        self.logger.debug('fetch_packet: %s, %s', interest_name, hash_value)
         return self._packet_input.get(name=interest_name, hash_restriction=hash_value)

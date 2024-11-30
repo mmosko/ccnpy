@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 
 
-class OptimizerResultTest(unittest.TestCase):
+class OptimizerResultTest(CcnpyTestCase):
 
     def test_one(self):
         # this is not an optimal design

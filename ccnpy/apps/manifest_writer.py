@@ -14,6 +14,7 @@
 
 
 import argparse
+import logging
 from datetime import datetime
 
 from ccnpy.core.ExpiryTime import ExpiryTime
@@ -24,8 +25,7 @@ from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tree.TreeIO import TreeIO
-from .cli_utils import add_encryption_cli_args, rsa_signer_from_cli_args, aead_encryptor_from_cli_args, \
-    fixup_key_password
+from .cli_utils import add_encryption_cli_args, rsa_signer_from_cli_args, fixup_key_password, encryptor_from_cli_args
 
 
 class ManifestWriter:
@@ -59,7 +59,7 @@ class ManifestWriter:
                                            manifest_expiry_time=self._parse_time(args.node_expiry),
                                            data_expiry_time=self._parse_time(args.data_expiry),
 
-                                           manifest_encryptor=aead_encryptor_from_cli_args(args),
+                                           manifest_encryptor=encryptor_from_cli_args(args),
 
                                            add_node_subtree_size=True,
 
@@ -107,6 +107,9 @@ class ManifestWriter:
 
 
 def run():
+    logging.basicConfig(level=logging.INFO)
+    # logging.getLogger('ccnpy.apps.cli_utils').setLevel(logging.DEBUG)
+
     max_size = 1500
 
     parser = argparse.ArgumentParser()

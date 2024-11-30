@@ -13,18 +13,18 @@
 #  limitations under the License.
 from typing import Optional
 
-from ccnpy.flic.tlvs.GroupData import GroupData
-from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
+from ccnpy.flic.tlvs.GroupData import GroupData
+from ccnpy.flic.tlvs.Pointers import Pointers
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class HashGroup(TlvType):
-    __type = 0x0002
 
     @classmethod
     def class_type(cls):
-        return cls.__type
+        return TlvNumbers.T_HASH_GROUP
 
     def __init__(self, group_data: Optional[GroupData] = None, pointers: Optional[Pointers] = None):
         """
@@ -64,24 +64,8 @@ class HashGroup(TlvType):
 
     @classmethod
     def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise RuntimeError("Incorrect TLV type %r" % tlv.type())
-
-        group_data = None
-        pointers = None
-
-        offset = 0
-        while offset < tlv.length():
-            inner_tlv = Tlv.deserialize(tlv.value()[offset:])
-            offset += len(inner_tlv)
-
-            if inner_tlv.type() == GroupData.class_type():
-                assert group_data is None
-                group_data = GroupData.parse(inner_tlv)
-            elif inner_tlv.type() == Pointers.class_type():
-                assert pointers is None
-                pointers = Pointers.parse(inner_tlv)
-            else:
-                raise ValueError("Unsupported TLV %r" % inner_tlv)
-
-        return cls(group_data=group_data, pointers=pointers)
+        values = cls.auto_parse(tlv,
+                                [('group_data', GroupData),
+                                 ('pointers', Pointers)]
+                                )
+        return cls(**values)

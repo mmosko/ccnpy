@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 from typing import Optional
 
@@ -24,6 +24,7 @@ from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tree.ManifestGraph import ManifestGraph
@@ -36,7 +37,7 @@ from tests.MockChunker import create_file_chunks
 from tests.MockReader import MockReader
 
 
-class TreeBuilderTest(unittest.TestCase):
+class TreeBuilderTest(CcnpyTestCase):
 
     @staticmethod
     def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor]):
@@ -85,7 +86,7 @@ class TreeBuilderTest(unittest.TestCase):
         top_packet = tb.build()
         data_buffer = TreeIO.DataBuffer()
 
-        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, debug=False)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
         traversal.preorder(packet=top_packet,
                            nc_cache=Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
@@ -119,7 +120,7 @@ class TreeBuilderTest(unittest.TestCase):
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer)
         top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, debug=False)
+        traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer)
         traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)
 
@@ -266,7 +267,7 @@ class TreeBuilderTest(unittest.TestCase):
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=packet_buffer, debug=False, build_graph=False)
+        traversal = Traversal(data_writer=actual_data, packet_input=packet_buffer, build_graph=False)
         traversal.preorder(top_packet, nc_cache=Traversal.NameConstructorCache(copy=name_ctx.export_schemas()))
 
         self.assertEqual(expected, actual_data.buffer)
@@ -287,7 +288,7 @@ class TreeBuilderTest(unittest.TestCase):
         """
         A larger example using an optimized tree to minimize the tree waste
 
-        solution={OptResult n=5000, p=38, dir=23, ind=15, int=9, leaf=127, w=33, h=2}
+        solution={OptResult n=5000, p=39, dir=6, ind=33, int=4, leaf=128, w=55, h=2}
 
         :return:
         """
@@ -331,7 +332,7 @@ class TreeBuilderTest(unittest.TestCase):
         self.assertEqual(expected, data_buffer.buffer)
 
         # 136 manifest nodes and 5000 data nodes
-        self.assertEqual(5136, traversal.count())
+        self.assertEqual(5133, traversal.count())
 
         # 15-ary tree with 136 manifests => ceil(log_13(136)) = 2
         self.assertEqual(2, params.tree_height())
@@ -356,7 +357,7 @@ class TreeBuilderTest(unittest.TestCase):
                                    waste=1)
 
         key = AeadCcm.generate(bits=256)
-        encryptor = AeadEncryptor(key=key, key_number=1234)
+        encryptor = AeadEncryptor(AeadParameters(key=key, key_number=1234))
 
         tb = self._create_tree_builder(metadata=metadata, solution=solution, packet_buffer=packet_buffer,
                                        encryptor=encryptor)
@@ -364,7 +365,7 @@ class TreeBuilderTest(unittest.TestCase):
         top_manifest = tb.build()
         data_buffer = TreeIO.DataBuffer()
         keystore = InsecureKeystore()
-        keystore.add_aes_key(key_num=1234, key=key, salt=None)
+        keystore.add_aes_key(AeadParameters(key_number=1234, key=key, aead_salt=None))
         traversal = Traversal(data_writer=data_buffer, packet_input=packet_buffer, keystore=keystore)
         traversal.preorder(top_manifest, Traversal.NameConstructorCache(tb.name_context().export_schemas()))
         self.assertEqual(expected, data_buffer.buffer)

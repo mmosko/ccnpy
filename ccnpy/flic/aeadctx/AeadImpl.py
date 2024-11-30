@@ -11,15 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
+import logging
+import math
+from array import array
 
-from ccnpy.flic.tlvs.AeadCtx import AeadCtx
-from ccnpy.flic.tlvs.AuthTag import AuthTag
-from ccnpy.flic.tlvs.EncryptedNode import EncryptedNode
-from ccnpy.flic.tlvs.Manifest import Manifest
-from ccnpy.flic.tlvs.Node import Node
+from .AeadData import AeadData
+from .AeadParameters import AeadParameters
+from ..tlvs.AeadCtx import AeadCtx
+from ..tlvs.AeadMode import AeadMode
+from ..tlvs.AuthTag import AuthTag
+from ..tlvs.EncryptedNode import EncryptedNode
+from ..tlvs.Manifest import Manifest
+from ..tlvs.Node import Node
+from ..tlvs.SecurityCtx import AeadSecurityCtx
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ...crypto.DecryptionError import DecryptionError
+from ...crypto.KDF import KDF
 
 
 class AeadImpl:
@@ -29,51 +36,84 @@ class AeadImpl:
     Typically, you will use `AeadImpl.create_manifest(...)` to create a Manifest TLV out of
     a Node.
     """
+    logger = logging.getLogger(__name__)
 
-    def __init__(self, key: AeadKey, key_number: int, salt: Optional[int]=None):
+    def __init__(self, params: AeadParameters):
         """
-
-        :param key: A AesGcmKey
-        :param key_number: An integer used to reference the key
+        If using a KDF and `KdfInfo` is not present, you must set the `KdfInfo` with the CCNx name before
+        creating the `AeadImpl`.
         """
-        if not isinstance(key, AeadKey):
-            raise TypeError("key must be AesGcmKey")
+        self._params = params
+        self.logger.debug(self)
 
-        self._key = key
-        self._key_number = key_number
-        self._salt = salt.to_bytes(4, byteorder='big') if salt is not None else None
-        print(self)
+    def  _derive_key(self, key: AeadKey) -> AeadKey:
+        if self._params.kdf_data is None:
+            return key
+        assert self._params.kdf_data.kdf_info() is not None
+
+        mode = AeadMode.from_key(key)
+        fixed_info = (b'FLIC'
+                      + self._params.key_number.serialize().tobytes()
+                      + mode.serialize().tobytes()
+                      + self._params.kdf_data.kdf_info().serialize().tobytes())
+        derived_bytes = KDF.derive(kdf_id=self._params.kdf_data.kdf_alg().value(),
+                                     input_key=key.key(),
+                                     length=math.ceil(len(key) / 8),
+                                     info=fixed_info,
+                                     salt=self._params.kdf_salt
+                                     )
+        if isinstance(key, AeadGcm):
+            return AeadGcm(derived_bytes)
+        if isinstance(key, AeadCcm):
+            return AeadCcm(derived_bytes)
+        raise TypeError(f"Key is unsupported byte: {key}")
 
     def __repr__(self):
-        return f'AeadImpl: (num: {self._key_number}, salt: {self._salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)})'
+        return f'AeadImpl: {self._params}'
 
     def _generate_nonce(self):
-        if self._salt is None:
-            return self._key.nonce(96)
+        if self._params.aead_salt_bytes is None:
+            return self._params.key.nonce(96)
 
-        salt_len = len(self._salt) * 8
-        return self._key.nonce(96 - salt_len)
+        salt_len = len(self._params.aead_salt_bytes) * 8
+        return self._params.key.nonce(96 - salt_len)
 
-    def _iv_from_nonce(self, nonce):
-        if self._salt is None:
+    def _iv_from_nonce(self, nonce: array):
+        if self._params.aead_salt_bytes is None:
             return nonce
-        return self._salt + nonce
+        return self._params.aead_salt_bytes + nonce
 
-    def _create_gcm_ctx(self, nonce):
-        if len(self._key) == 128:
-            return AeadCtx.create_aes_gcm_128(key_number=self._key_number, nonce=nonce)
-        elif len(self._key) == 256:
-            return AeadCtx.create_aes_gcm_256(key_number=self._key_number, nonce=nonce)
+    def _get_gcm_mode(self, nonce):
+        if len(self._params.key) == 128:
+            return AeadMode.create_aes_gcm_128()
+        elif len(self._params.key) == 256:
+            return AeadMode.create_aes_gcm_256()
         else:
-            raise ValueError("Unsupported key length %r" % len(self._key))
+            raise ValueError("Unsupported key length %r" % len(self._params.key))
 
-    def _create_ccm_ctx(self, nonce):
-        if len(self._key) == 128:
-            return AeadCtx.create_aes_ccm_128(key_number=self._key_number, nonce=nonce)
-        elif len(self._key) == 256:
-            return AeadCtx.create_aes_ccm_256(key_number=self._key_number, nonce=nonce)
+    def _get_ccm_mode(self, nonce):
+        if len(self._params.key) == 128:
+            return AeadMode.create_aes_ccm_128()
+        elif len(self._params.key) == 256:
+            return AeadMode.create_aes_ccm_256()
         else:
-            raise ValueError("Unsupported key length %r" % len(self._key))
+            raise ValueError("Unsupported key length %r" % len(self._params.key))
+
+    def _create_aead_data(self, nonce):
+        if isinstance(self._params.key, AeadGcm):
+            mode = self._get_gcm_mode(nonce)
+        elif isinstance(self._params.key, AeadCcm):
+            mode = self._get_ccm_mode(nonce)
+        else:
+            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._params.key)}")
+        return AeadData(
+            key_number=self._params.key_number,
+            nonce=nonce,
+            mode=mode,
+            kdf_data=self._params.kdf_data)
+
+    def _create_aead_ctx(self, nonce) -> AeadCtx:
+        return AeadCtx(self._create_aead_data(nonce))
 
     def encrypt(self, node):
         """
@@ -84,24 +124,31 @@ class AeadImpl:
         if not isinstance(node, Node):
             raise TypeError("node must be Node")
 
-        plaintext = node.serialized_value()
         nonce = self._generate_nonce()
-        iv = self._iv_from_nonce(nonce)
+        security_ctx = self._create_aead_ctx(nonce)
+        return self.encrypt_with_security_ctx(node, security_ctx)
 
-        if isinstance(self._key, AeadGcm):
-            security_ctx = self._create_gcm_ctx(nonce)
-        elif isinstance(self._key, AeadCcm):
-            security_ctx = self._create_ccm_ctx(nonce)
-        else:
-            raise ValueError(f"Unsupported key type, must be GCM or CCM: {type(self._key)}")
+    def encrypt_with_security_ctx(self, node: Node, security_ctx: AeadSecurityCtx):
+        """
 
-        ciphertext, a = self._key.encrypt(iv=iv,
+        :param node: A Node
+        :param security_ctx: The Security context to add to the manifest
+        :return: (security_ctx, encrypted_node, auth_tag)
+        """
+        if not isinstance(node, Node):
+            raise TypeError("node must be Node")
+
+        iv = self._iv_from_nonce(security_ctx.nonce().value())
+
+        plaintext = node.serialized_value()
+        ciphertext, a = self._params.key.encrypt(iv=iv,
                                           plaintext=plaintext,
                                           associated_data=security_ctx.serialize())
 
         encrypted_node = EncryptedNode(ciphertext)
         auth_tag = AuthTag(a)
         return security_ctx, encrypted_node, auth_tag
+
 
     def create_encrypted_manifest(self, node):
         """
@@ -136,18 +183,18 @@ class AeadImpl:
             raise ValueError("security context must not be None")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
-        if security_ctx.key_number() != self._key_number:
+        if security_ctx.key_number() != self._params.key_number:
             raise ValueError("security_ctx.key_number %r != our key_number %r" %
-                             (security_ctx.key_number(), self._key_number))
+                             (security_ctx.key_number(), self._params.key_number))
 
-        if self._key.aead_mode() == 'GCM':
-            if not (security_ctx.is_aes_gcm_128() or security_ctx.is_aes_gcm_256()):
+        if self._params.key.aead_mode() == 'GCM':
+            if not (security_ctx.aead_data().mode().is_aes_gcm_128() or security_ctx.aead_data().mode().is_aes_gcm_256()):
                 raise DecryptionError(f'The AES key is for GCM but the manifest is not encrypted with GCM (security ctx type {security_ctx.class_type()})')
-        if self._key.aead_mode() == 'CCM':
-            if not (security_ctx.is_aes_ccm_128() or security_ctx.is_aes_ccm_256()):
+        if self._params.key.aead_mode() == 'CCM':
+            if not (security_ctx.aead_data().mode().is_aes_ccm_128() or security_ctx.aead_data().mode().is_aes_ccm_256()):
                 raise DecryptionError(f'The AES key is for CCM but the manifest is not encrypted with CCM (security ctx type {security_ctx.class_type()})')
 
-        plaintext = self._key.decrypt(iv=self._iv_from_nonce(security_ctx.nonce()),
+        plaintext = self._params.key.decrypt(iv=self._iv_from_nonce(security_ctx.nonce().value()),
                                       ciphertext=encrypted_node.value(),
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())

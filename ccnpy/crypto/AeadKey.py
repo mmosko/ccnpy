@@ -30,7 +30,7 @@ class AeadKey(ABC):
     AeadKey does not have a concept of salt, only an IV.  It is up to the user of the class to
     handle salt, if used.  `flic.aeadctx.AeadImpl` is where we find salt.
     """
-
+    DEBUG = False
     __salt_length = 128
 
     def __init__(self, key, algo):
@@ -43,6 +43,7 @@ class AeadKey(ABC):
         self._key_bits = len(key) * 8
         self._algo = algo
         self._impl = algo(key)
+        self._key = key
 
     def __len__(self):
         return self._key_bits
@@ -94,6 +95,8 @@ class AeadKey(ABC):
         output = self._impl.encrypt(iv, plaintext, associated_data)
         ciphertext = array.array("B", output[:-self._tag_len])
         authtag = array.array("B", output[len(ciphertext):])
+        if self.DEBUG:
+            print(f"Encrypt: iv: {iv}, data: {associated_data}, authtag: {authtag}")
         return ciphertext, authtag
 
     def decrypt(self, iv, ciphertext, associated_data, auth_tag):
@@ -118,15 +121,19 @@ class AeadKey(ABC):
 
         combined = ciphertext + auth_tag
 
+        if self.DEBUG:
+            print(f"Decrypt: iv: {iv}, data: {associated_data}, authtag: {auth_tag}")
+
         try:
             plaintext = self._impl.decrypt(iv, combined, associated_data)
             return array.array("B", plaintext)
         except InvalidTag as e:
-            print("Decryption failed.  Either the key or salt is incorrect for the packet.")
+            print(f"Decryption failed due to tag mismatch.  Either the key or salt is incorrect for the packet.")
             # translate a Cryptography package exception into our own exception
             raise DecryptionError(e)
 
-
+    def key(self) -> bytes:
+        return self._key
 
 class AeadGcm(AeadKey):
     def __init__(self, key):

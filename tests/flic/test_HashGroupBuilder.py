@@ -13,10 +13,10 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 
-class HashGroupBuilderTest(unittest.TestCase):
+class HashGroupBuilderTest(CcnpyTestCase):
     """
     TODO: Add unit tests
     """

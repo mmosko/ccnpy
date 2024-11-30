@@ -12,43 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ccnpy.core.Tlv import Tlv
-from ccnpy.core.TlvType import TlvType
-from ccnpy.exceptions.CannotParseError import CannotParseError
+from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NcId(TlvType):
-    __T_NCID = 0x0010
-
+class NcId(IntegerTlvType):
     @classmethod
     def class_type(cls):
-        return cls.__T_NCID
+        return TlvNumbers.T_NCID
 
-    def __init__(self, nc_id: int):
-        TlvType.__init__(self)
-        self._nc_id = nc_id
-        self._tlv = Tlv(self.class_type(), Tlv.number_to_array(self._nc_id))
+    def __init__(self, value):
+        super().__init__(value)
 
-    def id(self) -> int:
-        return self._nc_id
-
-    def __len__(self):
-        return len(self._tlv)
 
     def __repr__(self):
-        return f"NCID ({self._nc_id})"
+        return f"NCID ({self._value})"
 
-    def __eq__(self, other):
-        if not isinstance(other, NcId):
-            return False
-        return self._nc_id == other._nc_id
-
-    @classmethod
-    def parse(cls, tlv):
-        if tlv.type() != cls.class_type():
-            raise CannotParseError("Incorrect TLV type %r" % tlv.type())
-
-        return cls(tlv.value_as_number())
-
-    def serialize(self):
-        return self._tlv.serialize()
+    def id(self):
+        return self._value

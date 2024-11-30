@@ -14,22 +14,23 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class SubtreeSizeTest(unittest.TestCase):
+class SubtreeSizeTest(CcnpyTestCase):
     def test_serialize(self):
         ss = SubtreeSize(0x010203)
         actual = ss.serialize()
 
-        expected = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
+        expected = array.array("B", [0, TlvNumbers.T_SUBTREE_SIZE, 0, 3, 1, 2, 3])
         self.assertEqual(expected, actual)
 
     def test_deserialize(self):
-        wire_format = array.array("B", [0, 1, 0, 8, 0, 0, 0, 0, 0, 1, 2, 3])
+        wire_format = array.array("B", [0, TlvNumbers.T_SUBTREE_SIZE, 0, 3, 1, 2, 3])
         tlv = Tlv.deserialize(wire_format)
         actual = SubtreeSize.parse(tlv)
         expected = SubtreeSize(0x010203)
