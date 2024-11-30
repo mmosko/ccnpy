@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Name import Name
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
@@ -22,7 +22,7 @@ from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Locators import Locators
 
 
-class NameConstructorContextTest(unittest.TestCase):
+class NameConstructorContextTest(CcnpyTestCase):
 
     def setUp(self):
         self.root_name = Name.from_uri('ccnx:/a')

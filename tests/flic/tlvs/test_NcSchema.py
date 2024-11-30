@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
@@ -24,7 +24,7 @@ from ccnpy.flic.tlvs.NcSchema import PrefixSchema, SegmentedSchema, HashSchema
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NcSchemaTest(unittest.TestCase):
+class NcSchemaTest(CcnpyTestCase):
     # def test_interest_derived_schema_no_flags(self):
     #     s = InterestDerivedSchema()
     #     expected = array.array("B", [0, 1, 0, 0])

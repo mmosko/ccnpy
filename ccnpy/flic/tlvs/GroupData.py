@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import logging
 from typing import Optional
 
 from .LeafDigest import LeafDigest
@@ -28,7 +29,7 @@ class GroupData(TlvType):
     """
     TODO: Should extend NodeData instead of repeating all the code
     """
-    DEBUG = False
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def class_type(cls):
@@ -106,8 +107,7 @@ class GroupData(TlvType):
 
     @classmethod
     def parse(cls, tlv):
-        if cls.DEBUG:
-            print(f'GroupData parsing Tlv: {tlv}')
+        cls.logger.debug('parsing Tlv: %s', tlv)
 
         classes = [ ('subtree_size', SubtreeSize),
                    ('subtree_digest', SubtreeDigest),

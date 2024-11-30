@@ -14,13 +14,13 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.crypto.RsaKey import RsaKey
 from tests.MockKeys import private_key_pem, public_key_pem
 
 
-class RsaKeyTest(unittest.TestCase):
+class RsaKeyTest(CcnpyTestCase):
 
     # openssl sha256 -sign test_key.pem -binary foo | xxd --include
     # Note that this uses PKCS1 v1.5 padding, not PSS

@@ -13,34 +13,34 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 
 from ccnpy.core.HashValue import HashValue
-from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 from ccnpy.crypto.AeadKey import AeadGcm
+from ccnpy.crypto.InsecureKeystore import InsecureKeystore
 from ccnpy.crypto.RsaKey import RsaKey
-from ccnpy.flic.RsaOaepCtx.RsaOaepEncryptor import RsaOaepEncryptor
-from ccnpy.flic.tlvs.HashGroup import HashGroup
-from ccnpy.flic.tlvs.Locator import Locator
-from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
+from ccnpy.flic.RsaOaepCtx.RsaOaepDecryptor import RsaOaepDecryptor
+from ccnpy.flic.RsaOaepCtx.RsaOaepEncryptor import RsaOaepEncryptor
+from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
+from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
+from ccnpy.flic.name_constructor.SchemaType import SchemaType
+from ccnpy.flic.tlvs.HashGroup import HashGroup
 from ccnpy.flic.tlvs.NcDef import NcDef
 from ccnpy.flic.tlvs.NcId import NcId
 from ccnpy.flic.tlvs.NcSchema import PrefixSchema
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.Pointers import Pointers
-from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
-from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
-from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.RsaOaepCtx import RsaOaepCtx
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
-from tests.MockKeys import shared_1024_pub_pem
+from tests.MockKeys import shared_1024_pub_pem, shared_1024_key_pem
 
 
-class ManiestFactoryTest(unittest.TestCase):
+class ManiestFactoryTest(CcnpyTestCase):
     @staticmethod
     def _create_options(**kwargs):
         return ManifestTreeOptions(name='ccnx:/a', schema_type=SchemaType.HASHED, signer=None, **kwargs)
@@ -125,7 +125,7 @@ class ManiestFactoryTest(unittest.TestCase):
 
     def test_encrypted_nopts_node(self):
         key = AeadGcm(array("B", 16 * [1]).tobytes())
-        encryptor = AeadEncryptor(key, 99)
+        encryptor = AeadEncryptor(AeadParameters(key=key, key_number=99))
 
         hv = HashValue.create_sha256(array("B", [1, 2]))
         ptr = Pointers([hv])
@@ -137,7 +137,7 @@ class ManiestFactoryTest(unittest.TestCase):
 
         self.assertTrue(rv.manifest.is_encrypted())
 
-        decryptor = AeadDecryptor(key, 99)
+        decryptor = AeadDecryptor(AeadParameters(key=key, key_number=99))
         actual_manifest = decryptor.decrypt_manifest(rv.manifest)
 
         self.assertEqual(node, actual_manifest.node())
@@ -173,8 +173,8 @@ class ManiestFactoryTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_rsa_oaep_encrypted_nopts_node(self):
-        key = AeadGcm(array("B", 16 * [1]).tobytes())
-        encryptor = RsaOaepEncryptor.create_with_new_content_key(wrapping_key=RsaKey(shared_1024_pub_pem))
+        wrapping_key = RsaKey(shared_1024_pub_pem)
+        encryptor = RsaOaepEncryptor.create_with_new_content_key(wrapping_key=wrapping_key, kdf_data=None)
 
         hv = HashValue.create_sha256(array("B", [1, 2]))
         ptr = Pointers([hv])
@@ -182,13 +182,16 @@ class ManiestFactoryTest(unittest.TestCase):
         node = Node(hash_groups=[hg])
         tree_options = self._create_options(manifest_encryptor=encryptor)
         factory = ManifestFactory(tree_options)
-        rv = factory._build(node)
+        rv = factory._build(node, include_full_security_context=True)
 
         self.assertTrue(rv.manifest.is_encrypted())
         self.assertIsInstance(rv.manifest.security_ctx(), RsaOaepCtx)
 
-        decryptor = RsaOaepDecryptor()
-        decryptor = AeadDecryptor(key, 99)
+        unwrapping_key = RsaKey(shared_1024_key_pem)
+        consumer_keystore = InsecureKeystore()
+        consumer_keystore.add_rsa_key('wrapping', unwrapping_key)
+
+        decryptor = RsaOaepDecryptor(consumer_keystore)
         actual_manifest = decryptor.decrypt_manifest(rv.manifest)
 
         self.assertEqual(node, actual_manifest.node())

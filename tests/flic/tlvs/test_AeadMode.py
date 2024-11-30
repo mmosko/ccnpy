@@ -14,14 +14,14 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.AeadMode import AeadMode
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class AeadModeTest(unittest.TestCase):
+class AeadModeTest(CcnpyTestCase):
 
     def test_serialize(self):
         mode = AeadMode.create_aes_gcm_128()

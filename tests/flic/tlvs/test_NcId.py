@@ -14,14 +14,14 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.NcId import NcId
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NcIdTest(unittest.TestCase):
+class NcIdTest(CcnpyTestCase):
     def test_serialize(self):
         ncid = NcId(5)
         expected = array.array("B", [0, TlvNumbers.T_NCID, 0, 1, 5])

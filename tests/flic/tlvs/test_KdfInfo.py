@@ -11,19 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
-
-from .AeadImpl import AeadImpl
-from .AeadParameters import AeadParameters
-from ..ManifestEncryptor import ManifestEncryptor
-from ..tlvs.KdfData import KdfData
-from ..tlvs.KeyNumber import KeyNumber
-from ...crypto.AeadKey import AeadKey
 
 
-class AeadEncryptor(ManifestEncryptor):
-    def __init__(self, params: AeadParameters):
-        self._psk = AeadImpl(params)
+import array
+from tests.ccnpy_testcase import CcnpyTestCase
 
-    def encrypt(self, node, **kwargs):
-        return self._psk.encrypt(node)
+from ccnpy.core.Tlv import Tlv
+from ccnpy.flic.tlvs.KdfInfo import KdfInfo
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
+
+
+class KdfInfoTest(CcnpyTestCase):
+    def test_serialize(self):
+        info = KdfInfo(b'abcd')
+        expected = array.array("B", [
+            0, TlvNumbers.T_KDF_INFO, 0, 4, 97, 98, 99, 100])
+        actual = info.serialize()
+        self.assertEqual(expected, actual)
+
+        decoded = KdfInfo.parse(Tlv.deserialize(actual))
+        self.assertEqual(info, decoded)

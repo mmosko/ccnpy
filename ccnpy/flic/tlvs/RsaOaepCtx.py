@@ -64,7 +64,7 @@ class RsaOaepCtx(AeadSecurityCtx):
         return len(self._tlv)
 
     def __repr__(self):
-        return "PSK: {aead: %r, wrapper: %r}" % (self._aead_data, self._rsa_oaep_wrapper),
+        return "RsaOaepCtx: {aead: %r, wrapper: %r}" % (self._aead_data, self._rsa_oaep_wrapper)
 
     @classmethod
     def parse(cls, tlv):

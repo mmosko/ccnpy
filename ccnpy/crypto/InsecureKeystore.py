@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
+import logging
+from typing import Optional, Dict
 
+from ccnpy.core.KeyId import KeyId
 from ccnpy.crypto.AeadKey import AeadKey
 from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.tlvs.KeyNumber import KeyNumber
 
 
@@ -30,44 +33,46 @@ class InsecureKeystore:
     This is a prototype keystore for symmetric and asymmetric keys.  It is not secure.  It should not be used
     in a real environment.  We provide it for the example utilities.
     """
+    logger = logging.getLogger(__name__)
 
     def __init__(self):
         self._asymmetric_by_name = {}
         self._asymmetric_by_keyid = {}
-        self._symmetric_by_keynum = {}
-        self._salt_by_keynum = {}
+        self._symmetric_by_keynum: Dict[int, AeadParameters] = {}
 
     def add_rsa_key(self, name, key: RsaKey):
+        assert key is not None
         self._asymmetric_by_name[name] = key
         self._asymmetric_by_keyid[key.keyid()] = key
+        self.logger.debug("name %s, key %s", name, key.keyid())
         return self
 
-    def add_aes_key(self, key_num: KeyNumber | int, key: AeadKey, salt: Optional[int]):
-        if isinstance(key_num, KeyNumber):
-            key_num = key_num.value()
-        self._symmetric_by_keynum[key_num] = key
-        self._salt_by_keynum[key_num] = salt
+    def add_aes_key(self, params: AeadParameters):
+        assert params is not None
+        self._symmetric_by_keynum[params.key_number.value()] = params
+        self.logger.debug("params %s", params)
         return self
 
-    def get_aes_key(self, key_num: KeyNumber) -> AeadKey:
+    def get_aes_key(self, key_num: KeyNumber) -> AeadParameters:
         try:
             return self._symmetric_by_keynum[key_num.value()]
         except KeyError as e:
             raise KeyNumberNotFoundError(e)
 
-    def get_aes_salt(self, key_num: KeyNumber):
-        try:
-            return self._salt_by_keynum[key_num.value()]
-        except KeyError as e:
-            raise KeyNumberNotFoundError(e)
-
     def get_rsa(self, name_or_keyid) -> RsaKey:
+        if isinstance(name_or_keyid, KeyId):
+            name_or_keyid = name_or_keyid.digest()
         if name_or_keyid in self._asymmetric_by_keyid:
-            return self._asymmetric_by_keyid[name_or_keyid]
-        try:
-            return self._asymmetric_by_name[name_or_keyid]
-        except KeyError as e:
-            raise KeyIdNotFoundError(e)
+            result = self._asymmetric_by_keyid[name_or_keyid]
+            self.logger.debug("lookup %s returns %s", name_or_keyid, result)
+            return result
+        else:
+            try:
+                result = self._asymmetric_by_name[name_or_keyid]
+                self.logger.debug("lookup %s returns %s", name_or_keyid, result)
+                return result
+            except KeyError as e:
+                raise KeyIdNotFoundError(f'Could not find name or keyid: {name_or_keyid}')
 
     def get_rsa_pub_key(self, keyid) -> RsaKey:
         try:

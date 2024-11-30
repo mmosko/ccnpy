@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
@@ -24,7 +24,7 @@ from ccnpy.flic.tlvs.Locator import Locator
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LocatorTest(unittest.TestCase):
+class LocatorTest(CcnpyTestCase):
     def test_serialize(self):
         name=Name.from_uri('ccnx:/a/b')
         keyid=HashValue(1, array.array("B", b'ab'))

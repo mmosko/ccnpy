@@ -21,7 +21,7 @@ from ccnpy.flic.tlvs.Node import Node
 from .RsaOaepWrapper import RsaOaepWrapper
 from ..aeadctx.AeadData import AeadData
 from ..aeadctx.AeadImpl import AeadImpl
-from ..tlvs.KeyNumber import KeyNumber
+from ..aeadctx.AeadParameters import AeadParameters
 from ..tlvs.RsaOaepCtx import RsaOaepCtx
 from ...crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ...crypto.DecryptionError import DecryptionError
@@ -62,10 +62,8 @@ class RsaOaepImpl(AeadImpl):
 
     @classmethod
     def _create_by_key_number(cls, keystore: InsecureKeystore, rsa_oaep_ctx: RsaOaepCtx):
-        key_number = rsa_oaep_ctx.key_number()
-        aead_key = keystore.get_aes_key(key_number)
-        salt = keystore.get_aes_salt(key_number)
-        return cls(wrapper=rsa_oaep_ctx.rsa_oaep_wrapper(), key=aead_key, key_number=key_number, aead_salt=salt)
+        params = keystore.get_aes_key(rsa_oaep_ctx.key_number())
+        return cls(wrapper=rsa_oaep_ctx.rsa_oaep_wrapper(), aead_params=params)
 
     @staticmethod
     def _create_aead_key(aead_data: AeadData, key: array) -> AeadKey:
@@ -83,23 +81,36 @@ class RsaOaepImpl(AeadImpl):
             raise ValueError(f"Cannot decrypt, missing AEAD key and there is no RsaOaepWrapper: {rsa_oaep_ctx}")
         try:
             wrapping_key = keystore.get_rsa(rsa_oaep_wrapper.key_id())
-            salt, aes_key = rsa_oaep_wrapper.wrapped_key().decrypt(wrapping_key)
+            cls.logger.debug("Wrapping Key: %s", wrapping_key)
+            if not wrapping_key.has_private_key():
+                raise ValueError(f'The keystore does not have a private key for keyid {rsa_oaep_wrapper.key_id()}')
+
+            aead_salt, aes_key = rsa_oaep_wrapper.wrapped_key().decrypt(wrapping_key)
+
             aead_key = cls._create_aead_key(rsa_oaep_ctx.aead_data(), aes_key)
-            keystore.add_aes_key(rsa_oaep_ctx.key_number(), aead_key, salt)
-            return cls(wrapper=rsa_oaep_wrapper, key=aead_key, key_number=rsa_oaep_ctx.key_number(), aead_salt=salt)
+            params = AeadParameters(
+                key=aead_key,
+                key_number=rsa_oaep_ctx.key_number(),
+                aead_salt=aead_salt,
+                kdf_data=rsa_oaep_ctx.aead_data().kdf_data(),
+                kdf_salt=None
+            )
+            cls.logger.debug('Create from wrapped key: %s', params)
+            keystore.add_aes_key(params)
+            return cls(wrapper=rsa_oaep_wrapper, aead_params=params)
+
         except KeyIdNotFoundError as e:
             print(f"Could not find keyid in kestore: {rsa_oaep_ctx.key_id()}")
             raise e
 
-    def __init__(self, wrapper: Optional[RsaOaepWrapper], key: AeadKey, key_number: KeyNumber, aead_salt: int):
-        if not isinstance(key, AeadKey):
-            raise TypeError("key must be AesGcmKey")
-        super().__init__(key=key, key_number=key_number, aead_salt=aead_salt)
+    def __init__(self, wrapper: Optional[RsaOaepWrapper], aead_params: AeadParameters):
+        if not isinstance(aead_params, AeadParameters):
+            raise TypeError("aead_params must be AeadParameters")
         self._wrapper = wrapper
-        self._aead_impl = AeadImpl(key=key, key_number=key_number)
+        super().__init__(params=aead_params)
 
     def __repr__(self):
-        return f'RsaOaepImpl: (num: {self._key_number}, salt: {self._aead_salt}, mode: {self._key.aead_mode()}, key len: {len(self._key)}, wrapper: {self._wrapper})'
+        return f'RsaOaepImpl: ({self._params}, {self._wrapper})'
 
     def encrypt(self, node: Node, include_wrapper: bool = False):
         """
@@ -153,19 +164,19 @@ class RsaOaepImpl(AeadImpl):
             raise ValueError("security context must not be None")
         if auth_tag is None:
             raise ValueError("auth_tag must not be None")
-        if security_ctx.key_number() != self._key_number:
+        if security_ctx.key_number() != self._params.key_number:
             raise ValueError("security_ctx.key_number %r != our key_number %r" %
-                             (security_ctx.key_number(), self._key_number))
+                             (security_ctx.key_number(), self._params.key_number))
 
         mode = security_ctx.aead_data().mode()
-        if self._key.aead_mode() == 'GCM':
+        if self._params.key.aead_mode() == 'GCM':
             if not (mode.is_aes_gcm_128() or mode.is_aes_gcm_256()):
                 raise DecryptionError(f'The AES key is for GCM but the manifest is not encrypted with GCM (security ctx type {security_ctx.class_type()})')
-        if self._key.aead_mode() == 'CCM':
+        if self._params.key.aead_mode() == 'CCM':
             if not (mode.is_aes_ccm_128() or mode.is_aes_ccm_256()):
                 raise DecryptionError(f'The AES key is for CCM but the manifest is not encrypted with CCM (security ctx type {security_ctx.class_type()})')
 
-        plaintext = self._key.decrypt(iv=self._iv_from_nonce(security_ctx.aead_data().nonce().value()),
+        plaintext = self._params.key.decrypt(iv=self._iv_from_nonce(security_ctx.aead_data().nonce().value()),
                                       ciphertext=encrypted_node.value(),
                                       associated_data=security_ctx.serialize(),
                                       auth_tag=auth_tag.value())

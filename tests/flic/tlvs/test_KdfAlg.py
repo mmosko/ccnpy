@@ -16,26 +16,19 @@
 import array
 from tests.ccnpy_testcase import CcnpyTestCase
 
-from ccnpy.core.HashValue import HashValue
-from ccnpy.core.KeyLink import KeyLink
-from ccnpy.core.Link import Link
-from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
+from ccnpy.crypto.HpkeKdfIdentifiers import HpkeKdfIdentifiers
+from ccnpy.flic.tlvs.KdfAlg import KdfAlg
+from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class KeyLinkTest(CcnpyTestCase):
+class KdfAlgTest(CcnpyTestCase):
     def test_serialize(self):
-        name = Name.from_uri('ccnx:/a/b')
-        keyid = HashValue(1, b'ab')
-        digest = HashValue(2, b'ABCD')
-        link = KeyLink(Link(name=name, keyid=keyid, digest=digest))
-        actual = link.serialize()
+        alg = KdfAlg.create_hkdf_sha256()
         expected = array.array("B", [
-            0, 14, 0, 36,
-            0, 0, 0, 10, 0, 1, 0, 1, 97, 0, 1, 0, 1, 98,
-            0, 2, 0, 6, 0, 1, 0, 2, 97, 98,
-            0, 3, 0, 8, 0, 2, 0, 4, 65, 66, 67, 68])
+            0, TlvNumbers.T_KDF_ALG, 0, 1, HpkeKdfIdentifiers.HKDF_SHA256.number])
+        actual = alg.serialize()
         self.assertEqual(expected, actual)
 
-        decoded = KeyLink.parse(Tlv.deserialize(actual))
-        self.assertEqual(link, decoded)
+        decoded = KdfAlg.parse(Tlv.deserialize(actual))
+        self.assertEqual(alg, decoded)

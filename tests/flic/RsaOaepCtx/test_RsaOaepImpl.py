@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue, HashFunctionType
 from ccnpy.core.KeyId import KeyId
@@ -30,6 +30,7 @@ from ccnpy.flic.RsaOaepCtx.RsaOaepImpl import RsaOaepImpl
 from ccnpy.flic.RsaOaepCtx.RsaOaepWrapper import RsaOaepWrapper
 from ccnpy.flic.RsaOaepCtx.WrappedKey import WrappedKey
 from ccnpy.flic.aeadctx.AeadData import AeadData
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.tlvs.AeadMode import AeadMode
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
@@ -47,7 +48,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 from tests.MockKeys import aes_key, shared_1024_pub_pem, shared_1024_key_pem
 
 
-class RsaOaepImplTest(unittest.TestCase):
+class RsaOaepImplTest(CcnpyTestCase):
 
     def setUp(self):
         self.nonce = array.array("B", [77, 88])
@@ -122,8 +123,8 @@ class RsaOaepImplTest(unittest.TestCase):
         kek = RsaKey(shared_1024_pub_pem)
         salt = 0x01020304
         wrapped_key = WrappedKey.create(wrapping_key=kek, key=aes_key, salt=salt)
-        wrapper = RsaOaepWrapper.create_sha256(key_id=kek.keyid(), wrapped_key=wrapped_key)
-        oaep_impl = RsaOaepImpl(key=AeadGcm(aes_key), key_number=KeyNumber(55), aead_salt=salt, wrapper=wrapper)
+        wrapper = RsaOaepWrapper.create_sha256(key_id=KeyId(kek.keyid()), wrapped_key=wrapped_key)
+        oaep_impl = RsaOaepImpl(aead_params=AeadParameters(key=AeadGcm(aes_key), key_number=KeyNumber(55), aead_salt=salt), wrapper=wrapper)
 
         node = self._create_node()
 
@@ -152,8 +153,9 @@ class RsaOaepImplTest(unittest.TestCase):
         key_number = KeyNumber(55)
         aead_key = AeadCcm(aes_key)
         wrapped_key = WrappedKey.create(wrapping_key=kek, key=aes_key, salt=salt)
-        wrapper = RsaOaepWrapper.create_sha256(key_id=kek.keyid(), wrapped_key=wrapped_key)
-        oaep_impl = RsaOaepImpl(key=aead_key, key_number=key_number, aead_salt=salt, wrapper=wrapper)
+        wrapper = RsaOaepWrapper.create_sha256(key_id=KeyId(kek.keyid()), wrapped_key=wrapped_key)
+        params = AeadParameters(key=aead_key, key_number=key_number, aead_salt=salt)
+        oaep_impl = RsaOaepImpl(aead_params=params, wrapper=wrapper)
 
         node = self._create_node()
 
@@ -165,8 +167,7 @@ class RsaOaepImplTest(unittest.TestCase):
         self.assertEqual(KeyNumber(55), security_ctx.aead_data().key_number())
 
         keystore = InsecureKeystore()
-        keystore.add_aes_key(key_num=key_number, key=aead_key, salt=salt)
-
+        keystore.add_aes_key(params)
         receiver_impl = RsaOaepImpl.create(keystore=keystore, rsa_oaep_ctx=security_ctx)
 
         plaintext = receiver_impl.decrypt_node(

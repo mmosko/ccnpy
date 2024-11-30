@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import uuid
 
 from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
@@ -25,6 +25,11 @@ class KdfInfo(OctetTlvType):
     @classmethod
     def class_type(cls):
         return TlvNumbers.T_KDF_INFO
+
+    def __init__(self, value: bytes | list | str | uuid.UUID):
+        if isinstance(value, uuid.UUID):
+            value = value.bytes
+        super().__init__(value)
 
     def __repr__(self):
         return "KdfInfo: %r" % super().__repr__()

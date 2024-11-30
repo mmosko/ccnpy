@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
@@ -22,7 +22,7 @@ from ccnpy.flic.tlvs.SubtreeDigest import SubtreeDigest
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class SubtreeDigestTest(unittest.TestCase):
+class SubtreeDigestTest(CcnpyTestCase):
     def test_serialize(self):
         hv = HashValue(55, array.array("B", [1, 2, 3]))
         sd = SubtreeDigest(hv)

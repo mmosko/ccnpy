@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.flic.tree.ManifestIdFactory import ManifestIdFactory
 from ccnpy.flic.tree.OptimizerResult import OptimizerResult
 
 
-class ManifestIdFactoryTest(unittest.TestCase):
+class ManifestIdFactoryTest(CcnpyTestCase):
 
     def test_degree_one(self):
         # this is a chain, not a tree

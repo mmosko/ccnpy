@@ -23,4 +23,4 @@ class KeyId(HashTlvType):
         return cls.__T_KEYID
 
     def __repr__(self):
-        return "LeafDigest(%r)" % self._digest
+        return "KeyId(%r)" % self._digest

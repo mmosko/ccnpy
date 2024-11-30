@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.ValidationPayload import ValidationPayload
 from ccnpy.crypto.Crc32c import Crc32cSigner, Crc32cVerifier
 
 
-class Crc32cSignerTest(unittest.TestCase):
+class Crc32cSignerTest(CcnpyTestCase):
     def test_signer(self):
         # checksum is in little-endian byte order of the Reversed generator (0x82F63B78)
         vectors = [(b'the quick brown fox', 0x3355EFD3),

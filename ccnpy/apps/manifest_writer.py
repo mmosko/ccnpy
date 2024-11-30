@@ -14,6 +14,7 @@
 
 
 import argparse
+import logging
 from datetime import datetime
 
 from ccnpy.core.ExpiryTime import ExpiryTime
@@ -106,6 +107,9 @@ class ManifestWriter:
 
 
 def run():
+    logging.basicConfig(level=logging.INFO)
+    # logging.getLogger('ccnpy.apps.cli_utils').setLevel(logging.DEBUG)
+
     max_size = 1500
 
     parser = argparse.ArgumentParser()

@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.flic.tree.FileChunks import FileChunks
 from ccnpy.flic.tree.SizedPointer import SizedPointer
 
 
-class FileChunksTest(unittest.TestCase):
+class FileChunksTest(CcnpyTestCase):
 
     def test_iterator(self):
         data = [

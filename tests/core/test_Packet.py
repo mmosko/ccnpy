@@ -14,7 +14,7 @@
 
 import array
 import tempfile
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.ContentObject import ContentObject
 from ccnpy.core.Name import Name
@@ -23,7 +23,7 @@ from ccnpy.core.ValidationAlg import ValidationAlg_Crc32c
 from ccnpy.crypto.Crc32c import Crc32cSigner
 
 
-class PacketTest(unittest.TestCase):
+class PacketTest(CcnpyTestCase):
     def test_create_content_object(self):
         body = ContentObject.create_data(name=Name.from_uri('ccnx:/apple'), payload=[1, 2, 3, 4])
         packet = Packet.create_content_object(body)

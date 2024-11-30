@@ -23,7 +23,7 @@ class DisplayFormatter:
     def hexlify(cls, value):
         if value is None:
             return "None"
-        return str(binascii.hexlify(value), 'utf-8')
+        return f'0x{str(binascii.hexlify(value), 'utf-8')}'
 
     @classmethod
     def prettify(cls, value):

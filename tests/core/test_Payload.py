@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Payload import Payload
 from ccnpy.core.Tlv import Tlv
 
 
-class PayloadTest(unittest.TestCase):
+class PayloadTest(CcnpyTestCase):
     def test_serialize(self):
         payload = Payload(array.array("B", [1, 2, 3, 4]))
         expected = array.array("B", [0, Payload.class_type(), 0, 4, 1, 2, 3, 4])

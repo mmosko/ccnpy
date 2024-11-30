@@ -22,8 +22,12 @@ from ccnpy.crypto.HpkeKdfIdentifiers import HpkeKdfIdentifiers
 
 class KDF:
     @classmethod
-    def derive(cls, kdf_id: HpkeKdfIdentifiers, input_key: bytes, length: int,
-               info: Optional[bytes] = None, salt: Optional[bytes] = None):
+    def derive(cls,
+               kdf_id: HpkeKdfIdentifiers,
+               input_key: bytes,
+               length: int,
+               info: Optional[bytes] = None,
+               salt: Optional[bytes] = None):
         """
         :param kdf_id: The RFC 9180 KDF identifier
         :param input_key: The key derivation key (cryptographic key)
@@ -32,11 +36,11 @@ class KDF:
         :param salt: An optional salt for the KDF (if used, should be consistent for the key).
         """
         if kdf_id == HpkeKdfIdentifiers.HKDF_SHA256:
-            hash_alg = hashes.SHA256
+            hash_alg = hashes.SHA256()
         elif kdf_id == HpkeKdfIdentifiers.HKDF_SHA384:
-            hash_alg = hashes.SHA384
+            hash_alg = hashes.SHA384()
         elif kdf_id == HpkeKdfIdentifiers.HKDF_SHA512:
-            hash_alg = hashes.SHA512
+            hash_alg = hashes.SHA512()
         else:
             raise ValueError(f"Unsupported kdf_id: {kdf_id}")
 

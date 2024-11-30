@@ -34,6 +34,11 @@ class KdfAlg(IntegerTlvType):
     def create_hkdf_sha512(cls):
         return cls(HpkeKdfIdentifiers.HKDF_SHA512)
 
+    def __init__(self, value: int | HpkeKdfIdentifiers):
+        if isinstance(value, HpkeKdfIdentifiers):
+            value = value.number
+        super().__init__(value)
+
     def __repr__(self):
         return f"KdfAlg ({self._value})"
 

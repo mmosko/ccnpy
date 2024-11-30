@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.FinalChunkId import FinalChunkId
 from ccnpy.core.Tlv import Tlv
 
 
-class FinalChunkIdTest(unittest.TestCase):
+class FinalChunkIdTest(CcnpyTestCase):
     def test_serialize(self):
         fcid = FinalChunkId(0x123456)
         expected = array.array("B", [0, FinalChunkId.class_type(), 0, 3, 0x12, 0x34, 0x56])

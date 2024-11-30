@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import array
+import logging
 from abc import abstractmethod, ABC
 
 from ccnpy.core.DisplayFormatter import DisplayFormatter
@@ -26,6 +27,8 @@ class TlvType(Serializable):
     """
     superclass for objects that are TLV types
     """
+    logger = logging.getLogger(__name__)
+
     def __init__(self):
         pass
 
@@ -76,13 +79,14 @@ class TlvType(Serializable):
         assert tlv.length() == len(tlv.value())
         return cls.auto_value_parse(tlv.value(), name_class_pairs)
 
-    @staticmethod
-    def auto_value_parse(tlv_value, name_class_pairs, skip_unknown: bool = True):
+    @classmethod
+    def auto_value_parse(cls, tlv_value, name_class_pairs, skip_unknown: bool = True):
         """
         Like `auto_parse`, but only parses the value after we've verified the outer class_type.
         """
         parser_lookup = {y.class_type(): (x, y) for x, y in name_class_pairs}
         values = {x: None for x, y in name_class_pairs}
+        cls.logger.debug("Initial values: %s", values)
 
         offset = 0
         while offset < len(tlv_value):
@@ -92,14 +96,17 @@ class TlvType(Serializable):
                 print(f'Error parsing {tlv_value} at offset {offset}: {e}')
                 raise
 
+            cls.logger.debug("offset %d parsing %s", offset, inner_tlv)
             offset += len(inner_tlv)
 
             try:
                 name_class = parser_lookup[inner_tlv.type()]
                 arg_name = name_class[0]
                 clazz = name_class[1]
-                assert values[arg_name] is None
+                if values[arg_name] is not None:
+                    raise ParseError(f'{arg_name} already set parsing: {tlv_value}')
                 values[arg_name] = clazz.parse(inner_tlv)
+                cls.logger.debug('Set values[%s]=%s', arg_name, values[arg_name])
             except KeyError:
                 if not skip_unknown:
                     raise ParseError("Unsupported TLV type %r" % inner_tlv)
@@ -127,6 +134,9 @@ class IntegerTlvType(TlvType, ABC):
             return False
         return self._value == other._value
 
+    def __hash__(self):
+        return hash(self._tlv)
+
     def value(self):
         return self._value
 
@@ -144,16 +154,27 @@ class IntegerTlvType(TlvType, ABC):
 class OctetTlvType(TlvType, ABC):
     """Encodes an octet string"""
 
-    def __init__(self, value):
+    def __init__(self, value: bytes | list | str):
+        """
+        When passed a list, it must be a byte list (i.e. 0...255 values).  When passed a string, it may be
+        either a hex string beginning with '0x' or it is considered a utf-8 string and converted into char
+        values.
+        """
         TlvType.__init__(self)
 
         if value is None:
-            raise ValueError(f"Nonce value must not be None, use an empty list")
+            raise ValueError(f"Octet value must not be None, use an empty list")
 
         if isinstance(value, bytes):
             value = array.array("B", value)
         elif isinstance(value, list):
             value = array.array("B", value)
+        elif isinstance(value, str):
+            # If beings with 0x treat as hex, otherwise treat as ascii string
+            if value.startswith('0x'):
+                value = array.array("B", bytes.fromhex(value[2:]))
+            else:
+                value = array.array("B", value.encode())
 
         self._value = value
         self._tlv = Tlv(self.class_type(), self._value)
@@ -167,7 +188,7 @@ class OctetTlvType(TlvType, ABC):
         return self._value == other._value
 
     def __repr__(self):
-        return "%r" % DisplayFormatter.hexlify(self._value)
+        return DisplayFormatter.hexlify(self._value)
 
     def value(self):
         return self._value

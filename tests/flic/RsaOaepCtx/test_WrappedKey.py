@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.crypto.RsaKey import RsaKey
@@ -23,7 +23,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 from tests.MockKeys import shared_512_pub_pem, aes_key, shared_1024_pub_pem, shared_1024_key_pem
 
 
-class WrappedKeyTest(unittest.TestCase):
+class WrappedKeyTest(CcnpyTestCase):
 
     def test_payload(self):
         buffer = array.array("B", [1, 2, 3, 4])

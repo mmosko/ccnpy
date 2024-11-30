@@ -11,9 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from enum import Enum
 
 
-class HpkeKdfIdentifiers:
-    HKDF_SHA256 = 0x0001
-    HKDF_SHA384 = 0x0002
-    HKDF_SHA512 = 0x0003
+class HpkeKdfIdentifiers(Enum):
+    HKDF_SHA256 = 0x0001, 'HKDF-SHA256'
+    HKDF_SHA384 = 0x0002, 'HKDF-SHA384'
+    HKDF_SHA512 = 0x0003, 'HKDF-SHA512'
+
+    def __init__(self, *args, **kwds):
+        super().__init__(args[0])
+        self.number = args[0]
+        self.str_name = args[1]
+
+    def __str__(self):
+        return self.str_name
+
+    def __repr__(self):
+        return self.str_name
+
+    @classmethod
+    def parse(cls, name: str):
+        for x in HpkeKdfIdentifiers:
+            if x.str_name == name.upper():
+                return x
+        return KeyError(f'Not found: {name}')

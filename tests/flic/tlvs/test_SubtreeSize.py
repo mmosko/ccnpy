@@ -14,14 +14,14 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class SubtreeSizeTest(unittest.TestCase):
+class SubtreeSizeTest(CcnpyTestCase):
     def test_serialize(self):
         ss = SubtreeSize(0x010203)
         actual = ss.serialize()

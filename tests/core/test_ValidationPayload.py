@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.ValidationPayload import ValidationPayload
 
 
-class ValidationPayloadTest(unittest.TestCase):
+class ValidationPayloadTest(CcnpyTestCase):
 
     def test_serialize(self):
         payload = array.array("B", [1, 2, 3, 4, 5, 6])

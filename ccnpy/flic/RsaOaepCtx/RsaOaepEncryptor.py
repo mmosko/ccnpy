@@ -12,36 +12,51 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import os
+import uuid
+from typing import Optional
 
 from .RsaOaepImpl import RsaOaepImpl
 from .RsaOaepWrapper import RsaOaepWrapper
 from .WrappedKey import WrappedKey
 from ..ManifestEncryptor import ManifestEncryptor
+from ..aeadctx.AeadParameters import AeadParameters
+from ..tlvs.KdfAlg import KdfAlg
+from ..tlvs.KdfData import KdfData
+from ..tlvs.KdfInfo import KdfInfo
 from ..tlvs.KeyNumber import KeyNumber
+from ...core.KeyId import KeyId
 from ...crypto.AeadKey import AeadGcm, AeadKey
 from ...crypto.RsaKey import RsaKey
 
 
 class RsaOaepEncryptor(ManifestEncryptor):
+    """
+    TODO: Convert to being Keystore based
+    """
 
     @classmethod
-    def create_with_new_content_key(cls, wrapping_key: RsaKey):
+    def create_with_new_content_key(cls, wrapping_key: RsaKey, kdf_data: Optional[KdfData]):
         """
         Creates with a random content encryption key and salt.
 
         :param wrapping_key: The key encryption key
         """
         key = AeadGcm.generate(256)
-        salt = os.urandom(4)
+        salt = int.from_bytes(os.urandom(4))
         key_number = KeyNumber(os.urandom(4))
-        return cls(wrapping_key=wrapping_key, key=key, salt=salt, key_number=key_number)
 
-    def __init__(self, wrapping_key: RsaKey, key: AeadKey, key_number: KeyNumber, salt: int | bytes=None):
-        if isinstance(salt, bytes):
-            salt = int.from_bytes(salt)
-        self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=key.key(), salt=salt)
-        self._wrapper = RsaOaepWrapper.create_sha256(key_id=wrapping_key.keyid(), wrapped_key=self._wrapped_key)
-        self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, aead_salt=salt)
+        return cls(
+            wrapping_key=wrapping_key,
+            params=AeadParameters(
+                key=key,
+                aead_salt=salt,
+                key_number=key_number,
+                kdf_data=kdf_data))
+
+    def __init__(self, wrapping_key: RsaKey, params: AeadParameters):
+        self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=params.key.key(), salt=params.aead_salt)
+        self._wrapper = RsaOaepWrapper.create_sha256(key_id=KeyId(wrapping_key.keyid()), wrapped_key=self._wrapped_key)
+        self._impl = RsaOaepImpl(wrapper=self._wrapper, aead_params=params)
 
     def encrypt(self, node, **kwargs):
         return self._impl.encrypt(node, **kwargs)

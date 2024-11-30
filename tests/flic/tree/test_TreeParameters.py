@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from typing import Optional
 
 from ccnpy.core.HashValue import HashValue
@@ -23,6 +23,7 @@ from ccnpy.flic.ManifestEncryptor import ManifestEncryptor
 from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.name_constructor.FileMetadata import FileMetadata, ChunkMetadata
 from ccnpy.flic.name_constructor.NameConstructorContext import NameConstructorContext
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
@@ -30,7 +31,7 @@ from ccnpy.flic.tlvs.Pointers import Pointers
 from ccnpy.flic.tree.TreeParameters import TreeParameters
 
 
-class TreeParametersTest(unittest.TestCase):
+class TreeParametersTest(CcnpyTestCase):
 
     @staticmethod
     def _create_options(max_packet_size: int, encryptor: Optional[ManifestEncryptor] = None):
@@ -65,7 +66,7 @@ class TreeParametersTest(unittest.TestCase):
 
     def test_encrypted_maxsize(self):
         key = AeadGcm.generate(128)
-        encryptor = AeadEncryptor(key=key, key_number=22)
+        encryptor = AeadEncryptor(AeadParameters(key=key, key_number=22))
 
         factory = ManifestFactory(tree_options=self._create_options(max_packet_size=self.max_packet_size, encryptor=encryptor))
 

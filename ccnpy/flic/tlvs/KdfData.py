@@ -60,7 +60,7 @@ class KdfData(TlvType):
         return self._tlv == other._tlv
 
     def __repr__(self):
-        return "KdfData: {%r, %r}" % self._kdf_alg, self._kdf_info
+        return "KdfData: {%r, %r}" % (self._kdf_alg, self._kdf_info)
 
     def kdf_alg(self) -> KdfAlg:
         return self._kdf_alg

@@ -14,13 +14,13 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.Vendor import Vendor
 
 
-class VendorTest(unittest.TestCase):
+class VendorTest(CcnpyTestCase):
     def test_serialize_no_payload(self):
         v = Vendor(0x1234, [])
         actual = v.serialize()

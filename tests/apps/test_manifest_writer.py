@@ -14,7 +14,7 @@
 
 import os
 import tempfile
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 
 from ccnpy.apps.manifest_writer import ManifestWriter
@@ -22,7 +22,7 @@ from ccnpy.flic.tree.Traversal import Traversal
 from ccnpy.flic.tree.TreeIO import TreeIO
 
 
-class ManifestWriterTest(unittest.TestCase):
+class ManifestWriterTest(CcnpyTestCase):
     private_key = b'''-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEA7QdUuaoTr4gA1bMoCdjUNPqpb7f211TYFcahHhaBPnBwQwYj
 NIV1HUmKnJiLn59F36iZFYgNR53O30F7g0/oR2MWVaJoeSKq7UP7gqlSjrplZEaI
@@ -61,6 +61,7 @@ YHoJ5UwIFj2Ifw/YHKJAgxG3vxApbLqMJEiCg3WajkqUhjhXZU8=
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls.test_key_file = tempfile.NamedTemporaryFile(delete=False)
         cls.test_key_file.write(cls.private_key)
         cls.test_key_file.close()

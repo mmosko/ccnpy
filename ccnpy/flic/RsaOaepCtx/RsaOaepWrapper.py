@@ -49,6 +49,8 @@ class RsaOaepWrapper(Serializable):
         :param nonce: A byte array
         :param mode: One of the allowed modes (use a class create_x method to create)
         """
+        assert isinstance(key_id, KeyId)
+
         self._key_id = key_id
         self._key_link = key_link
         self._wrapped_key = wrapped_key
@@ -64,8 +66,7 @@ class RsaOaepWrapper(Serializable):
         return len(self._wire_format)
 
     def __repr__(self):
-        return ("id: %r, link: %r, alg: %r, wrapped: %r" %
-                (self._key_id, self._key_link, self._hash_alg, self._wrapped_key))
+        return "{%r, %r, %r, %r}" % (self._key_id, self._key_link, self._hash_alg, self._wrapped_key)
 
     def key_id(self) -> KeyId:
         return self._key_id

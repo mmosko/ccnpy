@@ -121,11 +121,11 @@ for background on [CCNx FLIC manifets](#FLIC-Manifests)
 
 You may need to run `poetry build` and `poetry install` before `poetry run`.
 
-```bash
+```text
 ccnpy$ poetry run manifest_writer --help
-usage: manifest_writer [-h] [--schema {Hashed,Prefix,Segmented}] --name NAME [--manifest-locator MANIFEST_LOCATOR] [--data-locator DATA_LOCATOR] [--manifest-prefix MANIFEST_PREFIX]
-                       [--data-prefix DATA_PREFIX] [-d TREE_DEGREE] [-k KEY_FILE] [-p KEY_PASS] [--enc-key ENC_KEY] [--key-num KEY_NUM] [-s MAX_SIZE] [-o OUT_DIR] [-T]
-                       [--root-expiry ROOT_EXPIRY] [--node-expiry NODE_EXPIRY] [--data-expiry DATA_EXPIRY]
+usage: manifest_writer [-h] [--schema {Hashed,Prefix,Segmented}] --name NAME [--manifest-locator MANIFEST_LOCATOR] [--data-locator DATA_LOCATOR] [--manifest-prefix MANIFEST_PREFIX] [--data-prefix DATA_PREFIX] [-d TREE_DEGREE]
+                       [-k KEY_FILE] [-p KEY_PASS] [--wrap-key WRAP_KEY] [--wrap-pass WRAP_PASS] [--enc-key ENC_KEY] [--aes-mode {GCM,CCM}] [--key-num KEY_NUM] [--salt SALT] [--kdf {HKDF-SHA256,HKDF-SHA384,HKDF-SHA512}]
+                       [--kdf-info KDF_INFO] [--kdf-uuid | --no-kdf-uuid] [--kdf-salt KDF_SALT] [-s MAX_SIZE] [-o OUT_DIR] [--link] [-T] [--root-expiry ROOT_EXPIRY] [--node-expiry NODE_EXPIRY] [--data-expiry DATA_EXPIRY]
                        filename
 
 positional arguments:
@@ -145,12 +145,24 @@ options:
   --data-prefix DATA_PREFIX
                         CCNx URI for data (Segmented only)
   -d TREE_DEGREE        manifest tree degree (default is max that fits in a packet)
-  -k KEY_FILE           RSA private key in PEM format to sign the root manifest
-  -p KEY_PASS           RSA private key password (otherwise will prompt)
+  -k KEY_FILE           RSA key in PEM format to sign the root manifest
+  -p KEY_PASS           RSA key password (otherwise will prompt)
+  --wrap-key WRAP_KEY   Wrapping key for RSA-OAEP mode.
+  --wrap-pass WRAP_PASS
+                        Wrapping key key password (otherwise will prompt).
   --enc-key ENC_KEY     AES encryption key (hex string)
+  --aes-mode {GCM,CCM}  Encryption algorithm, default GCM
   --key-num KEY_NUM     Key number of pre-shared key (defaults to key hash)
+  --salt SALT           Upto a 4-byte salt to include in the IV with the nonce.
+  --kdf {HKDF-SHA256,HKDF-SHA384,HKDF-SHA512}
+                        Use a KDF
+  --kdf-info KDF_INFO   KDF INFO string (ascii or 0x hex string)
+  --kdf-uuid, --no-kdf-uuid
+                        Use a Type 1 UUID for the KdfInfo (overrides --kdf-info)
+  --kdf-salt KDF_SALT   Upto a 4-byte salt to include in the KDF function.
   -s MAX_SIZE           maximum content object size (default 1500)
   -o OUT_DIR            output directory (default='.')
+  --link                When writing to a directory, write links for named objects
   -T                    Use TCP to 127.0.0.1:9896
   --root-expiry ROOT_EXPIRY
                         Expiry time (ISO format, .e.g 2020-12-31T23:59:59+00:00) to expire root manifest
@@ -162,6 +174,51 @@ options:
  
 The default behavior is to write the wire format packets to a directory.  With the `-T` option, it will write them
 to the standard CCNx port.
+
+### Preferred Usage
+
+If you have a shared symmetric key, you can directly encrypt with that key.  You should use a KDF with
+a KDF info for the manifest tree.  You can generate a unique KDF info several ways: (1) specify `--kdf-uuid`,
+(2) leave the `--kdf-info` blank and use segmented schema so all objects have a unique name, or (3)
+externally generate a unique ID for the manfiest tree and put it in the `--kdf-info`.  Because the `--key-number`
+is included in the KDF FixedInfo, the `--kdf-info` really only needs to be unique per key number.
+
+Example:
+```bash
+ccnpy$ poetry run manifest_writer \
+   --schema Hashed \
+   --name ccnx:/foo.com/object \
+   --link \
+   -k test_key.pem -p '' \
+   --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+   --kdf hkdf-sha256 --kdf-uuid \
+   -s 500 \
+   -o output \
+   filename
+```
+
+If you have a shared key encryption key, where the publisher has the public key and the consumer(s) have
+the private key, then you can use the RSA-OAEP mode.  The key encryption key must be at least 1024 bits long.
+This method can generate a unique encryption key per manifest tree, so you do not need to include `--kdf-info`.
+It is still recommended to use a kdf.  
+
+In RSA-OAEP mode, the root manifest will include an RSA encryption of the RSA key size (e.g. 128 bytes for a 1024-bit key, 
+or 512 bytes for a 4096-bit key, etc.).  With an RSA signature and other data, the root manifest may be approximately
+1400 bytes with a 4096-bit wrapping key and 4096-bit signing key and a short name.
+
+Example:
+```bash
+ccnpy$ poetry run manifest_writer \
+   --schema Hashed \
+   --name ccnx:/foo.com/object \
+   --link \
+   -k test_key.pem -p '' \
+   --wrap-key `shared_key.pub` --wrap-pass '' \
+   --kdf hkdf-sha256 \
+   -s 500 \
+   -o output \
+   filename
+```
 
 ### Small Packet Example
 
@@ -183,10 +240,14 @@ ccnpy$ poetry run manifest_writer \
    -k test_key.pem -p '' \
    --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
    -s 500 \
-   -o output \
+   -o output9 \
    LICENSE
-Namespace(schema='Hashed', name='ccnx:/foo.com/object', manifest_locator=None, data_locator=None, manifest_prefix=None, data_prefix=None, tree_degree=None, key_file='test_key.pem', key_pass='', enc_key='0102030405060708090a0b0c0d0e0f10', aes_mode='CCM', key_num=1, salt=16909060, max_size=500, out_dir='output', write_links=True, use_tcp=False, root_expiry=None, node_expiry=None, data_expiry=None, filename='LICENSE')
-AeadImpl: (num: 1, salt: b'\x01\x02\x03\x04', mode: CCM, key len: 128)
+Namespace(schema='Hashed', name='ccnx:/foo.com/object', manifest_locator=None, data_locator=None, 
+  manifest_prefix=None, data_prefix=None, tree_degree=None, key_file='test_key.pem', key_pass='', 
+  wrap_key=None, wrap_pass=None, enc_key=b'\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10', 
+  aes_mode='CCM', key_num=KeyNum (1), salt=16909060, kdf_alg=None, kdf_info=None, kdf_uuid=False, 
+  kdf_salt=None, max_size=500, out_dir='output9', write_links=True, use_tcp=False, root_expiry=None, 
+  node_expiry=None, data_expiry=None, filename='LICENSE')
 Creating manifest tree
 Root manifest hash: HashValue: {alg: 'SHA256', val: '72948d88ecc64b528c8d76db86e26b147db23dc485313bd09a2c08ae01a4b5e8'}
 ````
@@ -209,7 +270,6 @@ First, let us go over the command-line term by term:
 
 The text output lines are:
 - `Namespace` is all the CLI arguments (the work `Namespace` is from the python argument parser).
-- `AeadImpl` is the encryption implementation parameters
 - `Root manifest hash...` is the SHA256 hash of the root manifest object, which we will use shortly.
 
 Looking at the output directory, we see that all the CCNx Packets are 500 bytes or less, which is exactly what
@@ -560,6 +620,229 @@ ccnpy$ poetry run packet_reader -i output --pretty -k test_key.pem -p '' link_00
 Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: 'c94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
 ```
 
+With the pre-shared key (AeadCtx) encryptioh mode, we can also specify that it should use a KDF
+and a byte string that is used in the FixedInfo.  With the CLI shown below, the AES CCM encryption
+will use a derived key from HKDF-SHA256 with a FixedInfo build from the byte string '0x57377849'
+and an HKDF salt of '0x999999'.  See the FLIC RFC for details on how FixedInfo is calculated.
+
+```bash
+ccnpy$ mkdir output10
+ccnpy$ poetry run manifest_writer    \
+  --schema Hashed \
+  --name ccnx:/foo.com/object \
+  --link \
+  -k test_key.pem -p '' \
+  --enc-key 0102030405060708090a0b0c0d0e0f10 --salt 0x01020304 --key-num 1 --aes-mode CCM \
+  --kdf hkdf-sha256 --kdf-info 0x57377849 --kdf-salt 0x999999 \
+  -s 500 \
+  -o output10 \
+  LICENSE
+Namespace(schema='Hashed', name='ccnx:/foo.com/object', manifest_locator=None, data_locator=None, manifest_prefix=None, data_prefix=None, tree_degree=None, key_file='test_key.pem', key_pass='', wrap_key=None, wrap_pass=None, enc_key=b'\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10', aes_mode='CCM', key_num=KeyNum (1), salt=16909060, kdf_alg=HKDF-SHA256, kdf_info=KdfInfo: '0x57377849', kdf_uuid=False, kdf_salt=10066329, max_size=500, out_dir='output10', write_links=True, use_tcp=False, root_expiry=None, node_expiry=None, data_expiry=None, filename='LICENSE')
+Creating manifest tree
+Root manifest hash: HashValue: {alg: 'SHA256', val: '0x5f0063b2d03e057c2dafe703fc824c319d6cd0ecee2a9cb4d1e0a25221bc4add'}
+```
+
+One of the encrypted manifests looks like this.  We see that the AeadData now contains a KDF.  Then encypted manifests
+will use a derived key.
+
+```bash
+ccnpy$ poetry run packet_reader -i output10 --pretty 5f0063b2d03e057c2dafe703fc824c319d6cd0ecee2a9cb4d1e0a25221bc4add
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 354,
+         flds: '0x000000',
+         hlen: 8
+      },
+      CO: {
+         NAME: [Name = b 'foo.com', Name = b 'object'],
+         None,
+         PLDTYP: 'MANIFEST',
+         Manifest: {
+            PSK: {
+               AeadData: {
+                  KeyNum(1),
+                  Nonce: {
+                     '0xcefc4e7554130729'
+                  },
+                  AeadMode(3): 'AES-CCM-128',
+                  KdfData: {
+                     KdfAlg(1),
+                     KdfInfo: '0x57377849'
+                  }
+               }
+            },
+            EncNode: '0x029e772e6defe77aea4ead71feeaa41a87b89c1a2707a947cb2e96256359c4be31ba6d41b50174a5d5c03bd0c4b7af8a96e60fd1f7c67ffb6814dcbdec532981c8593b7fd8a6bb6f53e48507db73191d78b069fcc1f25c73cf4b87a907fdfd8c24c0c29b80ac3ab3fff765a1f0',
+            AuthTag: '0x2fbac34b78b7230116590c35dcaa24a2'
+         },
+         None
+      },
+      RsaSha256: {
+         keyid: HashValue: {
+            alg: 'SHA256',
+            val: '0xc94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'
+         },
+         pk: None,
+         keylink: None,
+         'SignatureTime': '2024-11-30T04:21:24.071000+00:00'
+      },
+      ValPld: '0x75d5345a92ea5c5d542cacb2dbdcc793fcb85269d6ec9c9ef23113eafe96f16ce4ae3bfce3f0233957f74591f4da096cd485e4714374b94bb36ad167a7fffb2f'
+   }
+}
+Signature not validated, could not find RSA key in keystore with keyid HashValue: {alg: 'SHA256', val: '0xc94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'}
+Manifest not decrypted, could not find AES key in keystore with KeyNum (1)
+None
+````
+
+
+Another encryption technique is to use RSA-OAEP key wrapping rather than sharing a symmetric key.
+In this mode, the publisher uses an RSA public key to encrypt a symmetric key, and a consumer uses
+an RSA private key to get the symmetric key.  In some cases, it may be possible to use a key distribution
+system for group keying.  In this case, we specify to use a KDF, but do not include a `--kdf-info` or `--kdf-uuid`
+because the symmetric key is unique to this manifest tree and it uses a random key number (which is part
+of the FixedInfo of the KDF).
+
+```bash
+ccnpy$ openssl genrsa -out shared_key.pem 1024
+ccnpy$ openssl rsa -pubout -in shared_key.pem -out shared_key.pub
+ccnpy$ mkdir output11
+ccnpy$ poetry run manifest_writer    \
+  --schema Hashed \
+  --name ccnx:/foo.com/object \
+  --link \
+  -k test_key.pem -p '' \
+  --wrap-key shared_key.pub --wrap-pass '' \
+  --kdf hkdf-sha256 \
+  -s 500 \
+  -o output11 \
+  LICENSE
+Namespace(schema='Hashed', name='ccnx:/foo.com/object', manifest_locator=None, data_locator=None, manifest_prefix=None, data_prefix=None, tree_degree=None, key_file='test_key.pem', key_pass='', wrap_key='shared_key.pem', wrap_pass='', enc_key=None, aes_mode='GCM', key_num=None, salt=None, kdf_alg=HKDF-SHA256, kdf_info=None, kdf_uuid=True, kdf_salt=None, max_size=500, out_dir='output11', write_links=True, use_tcp=False, root_expiry=None, node_expiry=None, data_expiry=None, filename='LICENSE')
+Creating manifest tree
+The root manifest packet is 542 bytes, greater than max_packet_size 500
+Root manifest hash: HashValue: {alg: 'SHA256', val: '0xbf80fa3d655a29641792bacb45e24974e8b50f2136dc38be25dac86a6b4652c6'}
+```
+
+A dump of the root manifest shows and RsaOaepCtx with a KDF specified.  
+
+```bash
+$ poetry run packet_reader \
+   -k test_key.pem -p '' \
+   --wrap-key shared_key.pem --wrap-pass '' \
+   -i output11 --pretty bf80fa3d655a29641792bacb45e24974e8b50f2136dc38be25dac86a6b4652c6
+{
+   Packet: {
+      FH: {
+         ver: 1,
+         pt: 1,
+         plen: 526,
+         flds: '0x000000',
+         hlen: 8
+      },
+      CO: {
+         NAME: [Name = b 'foo.com', Name = b 'object'],
+         None,
+         PLDTYP: 'MANIFEST',
+         Manifest: {
+            RsaOaepCtx: {
+               aead: AeadData: {
+                  KeyNum(2892058647),
+                  Nonce('0x91072e529ece9afd'),
+                  AeadMode(2): 'AES-GCM-256',
+                  KdfData: {
+                     KdfAlg(1),
+                     None
+                  }
+               },
+               wrapper: {
+                  KeyId(HashValue: {
+                     alg: 'SHA256',
+                     val: '0x1b73a58d83c7f3b73ffe3fb48c0492559816a37211a86b8cb7dcb569b3cb00f4'
+                  }),
+                  None,
+                  HashAlg(1),
+                  WrappedKey: '0x0d00aeeebcf81bbd1dcfbf3745b1e26653452807de2012b3cbe185c77b16bc0b101c682971b2737a508dbf4396b884b0701565ca7149644e6c64ad6942d8e3c08f1ca86efa86f7b1e5980f13c97393a6f716f6806489d5f59f4ac7340aca55af37aca6b23ae6c4206dc60b03f05b7482f08db40d594b4d31557a35117b05f393'
+               }
+            },
+            EncNode: '0x2d47d1c2a2774c3bb6b5a2107713f8f70122a327c5c3a920520ce10697b19ee3edb3280499e7775f08cad17e49bbec69e62020dd2afe0ef2b1b65ea1a2e5c1557575f26b2474546bbc249b09c75ced47a438b268edaf8c15a7c1541756c01a538067568baaba0ef18b8234cb9b',
+            AuthTag: '0x9cc67fa4fc2cc4a94c3dcf98c9187914'
+         },
+         None
+      },
+      RsaSha256: {
+         keyid: HashValue: {
+            alg: 'SHA256',
+            val: '0xc94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'
+         },
+         pk: None,
+         keylink: None,
+         'SignatureTime': '2024-11-30T06:29:00.501000+00:00'
+      },
+      ValPld: '0x9d6e591c0c7f905b8152cd519798ea2303e6b91bd509ea049ca33c9ff9183a31dccf078b60a29c31fec186ddfc834a7d8914fc2d415e216206c83fc0cb3b661f'
+   }
+}
+
+Packet validation success with RsaSha256Verifier(HashValue: {alg: 'SHA256', val: '0xc94f873e56e52e317d405dcd9c293baa0ed1f04c12b0e0b3a1ba88c08ceb1044'})
+Manifest: {
+   None,
+   Node: {
+      data = NodeData: {
+         SubtreeSize: 11357,
+         None,
+         None,
+         [NCDEF: (NCID(1), HS: Locators: [Locator: Link(NAME: [Name =
+            b 'foo.com', Name = b 'object'
+         ], None, None)], None)],
+         None
+      },
+      len = 1,
+      hashes = [HashGroup: {
+         GroupData: {
+            None,
+            None,
+            None,
+            None,
+            NCID(1),
+            None
+         },
+         Ptrs: [HashValue: {
+            alg: 'SHA256',
+            val: '0x7cbad76c64fd75eb3a7d9872cb22e76abd1e8432c6454d09c8a91850bb2e5d13'
+         }]
+      }]
+   },
+   None
+}
+```
+
+If you look at the top manifest (using the decoded manifest above) via:
+
+```bash
+ccnpy$ poetry run packet_reader \
+  -k test_key.pem -p '' \
+  --wrap-key shared_key.pem --wrap-pass '' \
+  -i output11 --pretty 7cbad76c64fd75eb3a7d9872cb22e76abd1e8432c6454d09c8a91850bb2e5d13
+```
+
+you will see that the RsaOaepCtx is abbreviated without the wrapped key.  This means that `packet_reader` cannot
+decrypt the manifest, because it does not have the decrypted key from the room manifest.  You would need to use
+`manifest_reader` to traverse the manifests.
+
+```text
+    RsaOaepCtx: {
+       aead: AeadData: {
+          KeyNum(2892058647),
+          Nonce('0x38be46cd0695fc76'),
+          AeadMode(2): 'AES-GCM-256',
+          KdfData: {
+             KdfAlg(1),
+             None
+          }
+       },
+       wrapper: None
+    },
+```
 ### Using `manifest_reader`
 
 The utility `manifest_reader` reads what `manifest_writer` produces.  In this example, we ask it to read `ccnx:/foo.com/object`, which 

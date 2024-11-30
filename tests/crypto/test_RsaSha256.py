@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.crypto.RsaKey import RsaKey
 from ccnpy.crypto.RsaSha256 import RsaSha256Signer, RsaSha256Verifier
 from tests.MockKeys import private_key_pem, public_key_pem
 
 
-class RsaSha256SignerTest(unittest.TestCase):
+class RsaSha256SignerTest(CcnpyTestCase):
     # openssl genrsa -out test_key.pem
 
     def test_sign_verify(self):

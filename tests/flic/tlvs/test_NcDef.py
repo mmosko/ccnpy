@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.Locator import Locator
@@ -25,7 +25,7 @@ from ccnpy.flic.tlvs.NcSchema import HashSchema
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NcDefTest(unittest.TestCase):
+class NcDefTest(CcnpyTestCase):
     wire_format = array.array("B", [
         0, TlvNumbers.T_NCDEF, 0, 26,
         0, TlvNumbers.T_NCID, 0, 1, 5,

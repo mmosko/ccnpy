@@ -26,7 +26,7 @@ class WrappedKey(OctetTlvType):
         return TlvNumbers.T_WRAPPED_KEY
 
     @classmethod
-    def create(cls, wrapping_key: RsaKey, key: array, salt: int):
+    def create(cls, wrapping_key: RsaKey, key: array | bytes, salt: int):
         if salt is not None and (salt < 0 or salt > 0xFFFFFFFF):
             raise ValueError(f'If salt is specified, it must be unsigned 4-byte integer, got: {salt}')
 

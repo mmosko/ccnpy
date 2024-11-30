@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import logging
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import TlvType
@@ -27,7 +27,7 @@ class NcDef(TlvType):
 
         NcDef = TYPE LENGTH NcId NcSchema
     """
-    DEBUG = False
+    logger = logging.getLogger(__name__)
 
     @classmethod
     def class_type(cls):
@@ -58,6 +58,8 @@ class NcDef(TlvType):
 
     @classmethod
     def parse(cls, tlv):
+        cls.logger.debug('parsing: %s', tlv)
+
         if tlv.type() != cls.class_type():
             raise CannotParseError("Incorrect TLV type %r" % tlv.type())
 

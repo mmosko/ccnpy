@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.FixedHeader import FixedHeader
 
 
-class FixedHeaderTest(unittest.TestCase):
+class FixedHeaderTest(CcnpyTestCase):
     def test_serialize(self):
         fh = FixedHeader(ver=1, packet_type=1, packet_length=0x0102, fields=[7, 8, 9], header_length=8)
         actual = fh.serialize()

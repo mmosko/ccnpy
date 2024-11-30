@@ -14,7 +14,7 @@
 
 
 import io
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 from binascii import unhexlify
 
@@ -44,7 +44,7 @@ from tests.MockKeys import private_key_pem
 from tests.MockReader import MockReader
 
 
-class test_ManifestTree(unittest.TestCase):
+class test_ManifestTree(CcnpyTestCase):
 
 
     def setUp(self):
@@ -189,7 +189,7 @@ class test_ManifestTree(unittest.TestCase):
 
         expected = data_input.data
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, debug=False, build_graph=True)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=True)
         traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
         # traversal.get_graph().plot()
 

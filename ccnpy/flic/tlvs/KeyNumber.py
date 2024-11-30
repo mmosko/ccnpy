@@ -28,9 +28,11 @@ class KeyNumber(IntegerTlvType):
     def class_type(cls):
         return TlvNumbers.T_KEYNUM
 
-    def __init__(self, value: int | bytes):
+    def __init__(self, value: int | bytes | str):
         if isinstance(value, bytes):
             value=int.from_bytes(value)
+        elif isinstance(value, str):
+            value=int(value, 0)
         super().__init__(value)
 
     def __repr__(self):

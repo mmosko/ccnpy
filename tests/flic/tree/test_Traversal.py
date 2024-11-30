@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 from array import array
 from typing import Optional
 
@@ -27,6 +27,7 @@ from ccnpy.flic.ManifestFactory import ManifestFactory
 from ccnpy.flic.ManifestTreeOptions import ManifestTreeOptions
 from ccnpy.flic.aeadctx.AeadDecryptor import AeadDecryptor
 from ccnpy.flic.aeadctx.AeadEncryptor import AeadEncryptor
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.name_constructor.HashSchemaImpl import HashSchemaImpl
 from ccnpy.flic.name_constructor.SchemaType import SchemaType
 from ccnpy.flic.tlvs.Locators import Locators
@@ -40,7 +41,7 @@ from ccnpy.flic.tree.TreeParameters import TreeParameters
 from tests.MockChunker import create_file_chunks
 
 
-class TraversalTest(unittest.TestCase):
+class TraversalTest(CcnpyTestCase):
     # TODO: This test does not iterate over internal manifests, it only tests leafs.
 
     def setUp(self):
@@ -115,8 +116,8 @@ class TraversalTest(unittest.TestCase):
 
     def test_encrypted_leaf_manifest(self):
         key = AeadGcm.generate(bits=128)
-        encryptor = AeadEncryptor(key=key, key_number=77)
-        decryptor = AeadDecryptor(key=key, key_number=77)
+        encryptor = AeadEncryptor(AeadParameters(key=key, key_number=77))
+        # decryptor = AeadDecryptor(AeadParameters(key=key, key_number=77))
 
         # This size needs to be small enough that all the pointers fit in one manifest.
         expected = array("B", range(0, 30))
@@ -130,7 +131,7 @@ class TraversalTest(unittest.TestCase):
 
         # The reconstructed application data
         buffer = TreeIO.DataBuffer()
-        keystore = InsecureKeystore().add_aes_key(key_num=77, key=key, salt=None)
+        keystore = InsecureKeystore().add_aes_key(AeadParameters(key_number=77, key=key, aead_salt=None))
         traversal = Traversal(data_writer=buffer, packet_input=packet_buffer, keystore=keystore)
         traversal.preorder(root, nc_cache=Traversal.NameConstructorCache(copy={1: self.hash_schema}))
         self.assertEqual(expected, buffer.buffer)

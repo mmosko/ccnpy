@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import argparse
+import logging
 import sys
 from abc import ABC, abstractmethod
 
@@ -72,7 +73,6 @@ class ManifestDirectoryReader(ManifestReader):
         self._root_hash = args.hash_restriction
         self._dir = args.in_dir
         self._keystore = keystore
-        self._decryptors = {}
         self._reader = TreeIO.PacketDirectoryReader(self._dir)
         self._writer = self._create_writer(args)
         self.debug = False
@@ -102,8 +102,7 @@ class ManifestDirectoryReader(ManifestReader):
         with self._writer:
             traverser = Traversal(packet_input=self._reader,
                                   data_writer=self._writer,
-                                  keystore=self._keystore,
-                                  debug=self.debug)
+                                  keystore=self._keystore)
             # this will walk the manifest tree and write the app data to `data_writer`.
             traverser.traverse(root_name=self._root_name, hash_restriction=self._root_hash)
 
@@ -113,6 +112,11 @@ class ManifestDirectoryReader(ManifestReader):
 
 
 def run():
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('ccnpy.flic.tree.Traversal').setLevel(logging.DEBUG)
+    logging.getLogger('ccnpy.flic.RsaOaepCtx.RsaOaepImpl').setLevel(logging.DEBUG)
+    logging.getLogger('ccnpy.crypto.InsecureKeystore').setLevel(logging.DEBUG)
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--name', dest="name", default=None, help='CCNx URI for root manifest', required=True)

@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.LeafSize import LeafSize
@@ -22,7 +22,7 @@ from ccnpy.flic.tlvs.SuffixComponentType import SuffixComponentType
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class SuffixComponentTypeTest(unittest.TestCase):
+class SuffixComponentTypeTest(CcnpyTestCase):
     def test_serialize(self):
         original = SuffixComponentType(0x1234)
         actual = original.serialize()

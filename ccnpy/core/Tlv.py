@@ -101,6 +101,9 @@ class Tlv(Serializable):
 
         return result
 
+    def __hash__(self):
+        return hash(self._wire_format.tobytes())
+
     @classmethod
     def deserialize(cls, buffer):
         if len(buffer) < 4:

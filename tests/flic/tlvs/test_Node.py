@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.flic.HashGroupBuilder import HashGroupBuilder
@@ -29,7 +29,7 @@ from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NodeTest(unittest.TestCase):
+class NodeTest(CcnpyTestCase):
     def _create_node(self):
         nd = NodeData(subtree_size=SubtreeSize(1000))
 

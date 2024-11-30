@@ -14,13 +14,13 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
 from tests.MockKeys import aes_key
 
 
-class AeadKeyTest(unittest.TestCase):
+class AeadKeyTest(CcnpyTestCase):
     def _aead(self, key, nonce_length):
         buffer = array.array("B", b'somewhere over the rainbow')
         aad = array.array("B", b'way up high')

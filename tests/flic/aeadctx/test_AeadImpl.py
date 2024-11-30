@@ -14,15 +14,18 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
 from ccnpy.crypto.AeadKey import AeadGcm, AeadCcm
 from ccnpy.flic.aeadctx.AeadData import AeadData
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
 from ccnpy.flic.tlvs.AeadMode import AeadMode
 from ccnpy.flic.tlvs.GroupData import GroupData
 from ccnpy.flic.tlvs.HashGroup import HashGroup
+from ccnpy.flic.tlvs.KdfData import KdfData
+from ccnpy.flic.tlvs.KdfInfo import KdfInfo
 from ccnpy.flic.tlvs.Manifest import Manifest
 from ccnpy.flic.tlvs.Node import Node
 from ccnpy.flic.tlvs.NodeData import NodeData
@@ -35,7 +38,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 from tests.MockKeys import aes_key
 
 
-class AeadImplTest(unittest.TestCase):
+class AeadImplTest(CcnpyTestCase):
     # # openssl rand 16 | xxd - -include
     # key = array.array('B', [0x18, 0xd9, 0xab, 0x0a, 0x62, 0x8c, 0x54, 0xea,
     #                         0x32, 0x83, 0xcd, 0x80, 0x4a, 0xb1, 0x94, 0xac])
@@ -82,7 +85,7 @@ class AeadImplTest(unittest.TestCase):
 
     def test_encrypt_decrypt_node(self):
         key = AeadGcm(aes_key)
-        psk = AeadImpl(key=key, key_number=55)
+        psk = AeadImpl(AeadParameters(key=key, key_number=55))
 
         node = self._create_node()
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
@@ -96,7 +99,7 @@ class AeadImplTest(unittest.TestCase):
     def test_encrypt_decrypt_node_with_salt(self):
         key = AeadGcm(aes_key)
         # the salt should be paded out to 4 bytes
-        psk = AeadImpl(key=key, key_number=55, aead_salt=0x010203)
+        psk = AeadImpl(AeadParameters(key=key, key_number=55, aead_salt=0x010203))
 
         node = self._create_node()
         security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
@@ -110,8 +113,22 @@ class AeadImplTest(unittest.TestCase):
     def test_encrypt_decrypt_manifest(self):
         node = self._create_node()
         key = AeadCcm(aes_key)
-        psk = AeadImpl(key=key, key_number=55)
+        psk = AeadImpl(AeadParameters(key=key, key_number=55))
         encrypted_manifest = psk.create_encrypted_manifest(node)
         decrypted_manifest = psk.decrypt_manifest(encrypted_manifest)
         expected = Manifest(node=node)
         self.assertEqual(expected, decrypted_manifest)
+
+    def test_encrypt_decrypt_node_with_kdf(self):
+        key = AeadGcm(aes_key)
+        info = b'a publisher id'
+        kdf_data = KdfData.create_hkdf_sha256(KdfInfo(info))
+        psk = AeadImpl(AeadParameters(key=key, key_number=55, aead_salt=0x010203, kdf_data=kdf_data, kdf_salt=0x030609))
+
+        node = self._create_node()
+        security_ctx, encrypted_node, auth_tag = psk.encrypt(node)
+
+        plaintext = psk.decrypt_node(security_ctx=security_ctx,
+                                     encrypted_node=encrypted_node,
+                                     auth_tag=auth_tag)
+        self.assertEqual(node, plaintext)

@@ -14,14 +14,14 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
 
 
-class LinkTest(unittest.TestCase):
+class LinkTest(CcnpyTestCase):
     def test_serialize(self):
         name = Name.from_uri('ccnx:/a/b')
         keyid = HashValue(1, b'ab')

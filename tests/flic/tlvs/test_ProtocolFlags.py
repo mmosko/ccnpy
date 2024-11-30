@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.exceptions.CannotParseError import CannotParseError
@@ -22,7 +22,7 @@ from ccnpy.flic.tlvs.ProtocolFlags import ProtocolFlags
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class ProtocolFlagsTest(unittest.TestCase):
+class ProtocolFlagsTest(CcnpyTestCase):
     def test_serialize(self):
         flags = array.array("B", [1, 3, 5, 7, 9])
         pf = ProtocolFlags(flags)

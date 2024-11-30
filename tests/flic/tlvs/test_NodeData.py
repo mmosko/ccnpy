@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Link import Link
@@ -35,7 +35,7 @@ from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class NodeDataTest(unittest.TestCase):
+class NodeDataTest(CcnpyTestCase):
     def setUp(self):
         SchemaImplFactory.reset_nc_id()
 

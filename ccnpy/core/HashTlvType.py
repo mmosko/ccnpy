@@ -46,6 +46,9 @@ class HashTlvType(TlvType):
             return False
         return self._tlv == other._tlv
 
+    def __hash__(self):
+        return hash(self._tlv)
+    
     @classmethod
     def parse(cls, tlv):
         if tlv.type() != cls.class_type():

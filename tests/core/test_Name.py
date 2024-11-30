@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Name import Name
 from ccnpy.core.Tlv import Tlv
 
 
-class NameTest(unittest.TestCase):
+class NameTest(CcnpyTestCase):
     def test_from_uri(self):
         uri='ccnx:/apple/banana/cherry/durian'
         name = Name.from_uri(uri)

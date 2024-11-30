@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import argparse
+import logging
 from pathlib import PurePath
 
 from ccnpy.apps.packet_utils import validate_packet, decrypt_manifest
@@ -68,6 +69,10 @@ class PacketReader:
 
 
 def run():
+    logging.basicConfig(level=logging.INFO)
+    # logging.getLogger('ccnpy.crypto.InsecureKeystore').setLevel(logging.DEBUG)
+    logging.getLogger('ccnpy.apps.cli_utils').setLevel(logging.DEBUG)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', dest="in_dir", default='.', help="input directory (default=%r)" % '.')
 

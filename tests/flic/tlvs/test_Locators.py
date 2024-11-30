@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Link import Link
 from ccnpy.core.Name import Name
@@ -24,7 +24,7 @@ from ccnpy.flic.tlvs.Locators import Locators
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LocatorsTest(unittest.TestCase):
+class LocatorsTest(CcnpyTestCase):
     wire_format = array.array("B", [
                                     0, TlvNumbers.T_LOCATORS, 0, 31,
                                     0, TlvNumbers.T_LINK, 0, 14,

@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue, HashFunctionType
 from ccnpy.core.KeyId import KeyId
@@ -30,7 +30,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 from tests.MockKeys import shared_512_pub_pem, aes_key, shared_1024_pub_pem, shared_1024_key_pem
 
 
-class RsaOaepWrapperTest(unittest.TestCase):
+class RsaOaepWrapperTest(CcnpyTestCase):
 
     def setUp(self):
         wk = WrappedKey(array.array("B", [1, 2, 3, 4]))

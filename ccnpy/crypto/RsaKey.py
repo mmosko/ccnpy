@@ -15,6 +15,7 @@
 
 import array
 import hashlib
+import logging
 import math
 
 from cryptography.exceptions import InvalidSignature
@@ -32,7 +33,7 @@ class RsaKey:
     """
     TODO: Need a way to create an RSA key from the DER encoded public key
     """
-    DEBUG=False
+    logger = logging.getLogger(__name__)
     _SHA256_OVERHEAD = 66 #RSA OAEP overhead for sha 256 hash
 
     def __init__(self, pem_key, password=None):
@@ -60,12 +61,13 @@ class RsaKey:
         else:
             raise RuntimeError("Could not determine type of key from PEM file")
 
-        if self.DEBUG:
+        if self.logger.isEnabledFor(logging.DEBUG):
             if isinstance(self._public_key, rsa.RSAPublicKey):
-                print(self._public_key.public_numbers())
-                print(self._public_key.key_size)
+                self.logger.debug('RSA public keysize: %s', self._public_key.key_size)
 
     def __initialize_private_key(self, pem_key, password):
+        if password is not None and len(password) == 0:
+            password = None
         self._private_key = serialization.load_pem_private_key(
                                 pem_key,
                                 password=password,

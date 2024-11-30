@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
 from ccnpy.core.Tlv import Tlv
@@ -25,7 +25,7 @@ from ccnpy.flic.tlvs.SubtreeSize import SubtreeSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class HashGroupTest(unittest.TestCase):
+class HashGroupTest(CcnpyTestCase):
     wire_format = array.array("B", [
                                      0, TlvNumbers.T_HASH_GROUP, 0, 32,
                                      # Group Data

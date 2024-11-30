@@ -27,4 +27,4 @@ class Nonce(OctetTlvType):
         return TlvNumbers.T_NONCE
 
     def __repr__(self):
-        return "Nonce: {%r}" % super().__repr__()
+        return "Nonce(%r)" % super().__repr__()

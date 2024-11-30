@@ -14,6 +14,7 @@
 
 
 from ccnpy.core.TlvType import IntegerTlvType
+from ccnpy.crypto.AeadKey import AeadKey, AeadGcm, AeadCcm
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 class AeadMode(IntegerTlvType):
@@ -60,6 +61,18 @@ class AeadMode(IntegerTlvType):
     def create_aes_ccm_256(cls):
         return cls(mode=cls.__AEAD_AES_256_CCM)
 
+    @classmethod
+    def from_key(cls, key: AeadKey):
+        if isinstance(key, AeadGcm) and len(key) == 128:
+            return cls.create_aes_gcm_128()
+        if isinstance(key, AeadGcm) and len(key) == 256:
+            return cls.create_aes_gcm_256()
+        if isinstance(key, AeadCcm) and len(key) == 128:
+            return cls.create_aes_ccm_128()
+        if isinstance(key, AeadCcm) and len(key) == 256:
+            return cls.create_aes_ccm_256()
+        raise ValueError(f"Unsupported key type: {key}")
+
     def __init__(self, mode):
         super().__init__(mode)
 
@@ -78,3 +91,9 @@ class AeadMode(IntegerTlvType):
     def is_aes_ccm_256(self):
         return self._value == self.__AEAD_AES_256_CCM
 
+    def key_bits(self):
+        if self.is_aes_gcm_128() or self.is_aes_ccm_128():
+            return 128
+        if self.is_aes_gcm_256() or self.is_aes_ccm_256():
+            return 256
+        raise ValueError(f"Unsupported mode: {self}")

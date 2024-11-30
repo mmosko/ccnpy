@@ -11,35 +11,49 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
+import logging
+from typing import Dict, Tuple
 
-from .AeadImpl import AeadImpl
 from .RsaOaepImpl import RsaOaepImpl
 from ..ManifestDecryptor import ManifestDecryptor
+from ..tlvs.KeyNumber import KeyNumber
 from ..tlvs.RsaOaepCtx import RsaOaepCtx
+from ...core.KeyId import KeyId
 from ...crypto.InsecureKeystore import InsecureKeystore
 
 
 class RsaOaepDecryptor(ManifestDecryptor):
-    @classmethod
-    def create(cls, keystore: InsecureKeystore, rsa_oaep_ctx: RsaOaepCtx):
-        impl = RsaOaepImpl.create(keystore=keystore, rsa_oaep_ctx=rsa_oaep_ctx)
+    logger = logging.getLogger(__name__)
 
-        # def __init__(self, wrapper: Optional[RsaOaepWrapper], key: AeadKey, key_number: KeyNumber, salt: int):
+    class ImplCache:
+        def __init__(self):
+            self.cache: Dict[Tuple[KeyId, KeyNumber], RsaOaepImpl] = {}
 
-    def __init__(self, keystore: InsecureKeystore)
+        def get(self, key_id: KeyId, key_number: KeyNumber) -> RsaOaepImpl:
+            return self.cache[(key_id, key_number)]
+
+        def add(self, key_id: KeyId, key_number: KeyNumber, impl: RsaOaepImpl):
+            self.cache[(key_id, key_number)] = impl
+
+    def __init__(self, keystore: InsecureKeystore):
         self._keystore = keystore
-        # if isinstance(salt, bytes):
-        #     salt = int.from_bytes(salt)
-        # self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=key.key(), salt=salt)
-        # self._wrapper = RsaOaepWrapper.create_sha256(key_id=wrapping_key.keyid(), wrapped_key=self._wrapped_key)
-        # self._impl = RsaOaepImpl(wrapper=self._wrapper, key=key, key_number=key_number, salt=salt)
+        self._cache = RsaOaepDecryptor.ImplCache()
 
-    # def __init__(self, key, key_number: int, salt: Optional[int] = None):
-    #     self._psk = AeadImpl(key, key_number, salt)
+    def _get_impl(self, security_ctx: RsaOaepCtx) -> RsaOaepImpl:
+        try:
+            return self._cache.get(key_id=security_ctx.key_id(), key_number=security_ctx.key_number())
+        except KeyError:
+            pass
+
+        impl = RsaOaepImpl.create(keystore=self._keystore, rsa_oaep_ctx=security_ctx)
+        self._cache.add(key_id=security_ctx.key_id(), key_number=security_ctx.key_number(), impl=impl)
+        self.logger.debug('Create new impl: %s', impl)
+        return impl
 
     def decrypt_manifest(self, manifest):
-        return self._psk.decrypt_manifest(manifest)
+        impl = self._get_impl(security_ctx=manifest.security_ctx())
+        return impl.decrypt_manifest(manifest)
 
     def decrypt_node(self, security_ctx, encrypted_node, auth_tag):
-        return self._psk.decrypt_node(security_ctx, encrypted_node, auth_tag)
+        impl = self._get_impl(security_ctx=security_ctx())
+        return impl.decrypt_node(security_ctx, encrypted_node, auth_tag)

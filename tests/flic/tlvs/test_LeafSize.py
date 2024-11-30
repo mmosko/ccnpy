@@ -14,14 +14,14 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.tlvs.LeafSize import LeafSize
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class LeafSizeTest(unittest.TestCase):
+class LeafSizeTest(CcnpyTestCase):
     def test_serialize(self):
         ss = LeafSize(0x010203)
         actual = ss.serialize()

@@ -14,7 +14,7 @@
 
 
 import array
-import unittest
+from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.Tlv import Tlv
 from ccnpy.flic.aeadctx.AeadData import AeadData
@@ -27,7 +27,7 @@ from ccnpy.flic.tlvs.Nonce import Nonce
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
-class AeadCtxTest(unittest.TestCase):
+class AeadCtxTest(CcnpyTestCase):
 
     def test_serialize(self):
         psk_ctx = AeadCtx(AeadData(key_number=KeyNumber(12), nonce=Nonce([1, 2]), mode=AeadMode.create_aes_gcm_128()))
