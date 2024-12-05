@@ -12,3 +12,12 @@ clean:
 	coverage erase
 	-coverage run -m unittest
 
+bump:
+	poetry version patch
+
+testpub:
+	poetry publish -r test-pypi
+
+publish:
+	poetry publish
+

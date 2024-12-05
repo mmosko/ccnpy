@@ -1,10 +1,22 @@
 [tool.poetry]
 name = "ccnpy"
-version = "0.1.0"
+version = "0.1.1"
 description = "A pure python implementation of the CCNx client."
 authors = ["Marc Mosko <marc@mosko.org>"]
 license = "Apache 2.0"
 readme = "README.md"
+keywords = ["CCNx", "ICN", "Information Centric Networking"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Topic :: System :: Networking"
+]
+
+[project.urls]
+Homepage = "https://github.com/mmosko/ccnpy"
+Issues = "https://github.com/mmosko/ccnpy/issues"
 
 [tool.poetry.dependencies]
 python = "^3.12"
