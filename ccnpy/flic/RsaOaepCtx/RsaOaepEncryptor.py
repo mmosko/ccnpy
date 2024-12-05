@@ -54,7 +54,7 @@ class RsaOaepEncryptor(ManifestEncryptor):
                 kdf_data=kdf_data))
 
     def __init__(self, wrapping_key: RsaKey, params: AeadParameters):
-        self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, key=params.key.key(), salt=params.aead_salt)
+        self._wrapped_key = WrappedKey.create(wrapping_key=wrapping_key, params=params)
         self._wrapper = RsaOaepWrapper.create_sha256(key_id=KeyId(wrapping_key.keyid()), wrapped_key=self._wrapped_key)
         self._impl = RsaOaepImpl(wrapper=self._wrapper, aead_params=params)
 

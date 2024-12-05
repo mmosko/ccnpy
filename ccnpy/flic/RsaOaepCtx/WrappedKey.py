@@ -12,11 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from array import array
-from typing import Tuple
+from typing import Tuple, Optional
 
+from ccnpy.core.HashValue import HashFunctionType
+from ccnpy.core.KeyId import KeyId
 from ccnpy.core.Tlv import Tlv
 from ccnpy.core.TlvType import OctetTlvType
 from ccnpy.crypto.RsaKey import RsaKey
+from ccnpy.flic.RsaOaepCtx.HashAlg import HashAlg
+from ccnpy.flic.aeadctx.AeadData import AeadData
+from ccnpy.flic.aeadctx.AeadParameters import AeadParameters
+from ccnpy.flic.tlvs.AeadMode import AeadMode
+from ccnpy.flic.tlvs.KdfData import KdfData
+from ccnpy.flic.tlvs.KeyNumber import KeyNumber
 from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
@@ -25,14 +33,48 @@ class WrappedKey(OctetTlvType):
     def class_type(cls):
         return TlvNumbers.T_WRAPPED_KEY
 
-    @classmethod
-    def create(cls, wrapping_key: RsaKey, key: array | bytes, salt: int):
-        if salt is not None and (salt < 0 or salt > 0xFFFFFFFF):
-            raise ValueError(f'If salt is specified, it must be unsigned 4-byte integer, got: {salt}')
+    @staticmethod
+    def _create_label(key_number: KeyNumber, mode: AeadMode,
+                      kdf_data: Optional[KdfData], key_id: KeyId, hash_alg: HashAlg):
 
-        plaintext = Tlv.uint32_to_array(salt)
-        plaintext.extend(key)
-        ciphertext = wrapping_key.encrypt_oaep_sha256(plaintext)
+        if kdf_data is not None:
+            kdf_bytes = kdf_data.kdf_info().serialize().tobytes()
+        else:
+            kdf_bytes = b''
+
+        additional_info = (b'FLIC RSA-OAEP'
+                            + key_number.serialize().tobytes()
+                            + mode.serialize().tobytes()
+                            + kdf_bytes
+                            + key_id.serialize().tobytes()
+                            + hash_alg.serialize().tobytes())
+        return additional_info
+
+    @classmethod
+    def create(cls, wrapping_key: RsaKey, params: AeadParameters):
+        """
+        The label field:
+
+            AdditionalInfo = "FLIC RSA-OAEP" ||
+                     KeyNum || AeadMode || [KDFData] ||
+                     KeyID || HashAlg ||
+                     KeyLink (if present in RsaOaepWrapper)
+        """
+
+        if params.aead_salt is not None and (params.aead_salt < 0 or params.aead_salt > 0xFFFFFFFF):
+            raise ValueError(f'If salt is specified, it must be unsigned 4-byte integer, got: {params.aead_salt}')
+
+        plaintext = Tlv.uint32_to_array(params.aead_salt)
+        plaintext.extend(params.key.key())
+        ciphertext = wrapping_key.encrypt_oaep_sha256(
+            plaintext=plaintext,
+            label=cls._create_label(
+                key_id = KeyId(wrapping_key.keyid()),
+                key_number = params.key_number,
+                mode = AeadMode.from_key(params.key),
+                kdf_data = params.kdf_data,
+                hash_alg = HashAlg(HashFunctionType.T_SHA_256)
+            ))
         return cls(ciphertext=ciphertext)
 
     def __init__(self, ciphertext):
@@ -50,8 +92,18 @@ class WrappedKey(OctetTlvType):
     def serialize(self):
         return self._tlv.serialize()
 
-    def decrypt(self, wrapping_key: RsaKey) -> Tuple[int, array]:
-        plaintext = wrapping_key.decrypt_oaep_sha256(self._value)
+    def decrypt(self, wrapping_key: RsaKey, aead_data: AeadData) -> Tuple[int, array]:
+
+        plaintext = wrapping_key.decrypt_oaep_sha256(
+            cyphertext=self._value,
+            label=self._create_label(
+                key_id=KeyId(wrapping_key.keyid()),
+                key_number=aead_data.key_number(),
+                mode=aead_data.mode(),
+                kdf_data=aead_data.kdf_data(),
+                hash_alg=HashAlg(HashFunctionType.T_SHA_256)
+            ))
+
         if len(plaintext) < 20:
             raise ValueError("There must be at least 20 bytes (salt + 128 bit key")
 

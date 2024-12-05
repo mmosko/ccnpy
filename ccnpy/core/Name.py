@@ -105,6 +105,9 @@ class Name(TlvType):
         else:
             return v.decode('UTF-8')
 
+    def as_uri(self):
+        return 'ccnx:/' + '/'.join([f'{c.type()}={c.value()}' for c in self._components])
+
     def append(self, component: NameComponent):
         """
         Create a new Name by appending the given name component
@@ -138,13 +141,14 @@ class Name(TlvType):
         """
         return len(self._components)
 
-    def component(self, index):
+    def component(self, index) -> NameComponent:
         """
         Returns the index name component as its TLV value
 
         :param index:
         :return:
         """
+        assert index >= 0
         return self._components[index]
 
     @classmethod

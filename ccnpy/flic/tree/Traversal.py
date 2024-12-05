@@ -130,7 +130,7 @@ class Traversal:
             self.logger.debug("Traversal: %s", body)
 
             if self._build_graph:
-                self._manifest_graph.add_data(data_hash=packet.content_object_hash())
+                self._manifest_graph.add_data(data_hash=packet.content_object_hash(), name=packet.body().name())
 
             self._write_data(body.payload())
 

@@ -89,9 +89,9 @@ class test_ManifestTree(CcnpyTestCase):
 
         expected = array("B", private_key_pem)
         actual_data = TreeIO.DataBuffer()
-        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=False)
+        traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=True)
         traversal.preorder(root_manifest, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
-        # traversal.get_graph().save('tree.dot')
+        traversal.get_graph().save('tree_nary_1_2_14.dot')
 
         self.assertEqual(expected, actual_data.buffer)
         self.assertEqual(8, actual_data.count)
@@ -166,7 +166,7 @@ class test_ManifestTree(CcnpyTestCase):
             )
         )
         expected_top_packet = expected_top_manifest.packet(name=manifest_prefix.append_manifest_id(0))
-        print(expected_top_packet)
+        # print(expected_top_packet)
         self.assertEqual(expected_top_packet, actual_top_manifest_packet)
 
     def test_segmented_tree(self):
@@ -191,7 +191,7 @@ class test_ManifestTree(CcnpyTestCase):
         actual_data = TreeIO.DataBuffer()
         traversal = Traversal(data_writer=actual_data, packet_input=self.packet_buffer, build_graph=True)
         traversal.preorder(root_manifest_packet, nc_cache=Traversal.NameConstructorCache(copy=tree.name_context().export_schemas()))
-        # traversal.get_graph().plot()
+        traversal.get_graph().save('segmented.dot')
 
         self.assertEqual(expected, actual_data.buffer)
 

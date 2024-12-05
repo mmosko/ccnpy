@@ -20,7 +20,7 @@ from networkx.drawing.nx_agraph import graphviz_layout
 
 from ccnpy.core.DisplayFormatter import DisplayFormatter
 from ccnpy.core.HashValue import HashValue
-from ccnpy.core.Name import Name
+from ccnpy.core.Name import Name, NameComponent
 from ccnpy.flic.tlvs.Node import Node
 
 
@@ -62,31 +62,38 @@ class ManifestGraph:
         """Resume adding to the graph"""
         self._paused = False
 
-    def add_manifest(self, hash_value: HashValue, node: Node, name: Name):
+    @classmethod
+    def _label_from_name(cls, hash_value: HashValue, name: Name):
+        if name is not None:
+            last_segment = name.component(name.count()-1)
+            if last_segment.type() in [NameComponent.manifest_id_type(), NameComponent.chunk_id_type()]:
+                return str(last_segment.value_as_number())
+            else:
+                return name.as_uri()
+        return cls._hash_to_name(hash_value)
+
+    def add_manifest(self, hash_value: HashValue, node: Node, name: Optional[Name]):
         if self._paused:
             return
 
         self._invalidate_graph()
         children = [x for x in node.hash_values()]
-        if name is not None:
-            parent_name = str(name[-1])
-        else:
-            parent_name = None
+        parent_name = self._label_from_name(hash_value, name)
         self._entries[hash_value] = ManifestGraph.EntryRecord(
             is_data=False,
             parent=hash_value,
             parent_name=parent_name,
             children=children)
 
-    def add_data(self, data_hash: HashValue):
+    def add_data(self, data_hash: HashValue, name: Optional[Name]):
         if self._paused:
             return
-
         self._invalidate_graph()
+        parent_name = self._label_from_name(data_hash, name)
         self._entries[data_hash] = ManifestGraph.EntryRecord(
             is_data=True,
             parent=data_hash,
-            parent_name=None,
+            parent_name=parent_name,
             children=[])
 
     def save(self, path):

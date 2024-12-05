@@ -2,10 +2,10 @@
 .coverage
 *__pycache__*
 .idea/
-output/
-test_key.pem
+output*/
 poetry.lock
 dist/
 *.dot
 *.pem
 *.pub
+*.png

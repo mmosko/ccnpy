@@ -85,7 +85,9 @@ class RsaOaepImpl(AeadImpl):
             if not wrapping_key.has_private_key():
                 raise ValueError(f'The keystore does not have a private key for keyid {rsa_oaep_wrapper.key_id()}')
 
-            aead_salt, aes_key = rsa_oaep_wrapper.wrapped_key().decrypt(wrapping_key)
+            aead_salt, aes_key = rsa_oaep_wrapper.wrapped_key().decrypt(
+                wrapping_key=wrapping_key,
+                aead_data=rsa_oaep_ctx.aead_data())
 
             aead_key = cls._create_aead_key(rsa_oaep_ctx.aead_data(), aes_key)
             params = AeadParameters(

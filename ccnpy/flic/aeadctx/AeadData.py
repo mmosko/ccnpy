@@ -14,6 +14,7 @@
 from array import array
 from typing import Optional
 
+from .AeadParameters import AeadParameters
 from ..tlvs.AeadMode import AeadMode
 from ..tlvs.KdfData import KdfData
 from ..tlvs.KeyNumber import KeyNumber

@@ -18,6 +18,7 @@ from .HashGroup import HashGroup
 from .NodeData import NodeData
 from .TlvNumbers import TlvNumbers
 from ...core.HashValue import HashValue
+from ...core.Pad import Pad
 from ...core.Tlv import Tlv
 from ...core.TlvType import TlvType
 from ...exceptions.CannotParseError import CannotParseError
@@ -75,11 +76,12 @@ class Node(TlvType):
     def class_type(cls):
         return TlvNumbers.T_NODE
 
-    def __init__(self, node_data: Optional[NodeData] = None, hash_groups: List[HashGroup] = None):
+    def __init__(self, node_data: Optional[NodeData] = None, hash_groups: List[HashGroup] = None, pad_length: int = None):
         """
 
         :param node_data: (optional) ccnpy.flic.NodeData
         :param hash_groups: a list of HashGroups
+        :param pad_length: Pad the Node out to `pad_length` bytes
         """
         TlvType.__init__(self)
         self._node_data = node_data
@@ -94,7 +96,18 @@ class Node(TlvType):
         if not isinstance(hash_groups, list) or len(hash_groups) == 0:
             raise TypeError("hash_groups must be a list of one or more ccnpy.flic.HashGroup")
 
-        self._tlv = Tlv(self.class_type(), [self._node_data, *self._hash_groups])
+        self._tlv = self._create_padded_tlv(pad_length)
+
+    def _create_padded_tlv(self, pad_length: int):
+        value = Tlv.flatten([self._node_data, *self._hash_groups])
+        if pad_length is not None:
+            # +4 to account for the node's T and L.
+            deficit = pad_length - (4 + len(value))
+            # 4 is the minimum length pad
+            if deficit >= 4:
+                pad = Pad(length=deficit - 4)
+                value = Tlv.flatten([self._node_data, *self._hash_groups, pad])
+        return Tlv(self.class_type(), value)
 
     def __len__(self):
         return len(self._tlv)
@@ -181,6 +194,8 @@ class Node(TlvType):
                 hash_group = HashGroup.parse(inner_tlv)
                 hash_groups.append(hash_group)
 
+            elif inner_tlv.type() == Pad.class_type():
+                pass
             else:
                 raise ParseError("Unsupported inner TLV type %r" % inner_tlv)
 

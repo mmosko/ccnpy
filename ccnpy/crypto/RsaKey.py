@@ -17,6 +17,7 @@ import array
 import hashlib
 import logging
 import math
+from typing import Optional
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -203,11 +204,12 @@ class RsaKey:
 
         return result
 
-    def encrypt_oaep_sha256(self, plaintext):
+    def encrypt_oaep_sha256(self, plaintext: bytes, label: Optional[bytes] = None):
         """
         Encrypt the plain text using RSA-OAEP padding with SHA256 and MGF1.
 
         :param plaintext: Bytes or an array
+        :param label: Optional label (additional info) for OAEP padding
         :returns: An array
         """
         if isinstance(plaintext, array.array):
@@ -223,13 +225,13 @@ class RsaKey:
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
-                label=None
+                label=label
             )
         )
 
         return array.array("B", output)
 
-    def decrypt_oaep_sha256(self, cyphertext):
+    def decrypt_oaep_sha256(self, cyphertext: bytes, label: Optional[bytes] = None):
         """
         Decrypt the message using RSA-OAEP with SHA256 and MGF1
 
@@ -244,7 +246,7 @@ class RsaKey:
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
-                label=None
+                label=label
             )
         )
 
@@ -279,7 +281,7 @@ class RsaKey:
             pem = key_file.read()
             return cls(pem, password)
 
-    def keyid(self):
+    def keyid(self) -> HashValue:
         """
         sha256 of the public key in DER format returned in a ccnpy.HashValue
         :return:

@@ -455,5 +455,7 @@ class TreeBuilder:
 
     def _add_data_to_graph(self, chunk_metadata: ChunkMetadata):
         if self._manifest_graph is not None:
-            self._manifest_graph.add_data(data_hash=chunk_metadata.content_object_hash)
+            self._manifest_graph.add_data(
+                data_hash=chunk_metadata.content_object_hash,
+                name=chunk_metadata.name)
 

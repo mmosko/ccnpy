@@ -14,6 +14,8 @@
 
 
 import array
+
+from ccnpy.core.Pad import Pad
 from tests.ccnpy_testcase import CcnpyTestCase
 
 from ccnpy.core.HashValue import HashValue
@@ -30,7 +32,7 @@ from ccnpy.flic.tlvs.TlvNumbers import TlvNumbers
 
 
 class NodeTest(CcnpyTestCase):
-    def _create_node(self):
+    def _create_node(self, pad_length = None):
         nd = NodeData(subtree_size=SubtreeSize(1000))
 
         h1 = HashValue(1, array.array('B', [1, 2]))
@@ -43,7 +45,7 @@ class NodeTest(CcnpyTestCase):
         hg1 = HashGroup(group_data=gd, pointers=p1)
         hg2 = HashGroup(pointers=p2)
 
-        return Node(node_data=nd, hash_groups=[hg1, hg2])
+        return Node(node_data=nd, hash_groups=[hg1, hg2], pad_length=pad_length)
 
     def test_serialize(self):
         node = self._create_node()
@@ -69,6 +71,38 @@ class NodeTest(CcnpyTestCase):
                                      0, TlvNumbers.T_PTRS, 0,  6,
                                      0, 3, 0, 2, 5, 6
                                      ])
+        self.assertEqual(expected, actual)
+
+    def test_serialize_with_pad(self):
+        node = self._create_node(96)
+        actual = node.serialize()
+
+        expected = array.array("B", [
+                                     0, TlvNumbers.T_NODE, 0, 92,
+                                     # NodeData
+                                     0, TlvNumbers.T_NODE_DATA, 0, 6,
+                                     0, TlvNumbers.T_SUBTREE_SIZE, 0,  2, 0x03, 0xE8,
+                                     # HashGroup 1
+                                     0, TlvNumbers.T_HASH_GROUP, 0,  26,
+                                     # Group Data
+                                     0, TlvNumbers.T_GROUP_DATA, 0, 6,
+                                     0, TlvNumbers.T_SUBTREE_SIZE, 0, 2, 2, 0x34,
+                                     # Pointers
+                                     0, TlvNumbers.T_PTRS, 0, 12,
+                                     0, 1, 0, 2, 1, 2,
+                                     0, 2, 0, 2, 3, 4,
+                                     # Hash Group 2
+                                     0,  TlvNumbers.T_HASH_GROUP, 0,  10,
+                                     # Pointers
+                                     0, TlvNumbers.T_PTRS, 0,  6,
+                                     0, 3, 0, 2, 5, 6,
+                                     0x0F, 0xFE, 0, 34,
+                                     0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0
+        ])
         self.assertEqual(expected, actual)
 
     def test_hash_values(self):
