@@ -48,6 +48,9 @@ class ManifestTree:
         self._tree_options = tree_options
         self._name_ctx = NameConstructorContext.create(self._tree_options)
         self._manifest_graph = manifest_graph
+        self._file_metadata = self._name_ctx.data_schema_impl.chunk_data(self._data_input, self._packet_output)
+        self._manifest_factory = ManifestFactory(tree_options=self._tree_options, manifest_graph=self._manifest_graph)
+        self._optimized_params = self._calculate_optimal_tree(file_metadata=self._file_metadata, manifest_factory=self._manifest_factory)
 
     def name_context(self):
         return self._name_ctx
@@ -58,26 +61,27 @@ class ManifestTree:
 
         :return: The root_manifest packet, which is the named and signed manifest
         """
-
-        file_metadata = self._name_ctx.data_schema_impl.chunk_data(self._data_input, self._packet_output)
-        manifest_factory = ManifestFactory(tree_options=self._tree_options, manifest_graph=self._manifest_graph)
-        optimized_params = self._calculate_optimal_tree(file_metadata=file_metadata,
-                                                        manifest_factory=manifest_factory)
-
         if self._tree_options.debug:
-            print(f"Optimized parameters: {optimized_params}")
+            print(f"Optimized parameters: {self._optimized_params}")
 
-        top_manifest_packet = self._build_tree(tree_parameters=optimized_params,
-                                               manifest_factory=manifest_factory,
-                                               file_metadata=file_metadata)
+        top_manifest_packet = self.build_top()
+        root_packet = self.build_root(top_manifest_packet=top_manifest_packet)
+        return root_packet
 
+    def build_top(self) -> Packet:
+        top_manifest_packet = self._build_tree(tree_parameters=self._optimized_params,
+                                               manifest_factory=self._manifest_factory,
+                                               file_metadata=self._file_metadata)
+        return top_manifest_packet
+
+    def build_root(self, top_manifest_packet: Packet) -> Packet:
         root_packet = self._create_root_manifest(top_manifest_packet=top_manifest_packet,
-                                                 manifest_factory=manifest_factory,
-                                                 total_file_bytes=file_metadata.total_bytes)
+                                                 manifest_factory=self._manifest_factory,
+                                                 total_file_bytes=self._file_metadata.total_bytes)
         self._packet_output.put(root_packet)
         return root_packet
 
-    def _create_root_manifest(self, top_manifest_packet: Packet, manifest_factory: ManifestFactory, total_file_bytes):
+    def _create_root_manifest(self, manifest_factory: ManifestFactory, total_file_bytes, top_manifest_packet: Packet):
         """
         The root manifest has a CCNx Name and public key signature.  It is a manifest with one pointer to the
         top manifest packet.
