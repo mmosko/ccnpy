@@ -38,17 +38,19 @@ class ManifestTree:
         If `tree_options.max_tree_degree` is not given, it will pick a degree that minimizes the wasted space
         in the tree.
 
-        :param data_input: Something we can call read() on that returns byte arrays, e.g. open(filename, 'rb')
+        :param data_input: Something we can call read() on, or a FileMetadata
         :param packet_output: Something we can call put(ccnpy.Packet) on to output packets (see .tree.TreeIO)
         :param tree_options:
         :param manifest_graph: If not None, will be filled in as we build the tree
         """
-        self._data_input = data_input
         self._packet_output = packet_output
         self._tree_options = tree_options
         self._name_ctx = NameConstructorContext.create(self._tree_options)
         self._manifest_graph = manifest_graph
-        self._file_metadata = self._name_ctx.data_schema_impl.chunk_data(self._data_input, self._packet_output)
+        if isinstance(data_input, FileMetadata):
+            self._file_metadata = data_input
+        else:
+            self._file_metadata = self._name_ctx.data_schema_impl.chunk_data(data_input, self._packet_output)
         self._manifest_factory = ManifestFactory(tree_options=self._tree_options, manifest_graph=self._manifest_graph)
         self._optimized_params = self._calculate_optimal_tree(file_metadata=self._file_metadata, manifest_factory=self._manifest_factory)
 
