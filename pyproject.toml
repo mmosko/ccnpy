@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ccnpy"
-version = "0.1.1"
+version = "0.1.2"
 description = "A pure python implementation of the CCNx client."
 authors = ["Marc Mosko <marc@mosko.org>"]
 license = "Apache 2.0"
