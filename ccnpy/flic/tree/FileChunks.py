@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from typing import Iterable
 
 from .SizedPointer import SizedPointer
 
@@ -43,7 +43,10 @@ class FileChunks:
     def reverse_iterator(self):
         return self.__iter__()
 
-    class ReverseIterator:
+    class ReverseIterator(Iterable):
+        def __iter__(self):
+            return self
+
         def __init__(self, iterable):
             self._iterable = iterable
             self._offset = len(iterable) - 1
