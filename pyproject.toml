@@ -1,6 +1,6 @@
 [project]
 name = "ccnpy"
-version = "0.1.3"
+version = "0.1.4"
 description = "A pure python implementation of the CCNx client."
 authors = [
     { name = "Marc Mosko", email = "marc@mosko.org" },
