@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-
+import logging
 import math
 
 
@@ -23,6 +22,8 @@ class OptimizerResult:
 
     OptimizerResult is created by `TreeOptimizer` and then put into a `TreeParameters` for use by `TreeBuilder`.
     """
+    logger = logging.getLogger(__name__)
+
     def __init__(self, num_data_objects, num_pointers, direct_per_node, indirect_per_node, num_internal_nodes, waste):
         """
         :param num_data_objects: The required number of direct pointers (i.e. number of data objects)
@@ -81,7 +82,7 @@ class OptimizerResult:
         num_internal_direct = self._num_internal_nodes * self._direct_per_node
         remaining = self._num_data_objects - num_internal_direct
         if remaining <= 0:
-            print(f"internal capacity is {num_internal_direct}, so remaining is {remaining}")
+            self.logger.debug(f"internal capacity is {num_internal_direct}, so no leaf nodes required, remaining = {remaining}")
             return 0
         leaf_capacity = self._num_pointers
         leaf_nodes = int(math.ceil(remaining / leaf_capacity))

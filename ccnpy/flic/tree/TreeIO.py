@@ -14,8 +14,9 @@
 
 import os
 import socket
+from abc import ABC
 from array import array
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from typing import Optional, Dict
 
 from .SizedPointer import SizedPointer
@@ -38,7 +39,7 @@ class TreeIO:
     @staticmethod
     def get_link_name(name: Name) -> str:
         name_bytes = name.serialize().tobytes()
-        return f'link_{name_bytes.hex()}'
+        return f'{name_bytes.hex()}.link'
 
     class DataBuffer:
         def __init__(self):
@@ -99,6 +100,8 @@ class TreeIO:
         """
         def __init__(self):
             super().__init__([])
+            self.total_bytes_by_packet = 0
+            self.total_bytes_by_hash = 0
 
         def __len__(self):
             return len(self.by_hash)
@@ -112,15 +115,39 @@ class TreeIO:
             return f"PacketMemoryWriter({self.by_hash})"
 
         def put(self, packet: Packet):
+            self.total_bytes_by_packet += len(packet)
             self.packets.append(packet)
-            self.by_hash[packet.content_object_hash()] = packet
+            if packet.content_object_hash() not in self.by_hash:
+                self.total_bytes_by_hash += len(packet)
+                self.by_hash[packet.content_object_hash()] = packet
 
-    class PacketDirectoryWriter(PacketWriter):
+    class DirectoryBase(ABC):
+        def to_path(self, input: Packet | Name | HashValue, nested: bool = False):
+            if isinstance(input, Packet):
+                ptr = SizedPointer(content_object_hash=input.content_object_hash(), length=0)
+                filename = ptr.file_name()
+            elif isinstance(input, HashValue):
+                filename = input.value().tobytes().hex()
+            elif isinstance(input, Name):
+                filename = TreeIO.get_link_name(input)
+            else:
+                raise TypeError(f'Unsupported input type: {input}')
+
+            if nested:
+                subdir1 = filename[0:2]
+                subdir2 = filename[2:4]
+                dir_path = Path(self._directory, subdir1, subdir2)
+                dir_path.mkdir(parents=True, exist_ok=True)
+                return PurePath(self._directory, subdir1, subdir2, filename)
+
+            return PurePath(self._directory, filename)
+
+    class PacketDirectoryWriter(PacketWriter, DirectoryBase):
         """
         A file-system based write.  Packets are saved to the directory using their
         hash-based named (in UTF-8 hex).
         """
-        def __init__(self, directory: str, link_named_objects: bool = False, signer: Optional[Signer] = None):
+        def __init__(self, directory: str, link_named_objects: bool = False, signer: Optional[Signer] = None, nested: bool = False):
             """
 
             :param directory: The directory to use for I/O.  Must exist.
@@ -133,27 +160,43 @@ class TreeIO:
             self._directory = directory
             self._link_named_objects = link_named_objects
             self._signer = signer
+            self._nested = nested
+
+            self.by_hash = {}
+            self.packets = []
+            self.total_bytes_by_packet = 0
+            self.total_bytes_by_hash = 0
+            self.cnt_manifest = 0
+            self.cnt_data = 0
+            self.bytes_manifest = 0
+            self.bytes_data = 0
 
         def put(self, packet: Packet):
-            ptr = SizedPointer(content_object_hash=packet.content_object_hash(), length=0)
-            path = PurePath(self._directory, ptr.file_name())
-            packet.save(path)
-
+            self.total_bytes_by_packet += len(packet)
+            packet.save(self.to_path(input=packet, nested=self._nested))
             self._write_link(packet)
+            if packet.content_object_hash() not in self.by_hash:
+                self.total_bytes_by_hash += len(packet)
+                self.by_hash[packet.content_object_hash()] = packet
+                if packet.body().is_manifest():
+                    self.cnt_manifest += 1
+                    self.bytes_manifest += len(packet)
+                else:
+                    self.cnt_data += 1
+                    self.bytes_data += len(packet)
+
+        def _create_link(self, packet: Packet) -> Packet:
+            link = Link(name=packet.body().name(), digest=packet.content_object_hash())
+            link_object = ContentObject.create_link(name=packet.body().name(), link=link)
+            return self._create_signed_packet(link_object)
 
         def _write_link(self, packet: Packet):
             if not self._link_named_objects or not packet.body().is_content_object():
                 return
-            name = packet.body().name()
-            if name is None:
+            if packet.body().name() is None:
                 return
-
-            link = Link(name=name, digest=packet.content_object_hash())
-            link_object = ContentObject.create_link(name=name, link=link)
-            link_packet = self._create_signed_packet(link_object)
-            filename = TreeIO.get_link_name(name)
-            path = PurePath(self._directory, filename)
-            link_packet.save(path)
+            link_packet = self._create_link(packet=packet)
+            link_packet.save(self.to_path(packet.body().name()))
 
         def _create_signed_packet(self, link_object: ContentObject) -> Packet:
             if self._signer is None:
@@ -168,7 +211,7 @@ class TreeIO:
         def close(self):
             pass
 
-    class PacketDirectoryReader(PacketReader):
+    class PacketDirectoryReader(PacketReader, DirectoryBase):
         """
         A file-system based packet reader.  Reads packets based on their hash name from a directory
         """
@@ -191,8 +234,7 @@ class TreeIO:
                 return self._get_by_name(name)
 
             # ccnx does not use forwarding hint
-            ptr = SizedPointer(content_object_hash=hash_restriction, length=0)
-            path = PurePath(self._directory, ptr.file_name())
+            path = self.to_path(hash_restriction)
             p = Packet.load(path)
             if p.body().name() is not None:
                 if name != p.body().name():
@@ -214,14 +256,12 @@ class TreeIO:
             raise NotImplementedError(f'Could not find {name} by link, search not implemented')
 
         def _get_by_link(self, name: Name):
-            filename = TreeIO.get_link_name(name)
-            link_path = PurePath(self._directory, filename)
+            link_path = self.to_path(name)
             p = Packet.load(link_path)
             # TODO: we should validate p, but that needs a keystore
             if p.body().is_link():
                 link = Link.deserialize(p.body().payload().value())
-                hash_filename = SizedPointer(content_object_hash=link.digest(), length=0)
-                hash_path = PurePath(self._directory, hash_filename.file_name())
+                hash_path = self.to_path(link.digest())
                 packet = Packet.load(hash_path)
                 print(f"Dereferenced link {filename} to load packet {packet.content_object_hash()}")
                 return packet

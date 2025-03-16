@@ -58,12 +58,21 @@ class NameComponent(Tlv):
         if t == NameComponent.__T_CHUNKID:
             return f'ChunkId={Tlv.array_to_number(self.value())}'
         if t == NameComponent.__T_NAMESEGMENT:
-            return f'Name={self.value()}'
+            return f'Name={self.value().decode('UTF-8')}'
         if t == NameComponent.__T_MANIFESTID:
-            return f'ManifestId={self.value()}'
+            return f'ManifestId={Tlv.array_to_number(self.value())}'
         if t == NameComponent.__T_IPID:
             return f'IPID={self.value()}'
         return super().__repr__()
+
+    def is_name_segment(self):
+        return self._tlv_type == self.__T_NAMESEGMENT
+
+    def is_chunk_id_segment(self):
+        return self._tlv_type == self.__T_CHUNKID
+
+    def is_manifest_id_segment(self):
+        return self._tlv_type == self.__T_MANIFESTID
 
 class Name(TlvType):
     __T_NAME = 0x0000

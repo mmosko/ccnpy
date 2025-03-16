@@ -30,7 +30,9 @@ class ManifestTree:
     Builds a manifest tree.
     """
 
-    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions, manifest_graph: Optional[ManifestGraph] = None):
+    def __init__(self, data_input, packet_output: PacketWriter, tree_options: ManifestTreeOptions,
+                 manifest_graph: Optional[ManifestGraph] = None,
+                 name_context: Optional[NameConstructorContext] = None):
         """
         The `tree_options` must specify the name and schema.  Creates an optimized manifest tree, packing some data
         into the internal nodes.  it will minimize the tree height within the `tree_options.max_tree_degree`.
@@ -45,7 +47,7 @@ class ManifestTree:
         """
         self._packet_output = packet_output
         self._tree_options = tree_options
-        self._name_ctx = NameConstructorContext.create(self._tree_options)
+        self._name_ctx = name_context if name_context is not None else NameConstructorContext.create(self._tree_options)
         self._manifest_graph = manifest_graph
         if isinstance(data_input, FileMetadata):
             self._file_metadata = data_input
@@ -53,6 +55,7 @@ class ManifestTree:
             self._file_metadata = self._name_ctx.data_schema_impl.chunk_data(data_input, self._packet_output)
         self._manifest_factory = ManifestFactory(tree_options=self._tree_options, manifest_graph=self._manifest_graph)
         self._optimized_params = self._calculate_optimal_tree(file_metadata=self._file_metadata, manifest_factory=self._manifest_factory)
+        # print(f"Optimized parameters: {self._optimized_params}")
 
     def name_context(self):
         return self._name_ctx
@@ -63,17 +66,20 @@ class ManifestTree:
 
         :return: The root_manifest packet, which is the named and signed manifest
         """
-        if self._tree_options.debug:
-            print(f"Optimized parameters: {self._optimized_params}")
+        #if self._tree_options.debug:
+        print(f"Optimized parameters: {self._optimized_params}")
 
         top_manifest_packet = self.build_top()
         root_packet = self.build_root(top_manifest_packet=top_manifest_packet)
+
+        print(f"Manifest count {self._manifest_factory.cnt_manifests}, bytes {self._manifest_factory.cnt_manifest_bytes}")
         return root_packet
 
     def build_top(self) -> Packet:
         top_manifest_packet = self._build_tree(tree_parameters=self._optimized_params,
                                                manifest_factory=self._manifest_factory,
                                                file_metadata=self._file_metadata)
+        # print(f"Manifest count {self._manifest_factory.cnt_manifests}, bytes {self._manifest_factory.cnt_manifest_bytes}")
         return top_manifest_packet
 
     def build_root(self, top_manifest_packet: Packet) -> Packet:

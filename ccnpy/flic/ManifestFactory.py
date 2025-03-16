@@ -56,6 +56,8 @@ class ManifestFactory:
         self._encryptor = tree_options.manifest_encryptor
         self._tree_options = tree_options
         self._manifest_graph = manifest_graph
+        self.cnt_manifests = 0
+        self.cnt_manifest_bytes = 0
 
     def tree_options(self) -> ManifestTreeOptions:
         return self._tree_options
@@ -107,6 +109,8 @@ class ManifestFactory:
             self._manifest_graph.add_manifest(hash_value=packet.content_object_hash(),
                                               node=rv.node,
                                               name=packet.body().name())
+        self.cnt_manifests += 1
+        self.cnt_manifest_bytes += len(packet)
         return packet
 
     def _build(self, source,

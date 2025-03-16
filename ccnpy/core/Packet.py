@@ -78,6 +78,7 @@ class Packet:
         self._validation_alg = validation_alg
         self._validation_payload = validation_payload
         self._wire_format = self.__serialize()
+        self._hash = self._compute_hash()
 
     def __serialize(self):
         byte_list = self._header.serialize()
@@ -151,7 +152,7 @@ class Packet:
     def validation_payload(self):
         return self._validation_payload
 
-    def content_object_hash(self):
+    def _compute_hash(self):
         h = hashlib.sha256()
         h.update(self.body().serialize())
         if self.validation_alg() is not None:
@@ -159,8 +160,10 @@ class Packet:
         if self.validation_payload() is not None:
             h.update(self.validation_payload().serialize())
         digest = h.digest()
-        tlv = HashValue.create_sha256(array.array("B", digest))
-        return tlv
+        return HashValue.create_sha256(array.array("B", digest))
+
+    def content_object_hash(self):
+        return self._hash
 
 class PacketReader(abc.ABC):
     # TODO: We should bake in a validator callback, so the caller can validate received packets vs a trust or keystore.
