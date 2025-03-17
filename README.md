@@ -13,7 +13,7 @@ still in play at the moment and this is not a final specification or implementat
 
 This project uses `poetry` for the python build system.
 
-Table Of Contents:
+Table Of Contents:pipx
 * [Application Interface](#Application-Interface)
 * [Programming Interfaces](#Programming-Interfaces)
 * [Command-line Examples](#Examples)
@@ -21,6 +21,26 @@ Table Of Contents:
 * [Implementation Notes and dependencies](#Implementation-Notes)
 
 # Usage
+
+## Getting Started with Poetry
+
+Make sure poetry is installed and version 2.1.1 or later.  See https://python-poetry.org/docs/.
+
+```bash
+poetry update
+poetry build
+make check
+```
+
+You should see all the unit tests pass.
+
+```bash
+poetry run manifest_writer --help
+```
+
+This command should display the help menu from the ccnpy command.  It may also display some warnings about pyproject.toml.  If you see the help menu, you are ready to proceed.
+
+
 ## Application Interface
 
 * ccnpy.apps.manifest_writer: slice up a file into nameless data content objects and organize them into a manifest tree.
