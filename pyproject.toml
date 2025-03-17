@@ -16,7 +16,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: System :: Networking"
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 
 dependencies = [
     "cryptography >= 43.0.1",
