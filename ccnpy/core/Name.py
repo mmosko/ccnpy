@@ -74,6 +74,7 @@ class NameComponent(Tlv):
     def is_manifest_id_segment(self):
         return self._tlv_type == self.__T_MANIFESTID
 
+
 class Name(TlvType):
     __T_NAME = 0x0000
 
@@ -115,7 +116,8 @@ class Name(TlvType):
             return v.decode('UTF-8')
 
     def as_uri(self):
-        return 'ccnx:/' + '/'.join([f'{c.type()}={c.value()}' for c in self._components])
+        # return 'ccnx:/' + '/'.join([f'{c.type()}={repr(c.value())}' for c in self._components])
+        return 'ccnx:/' + '/'.join([repr(c) for c in self._components])
 
     def append(self, component: NameComponent):
         """

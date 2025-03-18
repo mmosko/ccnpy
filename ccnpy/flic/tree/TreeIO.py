@@ -18,6 +18,7 @@ from abc import ABC
 from array import array
 from pathlib import PurePath, Path
 from typing import Optional, Dict
+from urllib.parse import urlparse
 
 from .SizedPointer import SizedPointer
 from ..tlvs.Locators import Locators
@@ -38,8 +39,12 @@ class TreeIO:
 
     @staticmethod
     def get_link_name(name: Name) -> str:
-        name_bytes = name.serialize().tobytes()
-        return f'{name_bytes.hex()}.link'
+        url = urlparse(name.as_uri())
+        filename = url.path
+        safename=filename.replace('/','~')
+        return f'{safename}.link'
+        # name_bytes = name.serialize().tobytes()
+        # return f'{name_bytes.hex()}.link'
 
     class DataBuffer:
         def __init__(self):
