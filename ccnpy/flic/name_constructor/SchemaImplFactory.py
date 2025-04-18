@@ -78,5 +78,6 @@ class SchemaImplFactory:
         if isinstance(schema, SegmentedSchema):
             return SegmentedSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=None)
         if isinstance(schema, PrefixSchema):
-            return PrefixSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=None)
+            tree_options = ManifestTreeOptions(schema_type=SchemaType.PREFIX, name=schema.name(), signer=None)
+            return PrefixSchemaImpl(nc_id=nc_def.nc_id(), schema=schema, tree_options=tree_options)
         raise ValueError(f"Unsupported Schema: {nc_def}")
